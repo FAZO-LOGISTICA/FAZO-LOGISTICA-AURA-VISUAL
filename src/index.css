@@ -1,0 +1,202 @@
+/* Tailwind base */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================
+      FONDO ANIMADO PREMIUM FAZO
+   ================================ */
+
+body {
+  @apply text-white antialiased;
+  background: linear-gradient(135deg, #0b1120, #1e3a8a, #0f172a);
+  background-size: 300% 300%;
+  animation: bgMove 14s ease infinite;
+  font-family: "Inter", sans-serif;
+}
+
+@keyframes bgMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================================
+      SCROLL PERSONALIZADO
+   ================================ */
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #475569aa;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748baa;
+}
+
+/* ================================
+      MODO NOCHE AUTOMÁTICO
+   ================================ */
+
+body.modo-noche {
+  filter: brightness(0.75);
+}
+
+/* ================================
+      GLOW INSTITUCIONAL FAZO
+   ================================ */
+
+.glow-fazo {
+  filter: drop-shadow(0 0 12px #3b82f6);
+}
+
+.glow-fazo-strong {
+  filter: drop-shadow(0 0 25px #60a5fa);
+}
+
+/* ================================
+      BOTÓN FLOTANTE PREMIUM
+   ================================ */
+
+.btn-floating {
+  @apply fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-xl
+    flex items-center justify-center text-2xl font-bold select-none
+    transition-all duration-300;
+}
+
+.btn-floating-active {
+  @apply bg-red-600 shadow-red-500/60 animate-pulse;
+}
+
+.btn-floating-idle {
+  @apply bg-blue-600 hover:bg-blue-700 shadow-blue-500/60;
+}
+
+/* ================================
+      EFECTOS DE CARTAS Y CAJAS
+   ================================ */
+
+.card-fazo {
+  @apply bg-white/10 backdrop-blur-xl 
+    border border-white/20 rounded-2xl shadow-xl p-4;
+}
+
+.card-fazo-strong {
+  @apply bg-white/20 backdrop-blur-2xl 
+    border border-blue-300/30 shadow-2xl rounded-2xl;
+}
+
+/* ================================
+      ARRANQUE SUAVE DE LA APP
+   ================================ */
+
+.fade-enter {
+  opacity: 0;
+}
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 0.8s ease-in-out;
+}
+
+/* ================================
+      ANIMACIÓN DE PULSO PREMIUM
+   ================================ */
+
+.pulse-soft {
+  animation: pulseSoft 3s ease-in-out infinite;
+}
+@keyframes pulseSoft {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+/* ================================
+      ANIMACIONES IA / HOLOGRAMA
+   ================================ */
+
+.holo-glow {
+  animation: hologram 4s ease-in-out infinite;
+}
+
+@keyframes hologram {
+  0% { filter: drop-shadow(0 0 5px #2563eb); }
+  50% { filter: drop-shadow(0 0 22px #60a5fa); }
+  100% { filter: drop-shadow(0 0 5px #2563eb); }
+}
+
+/* ================================
+      TEXTO PROFESIONAL AURA
+   ================================ */
+
+.txt-soft {
+  @apply text-white/80;
+}
+
+.txt-strong {
+  @apply text-white font-bold drop-shadow-md;
+}
+
+/* ================================
+      UTILIDADES PREMIUM
+   ================================ */
+
+.no-select {
+  user-select: none;
+}
+
+.smooth {
+  scroll-behavior: smooth;
+}
+
+/* ==========================================================
+      ⚡⚡⚡  HUD STARK / AURA HOLOGRAMA (AGREGADO)
+      (NO SE TOCÓ NADA DE MÁS ARRIBA)
+   ========================================================== */
+
+/* Scanlines largas holográficas */
+@keyframes scanlines {
+  0% { background-position-y: 0; }
+  100% { background-position-y: 100vh; }
+}
+
+.animate-scanlines {
+  animation: scanlines 8s linear infinite;
+}
+
+/* Scan holográfico interior */
+@keyframes holoScan {
+  0% { background-position-y: 0; }
+  100% { background-position-y: 200px; }
+}
+
+.animate-holoScan {
+  animation: holoScan 5s linear infinite;
+}
+
+/* Brillo pulsante Cyan Stark */
+@keyframes starkGlow {
+  0% { filter: drop-shadow(0 0 6px rgba(0,255,255,0.4)); }
+  50% { filter: drop-shadow(0 0 32px rgba(0,255,255,0.8)); }
+  100% { filter: drop-shadow(0 0 6px rgba(0,255,255,0.4)); }
+}
+
+.glow-stark {
+  animation: starkGlow 3.5s ease-in-out infinite;
+}
+
+/* Marco de energía Jarvis */
+@keyframes jarvisFrame {
+  0% { box-shadow: 0 0 12px #06b6d4; }
+  50% { box-shadow: 0 0 28px #22d3ee; }
+  100% { box-shadow: 0 0 12px #06b6d4; }
+}
+
+.jarvis-frame {
+  animation: jarvisFrame 2.8s ease-in-out infinite;
+}

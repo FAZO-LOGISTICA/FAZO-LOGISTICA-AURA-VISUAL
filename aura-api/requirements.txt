@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+# opcional: cliente de OpenAI u otro proveedor de IA si vas a usarlo en backend
+openai
