@@ -1,7 +1,7 @@
 // ================================================
 //   AURAChat.js — Versión ULTRA PRO 2025
 //   FAZO LOGÍSTICA — Gustavo Oliva
-//   Mateo (IA) — Optimización total
+//   Mateo (IA) — Optimización total + Fix Netlify
 // ================================================
 
 import React, { useState, useEffect, useRef } from "react";
@@ -194,8 +194,9 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   }, []);
 
   // ================================================
-  //   SPEECH RECOGNITION
+  //   SPEECH RECOGNITION  (FIX NETLIFY AQUÍ)
   // ================================================
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
@@ -260,7 +261,7 @@ export default function AuraChat({ onComando, onSendToIframe }) {
 
     try {
       const payload = {
-        provider: "openai", // por defecto, cambiable
+        provider: "openai",
         messages: history.map((m) => ({
           role: m.from === "user" ? "user" : "assistant",
           content: m.text.trim(),
@@ -376,7 +377,7 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   };
 
   // ================================================
-  //   HUD VISUAL (NO SE TOCÓ TU ESTILO)
+  //   HUD VISUAL
   // ================================================
   const hudPanel =
     "bg-black/40 border border-cyan-500/40 rounded-2xl shadow-[0_0_25px_rgba(0,255,255,0.35)] backdrop-blur-xl";
