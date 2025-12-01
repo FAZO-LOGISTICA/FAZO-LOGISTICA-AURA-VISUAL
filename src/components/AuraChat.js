@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+
 // ================================================
 //   AURAChat.js — Versión ULTRA PRO 2025
 //   FAZO LOGÍSTICA — Gustavo Oliva
