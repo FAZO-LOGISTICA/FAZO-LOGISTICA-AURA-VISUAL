@@ -1,75 +1,56 @@
 // =======================================================
-//   FAZO-CONFIG v4.5 — Configuración ULTIMATE de AURA
-//   Multi-IA real • Backend dinámico • Versionamiento PRO
-//   Arquitectura FAZO LOGÍSTICA — 2025
+//   FAZO-CONFIG v5.0 — Arquitectura Definitiva AURA 2025
+//   Multi-IA real | Backend Render | Netlify | Ultra PRO
+//   Gustavo Oliva — FAZO LOGÍSTICA
 // =======================================================
 
 // =======================================================
-// 🔧 Utilidades PRO
+// 🔧 Utilidades robustas
 // =======================================================
 
-// Limpia strings y evita undefined
+// Limpia valores para evitar null/undefined en react
 const clean = (v) => (typeof v === "string" ? v.trim() : "");
 
-// Detecta entorno local / producción automáticamente
+// Detecta backend dinámico: producción (Netlify → Render) o local
 const getBackendURL = () => {
+  // 🔥 ESTA es la variable correcta para React
   const envURL = clean(process.env.REACT_APP_AURA_BACKEND_URL);
   if (envURL) return envURL;
 
-  // Local por defecto (React / Expo Web)
-  return "http://127.0.0.1:8000/aura";
+  // Modo local solo para desarrollo
+  return "http://127.0.0.1:8000/api/aura";
 };
 
 // =======================================================
-// 🧠 Modelos recomendados por proveedor (2025)
+// 🧠 Modelos IA (2025) — compatibles con el backend FAZO
 // =======================================================
 const MODELOS = {
-  // ANTHROPIC
   claude: "claude-3-7-sonnet",
-
-  // OPENAI
   openai: "gpt-4.1",
-
-  // GEMINI
   gemini: "gemini-1.5-flash",
-
-  // LLAMA (Groq)
   llama: "llama-3.1-70b",
-
-  // DEEPSEEK
   deepseek: "deepseek-chat",
-
-  // COHERE
   cohere: "command-r",
-
-  // GROQ (Mixtral / Llama)
   groq: "llama3-8b-8192",
 };
 
 // =======================================================
-// 🌐 Endpoints oficiales de cada proveedor (2025)
+// 🌐 Endpoints IA oficiales (usados SOLO por el backend)
 // =======================================================
 const URLS = {
   claude: "https://api.anthropic.com/v1/messages",
-
   openai: "https://api.openai.com/v1/chat/completions",
-
   gemini:
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-
   llama: "https://api.groq.com/openai/v1/chat/completions",
-
   deepseek: "https://api.deepseek.com/v1/chat/completions",
-
   cohere: "https://api.cohere.com/v1/chat",
-
   groq: "https://api.groq.com/openai/v1/chat/completions",
 };
 
 // =======================================================
-// 🔐 Claves del frontend (NO obligatorias)
-//   ⚠️ REACT_APP_* → No debes poner claves reales aquí
-//   El backend es quien usa las claves verdaderas
+// 🔐 Claves IA del frontend (opcionales)
+//   React JAMÁS debe tener claves reales — solo placeholders
 // =======================================================
 const KEYS = {
   claude: clean(process.env.REACT_APP_CLAUDE_KEY),
@@ -82,40 +63,48 @@ const KEYS = {
 };
 
 // =======================================================
-// 🤖 Motor IA primario de AURA (selección de proveedor)
+// 🤖 IA primaria seleccionada en Netlify (opcional)
 // =======================================================
 const AURA_PRIMARY =
-  clean(process.env.REACT_APP_AURA_PRIMARY) ||
-  "claude"; // Claude por defecto (mejor en español)
+  clean(process.env.REACT_APP_AURA_PRIMARY) || "claude";
 
 // =======================================================
-// 🚀 Configuración global final — Exportación PRO
+// 🎨 Branding FAZO oficial
+// =======================================================
+const BRAND = {
+  sistema: "FAZO-LOGÍSTICA",
+  modulo: "AURA",
+  version: "5.0 ULTRA MASTER",
+  autor: "Gustavo Alejandro Oliva Miranda",
+  pais: "Chile",
+  ciudad: "Valparaíso",
+  licencia: "© 2025 — Uso Municipal / FAZO",
+};
+
+// =======================================================
+// 🛠️ DEBUG automático — Perfecto para diagnóstico
+// =======================================================
+const DEBUG = {
+  entorno: process.env.NODE_ENV || "development",
+  react_version: React?.version || "N/A",
+  backend_url: getBackendURL(),
+  ia_principal: AURA_PRIMARY,
+  fecha_config: new Date().toISOString(),
+};
+
+// =======================================================
+// 🚀 Exportación final — El corazón del sistema AURA
 // =======================================================
 const config = {
   AURA_PRIMARY,
   MODELOS,
   URLS,
   KEYS,
+  BRAND,
+  DEBUG,
 
-  // Backend dinámico
+  // 🔥 Backend Render real
   AURA_BACKEND_URL: getBackendURL(),
-
-  // Branding oficial FAZO
-  BRAND: {
-    sistema: "FAZO-LOGÍSTICA",
-    modulo: "AURA",
-    version: "4.5 ULTRA PRO",
-    autor: "Gustavo Alejandro Oliva Miranda",
-    pais: "Chile",
-    ciudad: "Valparaíso",
-  },
-
-  // Información para depuración
-  DEBUG: {
-    entorno: process.env.NODE_ENV || "development",
-    backend_url: getBackendURL(),
-    ia_principal: AURA_PRIMARY,
-  },
 };
 
 export default config;
