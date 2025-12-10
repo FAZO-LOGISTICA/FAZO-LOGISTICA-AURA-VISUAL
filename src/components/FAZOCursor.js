@@ -41,3 +41,14 @@ export default function FAZOCursor() {
 
   return null;
 }
+const clickSound = new Audio("/sounds/click-holo.mp3");
+clickSound.volume = 0.35;
+
+const playClickSound = () => {
+  try {
+    clickSound.currentTime = 0;
+    clickSound.play();
+  } catch (_) {}
+};
+
+window.addEventListener("click", playClickSound);
