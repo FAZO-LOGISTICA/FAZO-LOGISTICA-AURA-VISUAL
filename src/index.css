@@ -254,3 +254,35 @@ body {
   0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
 }
+/* ==========================================================
+      RIPPLE HOLOGRÁFICO FAZO — HOVER BUTTON EFFECT
+   ========================================================== */
+
+button {
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0px;
+  height: 0px;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 255, 255, 0.25);
+  border-radius: 50%;
+  transition: width 0.5s ease-out, height 0.5s ease-out, opacity 0.6s ease-out;
+  opacity: 0;
+}
+
+button:hover::before {
+  width: 160%;
+  height: 160%;
+  opacity: 1;
+}
+
+button:hover {
+  filter: drop-shadow(0 0 8px rgba(0,255,255,0.6));
+}
