@@ -1,32 +1,22 @@
 // src/App.js
 import React, { useState, useEffect, useRef } from "react";
-import MenuFazo from "./components/MenuFazo";
+import SidebarFazo from "./components/SidebarFazo";
 import AuraFloatingPanel from "./components/AuraFloatingPanel";
 import AuraOrb from "./components/AuraOrb";
 import Login from "./components/Login";
 import "./index.css";
 
-// ========================================
-//      FAZO — HUD STARK NEGRO + CYAN
-//      AURA COMO NÚCLEO FLOTANTE
-// ========================================
+// ========================================================
+//   FAZO OS — SISTEMA OPERATIVO MUNICIPAL (2025)
+//   AURA núcleo inteligente + Módulos vía iframes
+//   Optimización total por Mateo IA
+// ========================================================
 export default function App() {
+  // ----------------------------------------
+  // LOGIN
+  // ----------------------------------------
   const [acceso, setAcceso] = useState(false);
 
-  // Vista activa (módulo principal)
-  const [vista, setVista] = useState("aguaruta");
-
-  // Subruta interna de AguaRuta
-  const [aguaRutaPath, setAguaRutaPath] = useState("");
-
-  // AURA flotante visible
-  const [auraVisible, setAuraVisible] = useState(false);
-
-  // Refs a iframes (para FAZO bridge)
-  const aguarutaIframeRef = useRef(null);
-  const trasladoIframeRef = useRef(null);
-
-  // Revisar login guardado
   useEffect(() => {
     const saved = localStorage.getItem("aura-acceso");
     if (saved === "ok") setAcceso(true);
@@ -36,76 +26,84 @@ export default function App() {
     return <Login onLogin={() => setAcceso(true)} />;
   }
 
-  // ========================================
-  //   FUNCIÓN GENERAL → ENVIAR A IFRAMES
-  // ========================================
+  // ----------------------------------------
+  // ESTADOS GLOBALES
+  // ----------------------------------------
+  const [vista, setVista] = useState("aguaruta");      // módulo actual
+  const [subrutaAgua, setSubrutaAgua] = useState("");  // pestañas internas
+  const [auraVisible, setAuraVisible] = useState(false);
+
+  // iframe refs (para comunicación bidireccional)
+  const aguarutaIframeRef = useRef(null);
+  const trasladoIframeRef = useRef(null);
+
+  // ----------------------------------------
+  // ENVIAR COMANDOS A IFRAMES (FAZO BRIDGE)
+  // ----------------------------------------
   const sendToIframe = (app, payload) => {
     try {
       if (!payload) return;
 
       if (app === "aguaruta" && aguarutaIframeRef.current?.contentWindow) {
-        aguarutaIframeRef.current.contentWindow.postMessage(
-          payload,
-          "*"
-        );
+        aguarutaIframeRef.current.contentWindow.postMessage(payload, "*");
       }
 
       if (app === "traslado" && trasladoIframeRef.current?.contentWindow) {
-        trasladoIframeRef.current.contentWindow.postMessage(
-          payload,
-          "*"
-        );
+        trasladoIframeRef.current.contentWindow.postMessage(payload, "*");
       }
     } catch (err) {
-      console.error("Error enviando comando FAZO a iframe:", err);
+      console.error("❌ Error enviando comando a iframe:", err);
     }
   };
 
-  // ========================================
-  //   MANEJO DE COMANDOS DE AURA
-  //   (módulos + subrutas AguaRuta)
-// ========================================
+  // =======================================================
+  //          AURA → CONTROL DE MÓDULOS (voz + texto)
+  // =======================================================
   const handleComandoAura = (cmd) => {
     if (!cmd) return;
 
-    // Compatibilidad simple (string)
+    // -----------------------------
+    // Si AURA envía un string simple
+    // -----------------------------
     if (typeof cmd === "string") {
       setVista(cmd);
       return;
     }
 
-    // Comandos de módulo principal
+    // -----------------------------
+    // MÓDULOS PRINCIPALES
+    // -----------------------------
     if (cmd.tipo === "modulo") {
       setVista(cmd.modulo);
 
-      // Si es AguaRuta y no trae ruta específica
-      if (cmd.modulo === "aguaruta" && !cmd.ruta) {
-        setAguaRutaPath("");
+      // Reiniciar subruta cuando abre AguaRuta
+      if (cmd.modulo === "aguaruta") {
+        setSubrutaAgua("");
       }
     }
 
-    // Comandos de subruta (pestañas AguaRuta)
+    // -----------------------------
+    // SUBRUTAS DE AGUARUTA
+    // -----------------------------
     if (cmd.tipo === "subruta") {
       if (cmd.modulo === "aguaruta") {
-        // Cambiar iframe a AguaRuta
         setVista("aguaruta");
-        setAguaRutaPath(cmd.ruta || "");
 
-        // Además, mandar comando al iframe para que interprete la pestaña
-        const tabSlug = (cmd.ruta || "").replace(/^\//, ""); // "/rutas-activas" → "rutas-activas"
+        const clean = (cmd.ruta || "").replace(/^\//, ""); // /rutas-activas → rutas-activas
+        setSubrutaAgua(clean);
 
-        if (tabSlug) {
-          // Forma estándar para fazo-bridge.js dentro de AguaRuta
-          sendToIframe("aguaruta", {
-            type: "FAZO_CMD",
-            command: "open-tab",
-            tab: tabSlug,
-          });
-        }
+        sendToIframe("aguaruta", {
+          type: "FAZO_CMD",
+          command: "open-tab",
+          tab: clean,
+        });
       }
     }
   };
 
+  // =======================================================
+  //                     RENDER PRINCIPAL
+  // =======================================================
   return (
     <div
       className="
@@ -115,36 +113,41 @@ export default function App() {
       "
     >
       {/* ======================================================
-                PANEL IZQUIERDO → MENÚ
+            SIDEBAR FAZO PRO (IZQUIERDA)
          ====================================================== */}
-      <MenuFazo setVista={setVista} />
+      <SidebarFazo active={vista} onNavigate={(slug) => {
+        setVista(slug);
+
+        // si el usuario abre AguaRuta desde el menú
+        if (slug === "aguaruta") setSubrutaAgua("");
+      }} />
 
       {/* ======================================================
-                PANEL DERECHO → CONTENIDO / IFRAME
+            PANEL DERECHO (CONTENIDO)
          ====================================================== */}
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col p-6 overflow-y-auto ml-64">
         <main className="flex-1 holo-fade">
-          {/* ======================================
-                    AGUARUTA (IFRAME)
-             ====================================== */}
+
+          {/* ----------------------------- */}
+          {/*        MÓDULO AGUARUTA        */}
+          {/* ----------------------------- */}
           {vista === "aguaruta" && (
             <iframe
               ref={aguarutaIframeRef}
-              src={`https://aguaruta.netlify.app${aguaRutaPath}`}
+              src={`https://aguaruta.netlify.app/${subrutaAgua}`}
               title="AguaRuta"
               className="
                 w-full h-[88vh] rounded-2xl
                 border border-cyan-400/40
                 bg-black/40 backdrop-blur-xl
                 shadow-[0_0_25px_rgba(0,255,255,0.25)]
-                transition
               "
             />
           )}
 
-          {/* ======================================
-                    TRASLADO MUNICIPAL
-             ====================================== */}
+          {/* ----------------------------- */}
+          {/*      TRASLADO MUNICIPAL       */}
+          {/* ----------------------------- */}
           {vista === "traslado" && (
             <iframe
               ref={trasladoIframeRef}
@@ -159,9 +162,9 @@ export default function App() {
             />
           )}
 
-          {/* ======================================
-                    FLOTA MUNICIPAL
-             ====================================== */}
+          {/* ----------------------------- */}
+          {/*         FLOTA MUNICIPAL       */}
+          {/* ----------------------------- */}
           {vista === "flota" && (
             <div
               className="
@@ -171,21 +174,15 @@ export default function App() {
                 shadow-[0_0_25px_rgba(0,255,255,0.2)]
               "
             >
-              <h2 className="text-3xl font-bold text-cyan-300 mb-2">
-                Flota Municipal
-              </h2>
-              <p className="text-cyan-200/80">
-                Vehículos, mantenimiento y disponibilidad.
-              </p>
-              <p className="text-cyan-300/40 mt-3">
-                (módulo en construcción)
-              </p>
+              <h2 className="text-3xl font-bold text-cyan-300 mb-2">Flota Municipal</h2>
+              <p className="text-cyan-200/80">Vehículos, mantenimiento y disponibilidad.</p>
+              <p className="text-cyan-300/40 mt-3">(módulo en construcción)</p>
             </div>
           )}
 
-          {/* ======================================
-                    REPORTES
-             ====================================== */}
+          {/* ----------------------------- */}
+          {/*           REPORTES            */}
+          {/* ----------------------------- */}
           {vista === "reportes" && (
             <div
               className="
@@ -195,21 +192,17 @@ export default function App() {
                 shadow-[0_0_25px_rgba(0,255,255,0.2)]
               "
             >
-              <h2 className="text-3xl font-bold text-cyan-300 mb-2">
-                Reportes FAZO
-              </h2>
+              <h2 className="text-3xl font-bold text-cyan-300 mb-2">Reportes FAZO</h2>
               <p className="text-cyan-200/80">
                 Informes avanzados, análisis y datos municipales.
               </p>
-              <p className="text-cyan-300/40 mt-3">
-                (módulo en construcción)
-              </p>
+              <p className="text-cyan-300/40 mt-3">(módulo en construcción)</p>
             </div>
           )}
 
-          {/* ======================================
-                    AJUSTES
-             ====================================== */}
+          {/* ----------------------------- */}
+          {/*            AJUSTES            */}
+          {/* ----------------------------- */}
           {vista === "ajustes" && (
             <div
               className="
@@ -219,9 +212,7 @@ export default function App() {
                 shadow-[0_0_25px_rgba(0,255,255,0.2)]
               "
             >
-              <h2 className="text-2xl font-bold text-cyan-300 mb-4">
-                Ajustes del Sistema
-              </h2>
+              <h2 className="text-2xl font-bold text-cyan-300 mb-4">Ajustes del Sistema</h2>
               <p className="text-cyan-200/70">
                 Configura voz, tema, accesos y opciones del sistema FAZO.
               </p>
@@ -244,12 +235,12 @@ export default function App() {
       </div>
 
       {/* ======================================================
-              ORB FAZO FLOTANTE (BOTÓN)
+                ORB FAZO (BOTÓN AURA)
          ====================================================== */}
       <AuraOrb onClick={() => setAuraVisible(true)} />
 
       {/* ======================================================
-              PANEL FLOTANTE DE AURA (CHAT)
+                PANEL FLOATING (AURA CHAT)
          ====================================================== */}
       <AuraFloatingPanel
         visible={auraVisible}
