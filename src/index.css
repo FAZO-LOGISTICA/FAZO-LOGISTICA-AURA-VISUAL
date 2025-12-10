@@ -1,67 +1,69 @@
+/* ========================================================================
+   FAZO OS — INDEX.CSS NIVEL ULTRA PRO MAX 2025
+   Hologramas, scanlines, jarvis-frame, glassmorphism, glow cyan
+   Mateo IA — Optimizado para producción
+   ======================================================================== */
+
 /* Tailwind base */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ================================
-      FONDO ANIMADO PREMIUM FAZO
-   ================================ */
+/* ============================================================
+      ⚡ FONDO ANIMADO PREMIUM FAZO
+   ============================================================ */
 
 body {
   @apply text-white antialiased;
-  background: linear-gradient(135deg, #0b1120, #1e3a8a, #0f172a);
-  background-size: 300% 300%;
-  animation: bgMove 14s ease infinite;
+  background: linear-gradient(135deg, #020617, #0f172a, #1e40af, #0a0f24);
+  background-size: 350% 350%;
+  animation: bgMove 18s ease-in-out infinite;
   font-family: "Inter", sans-serif;
 }
 
 @keyframes bgMove {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% { background-position: 0% 20%; }
+  50% { background-position: 100% 80%; }
+  100% { background-position: 0% 20%; }
 }
 
-/* ================================
-      SCROLL PERSONALIZADO
-   ================================ */
+/* ============================================================
+      ⚡ SCROLL PERSONALIZADO
+   ============================================================ */
 
-::-webkit-scrollbar {
-  width: 7px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #475569aa;
-  border-radius: 10px;
+  background: #64748b77;
+  border-radius: 12px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748baa;
+  background: #94a3b877;
 }
 
-/* ================================
-      MODO NOCHE AUTOMÁTICO
-   ================================ */
+/* ============================================================
+      ⚡ MODO NOCHE AUTOMÁTICO
+   ============================================================ */
 
 body.modo-noche {
   filter: brightness(0.75);
 }
 
-/* ================================
-      GLOW INSTITUCIONAL FAZO
-   ================================ */
+/* ============================================================
+      ⚡ GLOW FAZO — Cian institucional
+   ============================================================ */
 
 .glow-fazo {
-  filter: drop-shadow(0 0 12px #3b82f6);
+  filter: drop-shadow(0 0 14px #38bdf8);
 }
 
 .glow-fazo-strong {
-  filter: drop-shadow(0 0 25px #60a5fa);
+  filter: drop-shadow(0 0 30px #7dd3fc);
 }
 
-/* ================================
-      BOTÓN FLOTANTE PREMIUM
-   ================================ */
+/* ============================================================
+      ⚡ BOTÓN FLOTANTE PREMIUM (AURA ORB)
+   ============================================================ */
 
 .btn-floating {
   @apply fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-xl
@@ -74,12 +76,12 @@ body.modo-noche {
 }
 
 .btn-floating-idle {
-  @apply bg-blue-600 hover:bg-blue-700 shadow-blue-500/60;
+  @apply bg-cyan-600 hover:bg-cyan-700 shadow-cyan-500/60;
 }
 
-/* ================================
-      EFECTOS DE CARTAS Y CAJAS
-   ================================ */
+/* ============================================================
+      ⚡ TARJETAS DE SISTEMA (GLASS / HOLOGRÁFICAS)
+   ============================================================ */
 
 .card-fazo {
   @apply bg-white/10 backdrop-blur-xl 
@@ -88,115 +90,114 @@ body.modo-noche {
 
 .card-fazo-strong {
   @apply bg-white/20 backdrop-blur-2xl 
-    border border-blue-300/30 shadow-2xl rounded-2xl;
+    border border-cyan-300/30 shadow-2xl rounded-2xl;
 }
 
-/* ================================
-      ARRANQUE SUAVE DE LA APP
-   ================================ */
+/* ============================================================
+      ⚡ ANIMACIÓN DE ENTRADA SUAVE (SPA)
+   ============================================================ */
 
-.fade-enter {
-  opacity: 0;
-}
+.fade-enter { opacity: 0; }
 .fade-enter-active {
   opacity: 1;
   transition: opacity 0.8s ease-in-out;
 }
 
-/* ================================
-      ANIMACIÓN DE PULSO PREMIUM
-   ================================ */
+/* ============================================================
+      ⚡ PULSO HOLOGRÁFICO SUAVE
+   ============================================================ */
 
 .pulse-soft {
   animation: pulseSoft 3s ease-in-out infinite;
 }
+
 @keyframes pulseSoft {
-  0% { opacity: 0.8; }
-  50% { opacity: 1; }
+  0%   { opacity: 0.8; }
+  50%  { opacity: 1; }
   100% { opacity: 0.8; }
 }
 
-/* ================================
-      ANIMACIONES IA / HOLOGRAMA
-   ================================ */
+/* ============================================================
+      ⚡ EFECTOS HOLOGRÁFICOS PARA IA (AURA)
+   ============================================================ */
 
 .holo-glow {
   animation: hologram 4s ease-in-out infinite;
 }
 
 @keyframes hologram {
-  0% { filter: drop-shadow(0 0 5px #2563eb); }
-  50% { filter: drop-shadow(0 0 22px #60a5fa); }
-  100% { filter: drop-shadow(0 0 5px #2563eb); }
+  0%   { filter: drop-shadow(0 0 6px #2563eb); }
+  50%  { filter: drop-shadow(0 0 26px #60a5fa); }
+  100% { filter: drop-shadow(0 0 6px #2563eb); }
 }
 
-/* ================================
-      TEXTO PROFESIONAL AURA
-   ================================ */
+/* ============================================================
+      ⚡ TEXTO ESPECIAL AURA
+   ============================================================ */
 
-.txt-soft {
-  @apply text-white/80;
-}
+.txt-soft   { @apply text-white/80; }
+.txt-strong { @apply text-white font-bold drop-shadow-md; }
 
-.txt-strong {
-  @apply text-white font-bold drop-shadow-md;
-}
+/* ============================================================
+      ⚡ UTILIDADES PREMIUM
+   ============================================================ */
 
-/* ================================
-      UTILIDADES PREMIUM
-   ================================ */
+.no-select { user-select: none; }
+.smooth { scroll-behavior: smooth; }
 
-.no-select {
-  user-select: none;
-}
+/* ========================================================================
+      🔥 HUD STARK / JARVIS HOLOGRÁFICO
+      (Ultra Pro - complementa el Panel AURA y Sidebar)
+   ======================================================================== */
 
-.smooth {
-  scroll-behavior: smooth;
-}
-
-/* ==========================================================
-      ⚡⚡⚡  HUD STARK / AURA HOLOGRAMA (AGREGADO)
-      (NO SE TOCÓ NADA DE MÁS ARRIBA)
-   ========================================================== */
-
-/* Scanlines largas holográficas */
+/* Líneas de barrido tipo monitor holográfico */
 @keyframes scanlines {
   0% { background-position-y: 0; }
   100% { background-position-y: 100vh; }
 }
 
 .animate-scanlines {
-  animation: scanlines 8s linear infinite;
+  background-image: linear-gradient(
+      rgba(255,255,255,0.03) 1px,
+      transparent 1px
+  );
+  background-size: 100% 4px;
+  animation: scanlines 12s linear infinite;
 }
 
-/* Scan holográfico interior */
+/* Scan holográfico suave */
 @keyframes holoScan {
   0% { background-position-y: 0; }
-  100% { background-position-y: 200px; }
+  100% { background-position-y: 250px; }
 }
 
 .animate-holoScan {
-  animation: holoScan 5s linear infinite;
+  background-image: linear-gradient(
+      rgba(255,255,255,0.06) 1px,
+      transparent 1px
+  );
+  background-size: 100% 6px;
+  animation: holoScan 6s linear infinite;
 }
 
-/* Brillo pulsante Cyan Stark */
-@keyframes starkGlow {
-  0% { filter: drop-shadow(0 0 6px rgba(0,255,255,0.4)); }
-  50% { filter: drop-shadow(0 0 32px rgba(0,255,255,0.8)); }
-  100% { filter: drop-shadow(0 0 6px rgba(0,255,255,0.4)); }
-}
-
-.glow-stark {
-  animation: starkGlow 3.5s ease-in-out infinite;
-}
-
-/* Marco de energía Jarvis */
+/* Marco vibrante estilo Jarvis */
 @keyframes jarvisFrame {
-  0% { box-shadow: 0 0 12px #06b6d4; }
-  50% { box-shadow: 0 0 28px #22d3ee; }
-  100% { box-shadow: 0 0 12px #06b6d4; }
+  0% { box-shadow: 0 0 12px #22d3ee; }
+  50% { box-shadow: 0 0 32px #67e8f9; }
+  100% { box-shadow: 0 0 12px #22d3ee; }
 }
 
 .jarvis-frame {
-  animation: jarvisFrame 2.8s ease-in-out infinite;
+  animation: jarvisFrame 3.2s ease-in-out infinite;
+}
+
+/* Halo Stark ultra */
+@keyframes starkGlow {
+  0% { filter: drop-shadow(0 0 10px rgba(0,255,255,0.25)); }
+  50% { filter: drop-shadow(0 0 40px rgba(0,255,255,0.9)); }
+  100% { filter: drop-shadow(0 0 10px rgba(0,255,255,0.25)); }
+}
+
+.glow-stark {
+  animation: starkGlow 4s ease-in-out infinite;
 }
