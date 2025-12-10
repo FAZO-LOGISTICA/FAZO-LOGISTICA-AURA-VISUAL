@@ -3,7 +3,7 @@
 // =======================================================
 //   AURAChat.js — ULTRA PRO MAX 2025 (VERSIÓN DEFINITIVA)
 //   FAZO LOGÍSTICA — Gustavo Oliva
-//   Mateo (IA) — Optimización total de Voz + Avatar
+//   Mateo (IA) — Arquitectura completa + AURA OPERATIVA
 // =======================================================
 
 import React, { useState, useEffect, useRef } from "react";
@@ -22,7 +22,7 @@ import {
 import config from "../config";
 
 // =======================================================
-//   LIMPIAR EMOJIS
+//   LIMPIAR EMOJIS PARA QUE AURA NO LOS LEA EN VOZ
 // =======================================================
 const limpiarEmojis = (texto) =>
   texto.replace(
@@ -31,13 +31,13 @@ const limpiarEmojis = (texto) =>
   );
 
 // =======================================================
-//   BACKEND + PROVIDER
+//   BACKEND AURA
 // =======================================================
 const AURA_API_URL = config.AURA_BACKEND_URL;
 const AURA_PROVIDER = config.AURA_PRIMARY || "claude";
 
-console.log("🔗 AURA API URL:", AURA_API_URL);
-console.log("🧠 AURA PROVIDER:", AURA_PROVIDER);
+console.log("🔗 AURA API:", AURA_API_URL);
+console.log("🧠 MODELO AURA:", AURA_PROVIDER);
 
 // =======================================================
 //   SUBRUTAS AGUARUTA
@@ -66,58 +66,69 @@ const detectarSubrutaAguaRuta = (texto) => {
 };
 
 // =======================================================
-//   DETECTAR COMANDOS FAZO
+//   COMANDOS DE MÓDULOS FAZO
 // =======================================================
 const detectarComandoModulo = (texto) => {
   const t = texto?.toLowerCase() || "";
 
   if (t.includes("aguaruta") || (t.includes("agua") && t.includes("laguna")))
-    return {
-      tipo: "modulo",
-      modulo: "aguaruta",
-      frase: "Abriendo módulo AguaRuta. Cargando rutas, litros y camiones.",
-    };
+    return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo módulo AguaRuta." };
 
   if (t.includes("traslado"))
-    return {
-      tipo: "modulo",
-      modulo: "traslado",
-      frase: "Cargando módulo Traslado Municipal.",
-    };
+    return { tipo: "modulo", modulo: "traslado", frase: "Cargando módulo Traslado Municipal." };
 
   if (t.includes("flota"))
-    return {
-      tipo: "modulo",
-      modulo: "flota",
-      frase: "Mostrando panel de Flota Municipal.",
-    };
+    return { tipo: "modulo", modulo: "flota", frase: "Mostrando panel de Flota Municipal." };
 
   if (t.includes("reporte") || t.includes("informe"))
-    return {
-      tipo: "modulo",
-      modulo: "reportes",
-      frase: "Generando módulo de Reportes FAZO.",
-    };
+    return { tipo: "modulo", modulo: "reportes", frase: "Generando módulo de Reportes FAZO." };
 
   if (t.includes("ajustes"))
-    return {
-      tipo: "modulo",
-      modulo: "ajustes",
-      frase: "Abriendo ajustes internos de AURA.",
-    };
+    return { tipo: "modulo", modulo: "ajustes", frase: "Abriendo Ajustes del Sistema." };
 
   if (t.includes("aura") || t.includes("inicio"))
-    return {
-      tipo: "modulo",
-      modulo: "aura",
-      frase: "Volviendo al panel principal de AURA.",
-    };
+    return { tipo: "modulo", modulo: "aura", frase: "Volviendo al panel principal de AURA." };
 
   return null;
 };
 
 // =======================================================
-//   COMPONENTE AURA CHAT
+//   AURA OPERATIVA — DETECTOR DE ACCIONES REALES
+// =======================================================
+const detectarAccionAura = (texto) => {
+  const t = texto.toLowerCase();
+
+  // ABRIR MÓDULOS
+  if (t.includes("abre") || t.includes("abrir")) {
+    if (t.includes("mapa")) return { tipo: "accion", accion: "abrir-mapa" };
+    if (t.includes("rutas")) return { tipo: "accion", accion: "abrir-rutas" };
+    if (t.includes("traslado")) return { tipo: "accion", accion: "abrir-traslado" };
+    if (t.includes("ajustes")) return { tipo: "accion", accion: "abrir-ajustes" };
+  }
+
+  // FILTROS
+  if (t.includes("filtra") || t.includes("filtro")) {
+    if (t.includes("camion a1")) return { tipo: "accion", accion: "filtro-camion", valor: "A1" };
+    if (t.includes("camion a2")) return { tipo: "accion", accion: "filtro-camion", valor: "A2" };
+    if (t.includes("camion a3")) return { tipo: "accion", accion: "filtro-camion", valor: "A3" };
+  }
+
+  // BUSCAR
+  if (t.includes("buscar") || t.includes("busca")) {
+    const value = t.replace("buscar", "").replace("busca", "").trim();
+    return { tipo: "accion", accion: "buscar", valor: value };
+  }
+
+  // LOGOUT
+  if (t.includes("cerrar sesion")) {
+    return { tipo: "accion", accion: "logout" };
+  }
+
+  return null;
+};
+
+// =======================================================
+//   COMPONENTE PRINCIPAL
 // =======================================================
 export default function AuraChat({ onComando, onSendToIframe }) {
   const [messages, setMessages] = useState([
@@ -140,29 +151,24 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   const recognitionRef = useRef(null);
   const bottomRef = useRef(null);
 
-  const [speechSupported, setSpeechSupported] = useState(true);
-
-  // =======================================================
-  //   EFECTO DE ACTIVACIÓN
-  // =======================================================
+// =======================================================
+//   ACTIVACIÓN
+// =======================================================
   useEffect(() => {
     playActivate();
-    console.log("🌍 Entorno:", config.DEBUG?.entorno);
-    console.log("🛰️ Backend AURA:", AURA_API_URL);
   }, []);
 
-  // =======================================================
-  //   CARGA VOICES
-  // =======================================================
+// =======================================================
+//   CARGA VOCES TTS
+// =======================================================
   useEffect(() => {
     if (!window.speechSynthesis) return;
 
-    const loadVoices = () => {
+    const load = () => {
       const all = window.speechSynthesis.getVoices();
       setVoices(all);
 
       const guardada = localStorage.getItem("aura-voice");
-
       const preferida =
         all.find((v) => v.name === guardada) ||
         all.find((v) => v.lang.startsWith("es") && v.name.includes("female")) ||
@@ -172,19 +178,16 @@ export default function AuraChat({ onComando, onSendToIframe }) {
       setSelectedVoice(preferida);
     };
 
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
   }, []);
 
-  // =======================================================
-  -   SPEECH RECOGNITION
-  // =======================================================
+// =======================================================
+//   SPEECH RECOGNITION
+// =======================================================
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      setSpeechSupported(false);
-      return;
-    }
+    if (!SR) return;
 
     const rec = new SR();
     rec.lang = "es-CL";
@@ -201,52 +204,36 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     recognitionRef.current = rec;
   }, []);
 
-  // =======================================================
-  //   AUTO SCROLL
-  // =======================================================
+// =======================================================
+//   AUTO SCROLL
+// =======================================================
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // =======================================================
-  //   SUPER TTS ULTRA PRO MAX (MEJORADO)
-  // =======================================================
+// =======================================================
+//   TTS AMPLIADO
+// =======================================================
   const speak = (text) => {
     if (!window.speechSynthesis || !text) return;
 
-    // Limpieza profunda
-    const limpio = limpiarEmojis(text)
-      .replace(/\s+/g, " ")
-      .trim();
+    const limpio = limpiarEmojis(text).replace(/\s+/g, " ").trim();
 
-    // Cancelar cualquier audio activo
     window.speechSynthesis.cancel();
 
     const u = new SpeechSynthesisUtterance(limpio);
-
-    // Voz preferida
     if (selectedVoice) u.voice = selectedVoice;
 
-    // Ajustes finos realistas
     u.rate = 0.96;
     u.pitch = 1.03;
     u.volume = 1;
 
-    // Al empezar
     u.onstart = () => {
       startTalk();
       setIsTalking(true);
       setEmotion("hablando");
     };
 
-    // Sincronización labial (cada palabra)
-    u.onboundary = (e) => {
-      if (e.name === "word") {
-        setEmotion("hablando");
-      }
-    };
-
-    // Al terminar
     u.onend = () => {
       stopTalk();
       setIsTalking(false);
@@ -256,25 +243,20 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     window.speechSynthesis.speak(u);
   };
 
-  // =======================================================
-  //   BACKEND FAZO INTELIGENTE
-  // =======================================================
+// =======================================================
+//   LLAMADO A BACKEND
+// =======================================================
   const callAuraBackend = async (history) => {
     if (!AURA_API_URL) return null;
 
     const payload = {
       provider: AURA_PROVIDER,
-      metadata: {
-        origen: "FAZO-AURA",
-        usuario: "Gustavo Oliva",
-      },
       messages: history.map((m) => ({
         role: m.from === "user" ? "user" : "assistant",
         content: m.text.trim(),
       })),
     };
 
-    // Primer intento
     try {
       const res = await fetch(AURA_API_URL, {
         method: "POST",
@@ -284,48 +266,29 @@ export default function AuraChat({ onComando, onSendToIframe }) {
 
       if (res.ok) {
         const data = await res.json();
-        return data?.reply || null;
-      }
-    } catch {}
-
-    // Retry automático si Render estaba dormido
-    try {
-      console.warn("⚠️ Reintentando conexión a Render...");
-      const res2 = await fetch(AURA_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res2.ok) {
-        const data = await res2.json();
-        return data?.reply || null;
+        return data.reply;
       }
     } catch {}
 
     return null;
   };
 
-  // =======================================================
-  //   FALLBACK LOCAL
-  // =======================================================
-  const getLocalReply = (t) => {
-    const tx = t.toLowerCase();
-
-    if (tx.includes("agua")) return "Perfecto Gustavo, te ayudo con rutas, litros y camiones.";
-    if (tx.includes("traslado")) return "Cargando módulo Traslado Municipal.";
-    if (tx.includes("flota")) return "Mostrando disponibilidad de vehículos.";
-    return "Entendido, cuéntame qué necesitas.";
+// =======================================================
+//   FALLBACK LOCAL
+// =======================================================
+  const getLocalReply = (txt) => {
+    if (txt.includes("agua")) return "Perfecto, reviso AguaRuta.";
+    if (txt.includes("traslado")) return "Entendido, abro Traslado Municipal.";
+    return "Listo Gustavo, cuéntame qué hacemos.";
   };
 
-  // =======================================================
-  //   ENVIAR MENSAJE
-  // =======================================================
+// =======================================================
+//   ENVÍO DE MENSAJES
+// =======================================================
   const handleSendMessage = async (texto) => {
     const finalText = (texto || input).trim();
     if (!finalText) return;
 
-    // Si está hablando → cancelamos
     if (isTalking) {
       window.speechSynthesis.cancel();
       stopTalk();
@@ -343,12 +306,33 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     setInput("");
     setIsThinking(true);
 
-    // Emoción del usuario
+// =======================================================
+//   EMOCIÓN DEL USUARIO
+// =======================================================
     try {
       setEmotion(detectarEmocion(limpiarEmojis(finalText)) || "neutral");
     } catch {}
 
-    // SUBRUTAS
+// =======================================================
+//   AURA OPERATIVA — ACCIONES
+// =======================================================
+    const accion = detectarAccionAura(finalText);
+    if (accion) {
+      const frase = "Ejecutando instrucción, Gustavo.";
+      speak(frase);
+      playCommand();
+
+      setMessages((m) => [...m, { id: Date.now(), from: "aura", text: frase }]);
+      setIsThinking(false);
+
+      if (onComando) onComando(accion);
+
+      return;
+    }
+
+// =======================================================
+//   SUBRUTAS AguaRuta
+// =======================================================
     const sub = detectarSubrutaAguaRuta(finalText);
     if (sub) {
       speak(sub.frase);
@@ -370,7 +354,9 @@ export default function AuraChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // MÓDULOS GENERALES
+// =======================================================
+//   MODULOS GENERALES
+// =======================================================
     const cmd = detectarComandoModulo(finalText);
     if (cmd) {
       speak(cmd.frase);
@@ -383,13 +369,15 @@ export default function AuraChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // BACKEND REAL
+// =======================================================
+//   BACKEND
+// =======================================================
     const history = [...messages, userMsg];
     let reply = await callAuraBackend(history);
 
     if (!reply) reply = getLocalReply(finalText);
 
-    reply = reply.trim().replace(/\s+/g, " ");
+    reply = reply.trim();
 
     const auraMsg = {
       id: Date.now() + 1,
@@ -400,7 +388,6 @@ export default function AuraChat({ onComando, onSendToIframe }) {
 
     setMessages((m) => [...m, auraMsg]);
 
-    // Emoción IA
     try {
       setEmotion(detectarEmocion(limpiarEmojis(reply)) || "neutral");
     } catch {}
@@ -409,9 +396,9 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     setIsThinking(false);
   };
 
-  // =======================================================
-  //   HUD VISUAL
-  // =======================================================
+// =======================================================
+//   HUD VISUAL
+// =======================================================
   const hudPanel =
     "bg-black/40 border border-cyan-500/40 rounded-2xl shadow-[0_0_25px_rgba(0,255,255,0.35)] backdrop-blur-xl";
 
@@ -424,29 +411,9 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   const hudBubbleUser =
     "bg-cyan-800 text-white border border-cyan-500/30 rounded-br-sm";
 
-  // =======================================================
-  //   RENDER
-  // =======================================================
-  return (
-… continúa … (tu mensaje superó el límite, pero ya generé **todo el archivo completo y 100% funcional**.)
-
----
-
-## ✨ **Gustavo, tranquilo: NO falta nada.**
-El archivo **COMPLETO**, limpio, sin cortar y listo para pegar **lo generé perfectamente**.
-
-Solo que es demasiado largo para un mensaje → TE LO ENTREGO AHORA MISMO EN 2 PARTES:
-
----
-
-# ✅ **PARTE 1 (hasta antes del render) YA LA TIENES ARRIBA.**  
-Ahora viene…
-
----
-
-# 🚀 **PARTE 2 — RENDER COMPLETO FINAL (copiar y pegar justo al final del archivo)**
-
-```jsx
+// =======================================================
+//   RENDER COMPLETO
+// =======================================================
   return (
     <section className={`${hudPanel} p-4`}>
       {/* HEADER */}
@@ -480,11 +447,7 @@ Ahora viene…
         {/* AVATAR */}
         <div className="md:w-1/3 flex flex-col items-center">
           <div className="w-48 h-48 border border-cyan-400/30 rounded-3xl bg-black/40 shadow-[0_0_20px_rgba(0,255,255,0.2)] flex items-center justify-center overflow-hidden">
-            <AuraRealistic
-              emotion={emotion}
-              talking={isTalking}
-              listening={isListening}
-            />
+            <AuraRealistic emotion={emotion} talking={isTalking} listening={isListening} />
           </div>
 
           <p className="text-xs text-cyan-300/80 mt-3">
@@ -500,9 +463,7 @@ Ahora viene…
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex ${
-                  msg.from === "user" ? "justify-end" : "justify-start"
-                }`}
+                className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`max-w-[80%] px-3 py-2 text-sm border shadow-lg ${
@@ -514,9 +475,7 @@ Ahora viene…
               </div>
             ))}
 
-            {isThinking && (
-              <div className="text-cyan-300/70 text-xs">Procesando…</div>
-            )}
+            {isThinking && <div className="text-cyan-300/70 text-xs">Procesando…</div>}
 
             <div ref={bottomRef} />
           </div>
@@ -540,9 +499,9 @@ Ahora viene…
             <div className="flex flex-col items-center">
               <FloatingMic
                 isListening={isListening}
-                disabled={!speechSupported || isThinking}
+                disabled={isThinking}
                 onToggle={() => {
-                  if (!speechSupported || !recognitionRef.current) return;
+                  if (!recognitionRef.current) return;
 
                   if (isListening) {
                     recognitionRef.current.stop();
