@@ -1,58 +1,73 @@
-// src/components/AuraOrb.js
+// ========================================================
+//   AuraOrb.js — FAZO OS 2025
+//   Orbe Holográfico Definitivo • Reactor IA
+//   Mateo IA — versión ULTRA PRO MAX
+// ========================================================
+
 import React from "react";
 import { motion } from "framer-motion";
-
-/**
- * Orbe holográfico FAZO — versión Stark
- * Flotante, animado, siempre visible.
- * Abre el panel flotante de AURA.
- */
 
 export default function AuraOrb({ onClick }) {
   return (
     <motion.div
       onClick={onClick}
-      whileHover={{ scale: 1.15 }}
-      whileTap={{ scale: 0.9 }}
       drag
       dragMomentum={false}
-      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      whileHover={{ scale: 1.18, rotate: 2 }}
+      whileTap={{ scale: 0.88 }}
       className="
-        fixed z-50
-        bottom-6 right-6
-        w-20 h-20
-        rounded-full cursor-pointer select-none
+        fixed bottom-6 right-6 z-50
+        w-20 h-20 rounded-full cursor-pointer select-none
         flex items-center justify-center
-        bg-cyan-500/20
-        border border-cyan-300/50
         backdrop-blur-xl
-        shadow-[0_0_30px_rgba(0,255,255,0.35)]
+        bg-cyan-400/15
+        border border-cyan-300/40
+        shadow-[0_0_45px_rgba(0,255,255,0.45)]
         holo-glow
       "
       style={{
         boxShadow:
-          "0 0 25px rgba(0,255,255,0.6), inset 0 0 18px rgba(0,255,255,0.4)",
+          "0 0 35px rgba(0,255,255,0.7), inset 0 0 25px rgba(0,255,255,0.5)",
       }}
     >
-      {/* NÚCLEO INTERNO */}
+      {/* NÚCLEO ENERGÉTICO CENTRAL */}
       <motion.div
-        animate={{ scale: [1, 1.25, 1] }}
-        transition={{ duration: 2, repeat: Infinity }}
         className="
           w-10 h-10 rounded-full
-          bg-cyan-300/60
-          shadow-[0_0_25px_rgba(0,255,255,0.7)]
+          bg-cyan-200/80
+          shadow-[0_0_30px_rgba(0,255,255,0.9)]
         "
+        animate={{
+          scale: [1, 1.25, 1],
+          opacity: [0.8, 1, 0.8],
+        }}
+        transition={{ duration: 1.6, repeat: Infinity }}
       />
 
-      {/* ONDA HOLOGRÁFICA */}
+      {/* ANILLO HOLOGRÁFICO PRINCIPAL */}
       <motion.div
         className="
           absolute w-20 h-20 rounded-full
-          border border-cyan-200/30
+          border border-cyan-200/50
         "
-        animate={{ opacity: [0.2, 0.6, 0.2], scale: [1, 1.35, 1] }}
-        transition={{ duration: 3, repeat: Infinity }}
+        animate={{
+          scale: [1, 1.4, 1],
+          opacity: [0.25, 0.6, 0.25],
+        }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* ANILLO SECUNDARIO (efecto reactor Stark) */}
+      <motion.div
+        className="
+          absolute w-16 h-16 rounded-full
+          border border-cyan-300/30
+        "
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.1, 0.4, 0.1],
+        }}
+        transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
       />
     </motion.div>
   );
