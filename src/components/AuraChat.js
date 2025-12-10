@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
 // ================================================
-//   AURAChat.js — Versión ULTRA PRO 2025
+//   AURAChat.js — Versión ULTRA PRO 2025 (PROD)
 //   FAZO LOGÍSTICA — Gustavo Oliva
 //   Mateo (IA) — Optimización total + Fix Netlify
 // ================================================
@@ -31,10 +31,13 @@ const limpiarEmojis = (texto) =>
   );
 
 // ================================================
-//   BACKEND DE AURA
+//   BACKEND DE AURA + PROVIDER PRINCIPAL
 // ================================================
 const AURA_API_URL = config.AURA_BACKEND_URL;
-console.log("🔗 AURA API:", AURA_API_URL);
+const AURA_PROVIDER = config.AURA_PRIMARY || "openai";
+
+console.log("🔗 AURA API URL:", AURA_API_URL);
+console.log("🧠 AURA PROVIDER:", AURA_PROVIDER);
 
 // ================================================
 //   DETECTAR SUBRUTAS AGUARUTA
@@ -76,8 +79,9 @@ const detectarSubrutaAguaRuta = (texto) => {
   ];
 
   for (let r of rutas) {
-    if (norm.includes(r[0]))
+    if (norm.includes(r[0])) {
       return { tipo: "subruta", modulo: "aguaruta", ruta: r[1], frase: r[2] };
+    }
   }
 
   return null;
@@ -169,6 +173,10 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   // ================================================
   useEffect(() => {
     playActivate();
+
+    // Mini log de entorno
+    console.log("🌍 Entorno:", config.DEBUG?.entorno || "desconocido");
+    console.log("🛰️ Backend AURA:", AURA_API_URL);
   }, []);
 
   // ================================================
@@ -196,9 +204,9 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   }, []);
 
   // ================================================
-  //   SPEECH RECOGNITION  (FIX NETLIFY AQUÍ)
+  //   SPEECH RECOGNITION  (FIX NETLIFY)
+//   Regla de hooks ya está desactivada arriba
   // ================================================
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
@@ -256,21 +264,30 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   };
 
   // ================================================
-  //   LLAMAR BACKEND ULTRA PRO
+  //   LLAMAR BACKEND ULTRA PRO (Render)
+//   Usa provider dinámico desde config
   // ================================================
   const callAuraBackend = async (history) => {
-    if (!AURA_API_URL) return null;
+    if (!AURA_API_URL) {
+      console.warn("⚠️ AURA_API_URL no definido, usando modo demo.");
+      return null;
+    }
 
     try {
       const payload = {
-        provider: "openai",
+        provider: AURA_PROVIDER, // ← claude / openai / etc
+        metadata: {
+          origen: "FAZO-AURA-VISUAL",
+          usuario: "Gustavo Oliva",
+          modulo: "AURA-HUD",
+        },
         messages: history.map((m) => ({
           role: m.from === "user" ? "user" : "assistant",
           content: m.text.trim(),
         })),
       };
 
-      console.log("📤 Enviando a backend:", payload);
+      console.log("📤 Enviando a backend AURA:", payload);
 
       const res = await fetch(AURA_API_URL, {
         method: "POST",
@@ -278,18 +295,22 @@ export default function AuraChat({ onComando, onSendToIframe }) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.error("❌ Backend respondió con error HTTP:", res.status);
+        return null;
+      }
 
       const data = await res.json();
+      console.log("📥 Respuesta backend AURA:", data);
       return data?.reply || null;
     } catch (e) {
-      console.error("❌ Backend error:", e);
+      console.error("❌ Error llamando backend AURA:", e);
       return null;
     }
   };
 
   // ================================================
-  //   FALLBACK LOCAL
+  //   FALLBACK LOCAL (modo demo si Render falla)
   // ================================================
   const getLocalReply = (t) => {
     const tx = t.toLowerCase();
@@ -303,7 +324,10 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     if (tx.includes("flota"))
       return "En Flota Municipal puedo ayudarte con mantenimientos y disponibilidad.";
 
-    return "Entendido Gustavo, cuéntame más.";
+    if (tx.includes("reporte"))
+      return "En el módulo de Reportes FAZO podemos armar informes mensuales y comparativos.";
+
+    return "Entendido Gustavo, cuéntame más. Estoy conectada y lista para trabajar.";
   };
 
   // ================================================
@@ -313,16 +337,24 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     const finalText = (texto || input).trim();
     if (!finalText || isThinking) return;
 
-    const userMsg = { id: Date.now(), from: "user", text: finalText };
+    const userMsg = {
+      id: Date.now(),
+      from: "user",
+      text: finalText,
+      timestamp: new Date().toISOString(),
+    };
+
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setIsThinking(true);
 
-    // Emotion detect
+    // Emotion detect (usuario)
     try {
       const emoUser = detectarEmocion(limpiarEmojis(finalText));
       if (emoUser) setEmotion(emoUser);
-    } catch {}
+    } catch (err) {
+      console.warn("⚠️ Error detectando emoción usuario:", err);
+    }
 
     // SUBRUTAS AGUARUTA
     const sub = detectarSubrutaAguaRuta(finalText);
@@ -347,7 +379,7 @@ export default function AuraChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // COMANDOS PRINCIPALES
+    // COMANDOS PRINCIPALES (módulos grandes)
     const cmd = detectarComandoModulo(finalText);
     if (cmd) {
       speak(cmd.frase);
@@ -361,18 +393,31 @@ export default function AuraChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // BACKEND
+    // BACKEND (modo real)
     const historySnapshot = [...messages, userMsg];
     let reply = await callAuraBackend(historySnapshot);
-    if (!reply) reply = getLocalReply(finalText);
 
-    const auraMsg = { id: Date.now(), from: "aura", text: reply };
+    // Si el backend no responde → demo local
+    if (!reply) {
+      console.warn("⚠️ Backend no respondió, usando modo demo local.");
+      reply = getLocalReply(finalText);
+    }
+
+    const auraMsg = {
+      id: Date.now() + 1,
+      from: "aura",
+      text: reply,
+      timestamp: new Date().toISOString(),
+    };
     setMessages((m) => [...m, auraMsg]);
 
+    // Emotion detect (respuesta AURA)
     try {
       const emoAura = detectarEmocion(limpiarEmojis(reply));
       if (emoAura) setEmotion(emoAura);
-    } catch {}
+    } catch (err) {
+      console.warn("⚠️ Error detectando emoción AURA:", err);
+    }
 
     speak(reply);
     setIsThinking(false);
