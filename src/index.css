@@ -201,3 +201,56 @@ body.modo-noche {
 .glow-stark {
   animation: starkGlow 4s ease-in-out infinite;
 }
+/* ==========================================================
+        CURSOR HOLOGRÁFICO FAZO OS — MODO STARK 2025
+   ========================================================== */
+
+body {
+  cursor: none !important; /* Ocultamos cursor normal */
+}
+
+/* Cursor principal */
+#fazo-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0,255,255,0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  transition: all 0.08s ease-out;
+  filter: drop-shadow(0 0 6px rgba(0,255,255,0.8));
+}
+
+/* Rastro holográfico */
+#fazo-cursor-trail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle, 
+    rgba(0,255,255,0.18) 0%, 
+    transparent 70%
+  );
+  z-index: 9998;
+  transition: all 0.25s ease-out;
+  filter: drop-shadow(0 0 12px rgba(0,255,255,0.3));
+}
+
+/* Clic animado */
+.click-pulse {
+  animation: clickPulse 0.35s ease-out forwards;
+}
+
+@keyframes clickPulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
