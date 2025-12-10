@@ -1,28 +1,29 @@
 // =======================================================
-//   FAZO-CONFIG v5.0 — Arquitectura Definitiva AURA 2025
+//   FAZO-CONFIG v6.0 — Arquitectura Definitiva AURA 2025
 //   Multi-IA real | Backend Render | Netlify | Ultra PRO
 //   Gustavo Oliva — FAZO LOGÍSTICA
 // =======================================================
+
+import React from "react"; // ← 🔥 IMPORTANTE: evita el error “React no definido”
 
 // =======================================================
 // 🔧 Utilidades robustas
 // =======================================================
 
-// Limpia valores para evitar null/undefined en react
+// Limpia valores para evitar null/undefined en React
 const clean = (v) => (typeof v === "string" ? v.trim() : "");
 
 // Detecta backend dinámico: producción (Netlify → Render) o local
 const getBackendURL = () => {
-  // 🔥 ESTA es la variable correcta para React
   const envURL = clean(process.env.REACT_APP_AURA_BACKEND_URL);
   if (envURL) return envURL;
 
-  // Modo local solo para desarrollo
+  // Modo local para desarrollo
   return "http://127.0.0.1:8000/api/aura";
 };
 
 // =======================================================
-// 🧠 Modelos IA (2025) — compatibles con el backend FAZO
+// 🧠 Modelos IA (2025) — compatibles con backend FAZO
 // =======================================================
 const MODELOS = {
   claude: "claude-3-7-sonnet",
@@ -35,7 +36,7 @@ const MODELOS = {
 };
 
 // =======================================================
-// 🌐 Endpoints IA oficiales (usados SOLO por el backend)
+// 🌐 Endpoints IA oficiales
 // =======================================================
 const URLS = {
   claude: "https://api.anthropic.com/v1/messages",
@@ -49,8 +50,7 @@ const URLS = {
 };
 
 // =======================================================
-// 🔐 Claves IA del frontend (opcionales)
-//   React JAMÁS debe tener claves reales — solo placeholders
+// 🔐 Claves IA del frontend (opcionales — JAMÁS reales)
 // =======================================================
 const KEYS = {
   claude: clean(process.env.REACT_APP_CLAUDE_KEY),
@@ -63,7 +63,7 @@ const KEYS = {
 };
 
 // =======================================================
-// 🤖 IA primaria seleccionada en Netlify (opcional)
+// 🤖 IA primaria según Netlify
 // =======================================================
 const AURA_PRIMARY =
   clean(process.env.REACT_APP_AURA_PRIMARY) || "claude";
@@ -74,7 +74,7 @@ const AURA_PRIMARY =
 const BRAND = {
   sistema: "FAZO-LOGÍSTICA",
   modulo: "AURA",
-  version: "5.0 ULTRA MASTER",
+  version: "6.0 ULTRA MASTER",
   autor: "Gustavo Alejandro Oliva Miranda",
   pais: "Chile",
   ciudad: "Valparaíso",
@@ -82,7 +82,7 @@ const BRAND = {
 };
 
 // =======================================================
-// 🛠️ DEBUG automático — Perfecto para diagnóstico
+// 🛠️ DEBUG automático — diagnóstico perfecto
 // =======================================================
 const DEBUG = {
   entorno: process.env.NODE_ENV || "development",
@@ -103,7 +103,7 @@ const config = {
   BRAND,
   DEBUG,
 
-  // 🔥 Backend Render real
+  // Backend Render real
   AURA_BACKEND_URL: getBackendURL(),
 };
 
