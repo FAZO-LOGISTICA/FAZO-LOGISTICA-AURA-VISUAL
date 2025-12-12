@@ -1,10 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
-// =======================================================
-//   AURAChat.js — GOD MODE OFFLINE 2025
-//   FAZO LOGÍSTICA — Gustavo Oliva
-//   Mateo IA — Operación total con Offline + Reconexión
-// =======================================================
+/* =======================================================
+   AURAChat.js — GOD MODE ULTRA 2025
+   FAZO LOGÍSTICA — Gustavo Oliva
+   Mateo IA — Motor completo: Voz + IA + Offline + HoloSphere
+   Versión: 5.1 — Ultra Consolidada
+======================================================= */
 
 import React, { useState, useEffect, useRef } from "react";
 import AuraRealistic from "./AuraRealistic";
@@ -25,27 +26,24 @@ import {
 
 import config from "../config";
 
-// =======================================================
-//   UTILS — Limpieza de texto
-// =======================================================
+/* =======================================================
+   UTIL — Limpia emojis y exceso de espacios
+======================================================= */
 const limpiar = (t) =>
   t
     ?.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g, "")
     .replace(/\s+/g, " ")
     .trim() || "";
 
-// =======================================================
-//   BACKEND AURA
-// =======================================================
+/* =======================================================
+   BACKEND PRINCIPAL
+======================================================= */
 const AURA_API = config.AURA_BACKEND_URL;
 const MODEL = config.AURA_PRIMARY;
 
-console.log("🔗 Backend:", AURA_API);
-console.log("🤖 Modelo:", MODEL);
-
-// =======================================================
-//   SUBRUTAS AGUARUTA
-// =======================================================
+/* =======================================================
+   SUBRUTAS AGUARUTA
+======================================================= */
 const SUBS = [
   ["rutas activas", "rutas-activas", "Abriendo Rutas Activas."],
   ["no entregadas", "no-entregadas", "Mostrando No Entregadas."],
@@ -56,37 +54,41 @@ const SUBS = [
   ["editar redistribucion", "editar-redistribucion", "Herramienta de Redistribución abierta."],
 ];
 
-const detectarSubruta = (texto) => {
-  if (!texto) return null;
-  const n = limpiar(texto).toLowerCase();
+const detectarSubruta = (txt) => {
+  if (!txt) return null;
 
+  const n = limpiar(txt).toLowerCase();
   for (let [palabra, ruta, frase] of SUBS) {
-    if (n.includes(palabra)) {
-      return { tipo: "subruta", modulo: "aguaruta", ruta: "/" + ruta, frase };
-    }
+    if (n.includes(palabra)) return { tipo: "subruta", ruta: "/" + ruta, frase };
   }
   return null;
 };
 
-// =======================================================
-//   MÓDULOS FAZO
-// =======================================================
+/* =======================================================
+   MÓDULOS PRINCIPALES FAZO
+======================================================= */
 const detectarModulo = (txt) => {
   const t = txt.toLowerCase();
 
-  if (t.includes("agua")) return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo AguaRuta." };
-  if (t.includes("traslado")) return { tipo: "modulo", modulo: "traslado", frase: "Cargando Traslado Municipal." };
-  if (t.includes("flota")) return { tipo: "modulo", modulo: "flota", frase: "Mostrando Flota Municipal." };
-  if (t.includes("reporte")) return { tipo: "modulo", modulo: "reportes", frase: "Generando Reportes." };
-  if (t.includes("ajuste")) return { tipo: "modulo", modulo: "ajustes", frase: "Abriendo Ajustes." };
-  if (t.includes("inicio") || t.includes("aura")) return { tipo: "modulo", modulo: "aura", frase: "Volviendo al inicio." };
+  if (t.includes("agua"))
+    return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo AguaRuta." };
+  if (t.includes("traslado"))
+    return { tipo: "modulo", modulo: "traslado", frase: "Cargando Traslado Municipal." };
+  if (t.includes("flota"))
+    return { tipo: "modulo", modulo: "flota", frase: "Mostrando Flota Municipal." };
+  if (t.includes("reporte"))
+    return { tipo: "modulo", modulo: "reportes", frase: "Generando Reportes." };
+  if (t.includes("ajuste"))
+    return { tipo: "modulo", modulo: "ajustes", frase: "Abriendo Ajustes." };
+  if (t.includes("inicio") || t.includes("aura"))
+    return { tipo: "modulo", modulo: "aura", frase: "Volviendo a inicio." };
 
   return null;
 };
 
-// =======================================================
-//   ACCIONES DIRECTAS
-// =======================================================
+/* =======================================================
+   ACCIONES DIRECTAS
+======================================================= */
 const detectarAccion = (txt) => {
   const t = txt.toLowerCase();
 
@@ -94,25 +96,18 @@ const detectarAccion = (txt) => {
   if (t.includes("abrir mapa")) return { tipo: "accion", accion: "abrir-mapa" };
   if (t.includes("abrir traslado")) return { tipo: "accion", accion: "abrir-traslado" };
 
-  if (t.includes("cerrar sesion")) return { tipo: "accion", accion: "logout" };
-
-  if (t.includes("filtro camion a1")) return { tipo: "accion", accion: "filtro-camion", valor: "A1" };
-  if (t.includes("filtro camion a2")) return { tipo: "accion", accion: "filtro-camion", valor: "A2" };
-  if (t.includes("filtro camion a3")) return { tipo: "accion", accion: "filtro-camion", valor: "A3" };
+  if (t.includes("logout") || t.includes("cerrar sesion"))
+    return { tipo: "accion", accion: "logout" };
 
   return null;
 };
 
-// =======================================================
-//   COMPONENTE PRINCIPAL AURAChat
-// =======================================================
-export default function AuraChat({ onComando, onSendToIframe }) {
+/* =======================================================
+   COMPONENTE PRINCIPAL
+======================================================= */
+export default function AURAChat({ onComando, onSendToIframe }) {
   const [messages, setMessages] = useState([
-    {
-      id: 1,
-      from: "aura",
-      text: `Hola Gustavo 👋, soy AURA (${config.BRAND.version}). Lista para ayudarte.`,
-    },
+    { id: 1, from: "aura", text: `Hola Gustavo 👋, soy AURA (${config.BRAND.version}). Lista para ayudarte.` },
   ]);
 
   const [input, setInput] = useState("");
@@ -120,32 +115,32 @@ export default function AuraChat({ onComando, onSendToIframe }) {
   const [emotion, setEmotion] = useState("neutral");
   const [talking, setTalking] = useState(false);
   const [listening, setListening] = useState(false);
+  const [micVolume, setMicVolume] = useState(0);
 
   const [voices, setVoices] = useState([]);
   const [voice, setVoice] = useState(null);
 
-  // 🌐 ESTADO DE INTERNET
   const [online, setOnline] = useState(navigator.onLine);
 
   const recRef = useRef(null);
   const endRef = useRef(null);
 
-  // =======================================================
-  //   DETECTOR GLOBAL OFFLINE / ONLINE
-  // =======================================================
+  /* =======================================================
+       DETECCIÓN OFFLINE GLOBAL
+  ======================================================= */
   useEffect(() => {
     const goOnline = () => {
       setOnline(true);
       playSuccess();
       setEmotion("happy");
-      agregarMsg("aura", "Conexión restablecida Gustavo ✔️");
+      agregar("aura", "Conexión restablecida ✔️");
     };
 
     const goOffline = () => {
       setOnline(false);
       playAlert();
       setEmotion("sad");
-      agregarMsg("aura", "Te quedaste sin conexión… sigo operativa en modo local.");
+      agregar("aura", "Sin internet… sigo operativa en modo local.");
     };
 
     window.addEventListener("online", goOnline);
@@ -157,79 +152,49 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     };
   }, []);
 
-  // =======================================================
-  //   Función para agregar mensajes
-  // =======================================================
-  const agregarMsg = (from, text) => {
-    setMessages((m) => [...m, { id: Date.now(), from, text }]);
-  };
-  // =======================================================
-  //   ACTIVAR SONIDO DE INICIO
-  // =======================================================
+  /* =======================================================
+        MIC VOLUME ANALYZER (ONDAS REACTIVAS)
+  ======================================================= */
   useEffect(() => {
-    playActivate();
-  }, []);
+    let stream, audioCtx, analyser, dataArray;
 
-  // =======================================================
-  //   CARGA DE VOCES TTS
-  // =======================================================
-  useEffect(() => {
-    if (!window.speechSynthesis) return;
+    const init = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        const src = audioCtx.createMediaStreamSource(stream);
 
-    const loadVoices = () => {
-      const list = window.speechSynthesis.getVoices();
-      setVoices(list);
+        analyser.fftSize = 256;
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-      const guardada = localStorage.getItem("auraVoice");
-      const preferida =
-        list.find((v) => v.name === guardada) ||
-        list.find((v) => v.lang.startsWith("es") && v.name.includes("female")) ||
-        list.find((v) => v.lang.startsWith("es")) ||
-        list[0];
+        src.connect(analyser);
 
-      setVoice(preferida);
+        const loop = () => {
+          analyser.getByteFrequencyData(dataArray);
+          const avg = dataArray.reduce((a, b) => a + b, 0) / (255 * dataArray.length);
+          setMicVolume(avg);
+          requestAnimationFrame(loop);
+        };
+        loop();
+      } catch (err) {
+        setMicVolume(0);
+      }
     };
 
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    init();
+    return () => stream?.getTracks().forEach((t) => t.stop());
   }, []);
 
-  // =======================================================
-  //   RECONOCIMIENTO DE VOZ (SpeechRecognition)
-  // =======================================================
-  useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
+  /* =======================================================
+        AGREGA MENSAJES
+  ======================================================= */
+  const agregar = (from, text) =>
+    setMessages((m) => [...m, { id: Date.now() + Math.random(), from, text }]);
 
-    const rec = new SR();
-    rec.lang = "es-CL";
-    rec.interimResults = false;
-
-    rec.onresult = (e) => {
-      const tx = e.results[0][0].transcript.trim();
-      if (tx) sendMessage(tx);
-    };
-
-    rec.onerror = () => {
-      playError();
-      setListening(false);
-    };
-
-    rec.onend = () => setListening(false);
-
-    recRef.current = rec;
-  }, []);
-
-  // =======================================================
-  //   AUTO SCROLL EN CHAT
-  // =======================================================
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, thinking]);
-
-  // =======================================================
-  //   SISTEMA DE VOZ — TTS
-  // =======================================================
+  /* =======================================================
+        TTS (VOZ NATIVA)
+  ======================================================= */
   const speak = (text) => {
     if (!window.speechSynthesis) return;
 
@@ -256,15 +221,57 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     window.speechSynthesis.speak(u);
   };
 
-  // =======================================================
-  //      CONSULTA A BACKEND (CON DETECTOR OFFLINE)
-  // =======================================================
-  const consultarBackend = async (hist) => {
-    if (!online) {
-      console.warn("⚠️ OFFLINE — No se llamará al backend.");
-      return null;
-    }
+  /* =======================================================
+        SPEECH RECOGNITION
+  ======================================================= */
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
 
+    const rec = new SR();
+    rec.lang = "es-CL";
+    rec.interimResults = false;
+
+    rec.onresult = (e) => {
+      const t = e.results[0][0].transcript.trim();
+      sendMessage(t);
+    };
+
+    rec.onerror = () => playError();
+    rec.onend = () => setListening(false);
+
+    recRef.current = rec;
+  }, []);
+
+  /* =======================================================
+        CARGA VOCES TTS
+  ======================================================= */
+  useEffect(() => {
+    if (!window.speechSynthesis) return;
+
+    const load = () => {
+      const list = window.speechSynthesis.getVoices();
+      setVoices(list);
+
+      const saved = localStorage.getItem("auraVoice");
+      const preferida =
+        list.find((v) => v.name === saved) ||
+        list.find((v) => v.lang.startsWith("es") && v.name.includes("female")) ||
+        list.find((v) => v.lang.startsWith("es")) ||
+        list[0];
+
+      setVoice(preferida);
+    };
+
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+  }, []);
+
+  /* =======================================================
+        CONSULTAR BACKEND
+  ======================================================= */
+  const consultarBackend = async (hist) => {
+    if (!online) return null;
     if (!AURA_API) return null;
 
     try {
@@ -280,83 +287,71 @@ export default function AuraChat({ onComando, onSendToIframe }) {
         }),
       });
 
-      if (!res.ok) {
-        playAlert();
-        return null;
-      }
+      if (!res.ok) return null;
 
       const data = await res.json();
-      return data.reply;
-    } catch (e) {
-      playError();
+      return data.reply || null;
+    } catch {
       return null;
     }
   };
 
-  // =======================================================
-  //        FALLBACK → RESPUESTA LOCAL SIN INTERNET
-  // =======================================================
-  const fallback = (txt) => {
-    txt = txt.toLowerCase();
+  /* =======================================================
+        FALLBACK LOCAL OFFLINE
+  ======================================================= */
+  const fallback = (t) => {
+    t = t.toLowerCase();
 
-    if (txt.includes("agua")) return "Sin conexión Gustavo, pero sé que necesitas AguaRuta.";
-    if (txt.includes("traslado")) return "Modo sin conexión activo. Traslado Municipal no cargará.";
-    if (txt.includes("hola")) return "Aquí sigo Gustavo, aunque estemos offline.";
-    if (txt.includes("estado")) return "Estoy 100% operativa en modo local.";
+    if (t.includes("agua")) return "Sin internet, pero ya sé que necesitas AguaRuta.";
+    if (t.includes("hola")) return "Aquí sigo Gustavo, aunque estemos sin conexión.";
+    if (t.includes("estado")) return "Estoy 100% operativa en modo local.";
 
-    return "Estoy sin internet, pero aún puedo ayudarte con funciones básicas.";
+    return "Modo offline activo. Funciones limitadas, pero sigo operativa.";
   };
 
-  // =======================================================
-  //            ENVÍO PRINCIPAL DE MENSAJES
-  // =======================================================
+  /* =======================================================
+        ENVÍO PRINCIPAL
+  ======================================================= */
   const sendMessage = async (texto) => {
     const cleaned = limpiar(texto || input);
     if (!cleaned) return;
 
-    // detener voz si está hablando
     if (talking) {
       window.speechSynthesis.cancel();
       stopTalk();
       setTalking(false);
     }
 
-    const userMsg = { id: Date.now(), from: "user", text: cleaned };
-    setMessages((m) => [...m, userMsg]);
+    agregar("user", cleaned);
     setInput("");
     setThinking(true);
 
-    // Detectar emoción del usuario
-    try {
-      setEmotion(detectarEmocion(cleaned) || "neutral");
-    } catch {}
+    setEmotion(detectarEmocion(cleaned));
 
-    // 🔹 ACCIONES DIRECTAS
+    // 🔹 ACCIÓN DIRECTA
     const acc = detectarAccion(cleaned);
     if (acc) {
       playCommand();
       speak("Ejecutando instrucción.");
-      agregarMsg("aura", "Ejecutando instrucción…");
-      setThinking(false);
+      agregar("aura", "Ejecutando instrucción…");
       onComando?.(acc);
+      setThinking(false);
       return;
     }
 
-    // 🔹 SUBRUTAS AguaRuta
+    // 🔹 SUBRUTA AGUARUTA
     const sub = detectarSubruta(cleaned);
     if (sub) {
       playCommand();
       speak(sub.frase);
-      agregarMsg("aura", sub.frase);
-      setThinking(false);
-
+      agregar("aura", sub.frase);
       onComando?.(sub);
       onSendToIframe?.("aguaruta", {
         type: "FAZO_CMD",
         command: "open-tab",
         tab: sub.ruta.replace("/", ""),
       });
-
+      setThinking(false);
       return;
     }
 
@@ -365,52 +360,40 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     if (mod) {
       playCommand();
       speak(mod.frase);
-      agregarMsg("aura", mod.frase);
-      setThinking(false);
+      agregar("aura", mod.frase);
       onComando?.(mod);
+      setThinking(false);
       return;
     }
 
-    // =======================================================
-    //     MODO ONLINE → Consultar backend real
-    // =======================================================
-    const hist = [...messages, userMsg];
+    /* -------------------------------------------
+          CONSULTA BACKEND (ONLINE)
+    -------------------------------------------- */
+    const hist = [...messages, { from: "user", text: cleaned }];
     let reply = await consultarBackend(hist);
 
-    // Si backend no responde → fallback local
     if (!reply) {
       playAlert();
       reply = fallback(cleaned);
     }
 
-    const auraMsg = { id: Date.now() + 1, from: "aura", text: reply };
-    setMessages((m) => [...m, auraMsg]);
-
+    agregar("aura", reply);
     speak(reply);
     playClick();
+
+    setEmotion(detectarEmocion(limpiar(reply)));
     setThinking(false);
-
-    try {
-      setEmotion(detectarEmocion(limpiar(reply)) || "neutral");
-    } catch {}
   };
-  // =======================================================
-  //   UTILIDAD PARA AGREGAR MENSAJES DE AURA
-  // =======================================================
-  const agregarMsg = (from, text) =>
-    setMessages((m) => [...m, { id: Date.now(), from, text }]);
 
-  // =======================================================
-  //   ESTILOS BASE
-  // =======================================================
-  const contenedor =
+  /* =======================================================
+        RENDER
+  ======================================================= */
+  const cont =
     "bg-black/40 border border-cyan-500/40 rounded-2xl backdrop-blur-xl p-4 shadow-[0_0_25px_rgba(0,255,255,0.25)]";
 
   return (
-    <section className={contenedor}>
-      {/* =======================================================
-            ENCABEZADO AURA OS / SELECCIÓN DE VOZ
-      ======================================================= */}
+    <section className={cont}>
+      {/* HEADER */}
       <div className="flex justify-between items-center border-b border-cyan-400/30 pb-2">
         <span className="text-cyan-300 text-sm flex items-center gap-2">
           <span
@@ -441,13 +424,10 @@ export default function AuraChat({ onComando, onSendToIframe }) {
         )}
       </div>
 
-      {/* =======================================================
-            BODY: AVATAR + CHAT
-      ======================================================= */}
+      {/* BODY */}
       <div className="flex flex-col md:flex-row gap-4 mt-4">
-        {/* -------------------------------------------------------
-                AVATAR AURA HOLOGRÁFICA
-        -------------------------------------------------------- */}
+        
+        {/* AVATAR */}
         <div className="md:w-1/3 flex flex-col items-center">
           <div className="w-44 h-44 rounded-3xl bg-black/50 border border-cyan-300/30 
                           shadow-[0_0_20px_rgba(0,255,255,0.3)] flex items-center 
@@ -457,6 +437,7 @@ export default function AuraChat({ onComando, onSendToIframe }) {
               talking={talking}
               listening={listening}
               offline={!online}
+              micVolume={micVolume}
             />
           </div>
 
@@ -467,14 +448,12 @@ export default function AuraChat({ onComando, onSendToIframe }) {
 
           {!online && (
             <p className="text-xs text-red-300 mt-1 animate-pulse">
-              ⚠ Modo sin conexión — funciones limitadas
+              ⚠ Sin conexión — funciones limitadas
             </p>
           )}
         </div>
 
-        {/* -------------------------------------------------------
-                PANEL DE CHAT
-        -------------------------------------------------------- */}
+        {/* CHAT */}
         <div className="md:w-2/3 flex flex-col">
           <div className="bg-black/30 border border-cyan-400/30 rounded-xl p-4 
                           max-h-[420px] overflow-y-auto custom-scroll shadow-inner">
@@ -507,9 +486,7 @@ export default function AuraChat({ onComando, onSendToIframe }) {
             <div ref={endRef} />
           </div>
 
-          {/* -------------------------------------------------------
-                  INPUT + MIC
-          -------------------------------------------------------- */}
+          {/* INPUT */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -517,7 +494,6 @@ export default function AuraChat({ onComando, onSendToIframe }) {
             }}
             className="flex gap-2 mt-3 items-end"
           >
-            {/* ÁREA DE ESCRITURA */}
             <textarea
               rows={2}
               className="flex-1 bg-black/40 border border-cyan-300/30 
@@ -526,13 +502,13 @@ export default function AuraChat({ onComando, onSendToIframe }) {
               placeholder={
                 online
                   ? "Escríbeme lo que necesites, Gustavo…"
-                  : "Modo offline activo… ¿qué necesitas?"
+                  : "Sin conexión… ¿qué necesitas?"
               }
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
 
-            {/* MIC + BOTÓN DE ENVIAR */}
+            {/* MIC + ENVIAR */}
             <div className="flex flex-col items-center gap-2">
               <FloatingMic
                 isListening={listening}
@@ -551,7 +527,6 @@ export default function AuraChat({ onComando, onSendToIframe }) {
                 }}
               />
 
-              {/* BOTÓN ENVIAR */}
               <button
                 type="submit"
                 className="px-4 py-2 bg-cyan-600 text-white rounded-xl 
