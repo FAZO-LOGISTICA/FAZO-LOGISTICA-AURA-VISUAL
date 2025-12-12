@@ -1,8 +1,8 @@
 // ======================================================================
-//   AURASounds.js — HOLOSONIC ENGINE v2025
+//   AURASounds.js — HOLOSONIC ENGINE v2025 (VERSIÓN COMPLETA)
 //   FAZO LOGÍSTICA — Gustavo Oliva
-//   Sonidos hiperrealistas sin archivos de audio (WebAudio API)
-//   Jarvis-Style | Hologram FX | Intelligent Volume Control
+//   Sonidos hiperrealistas sin archivos (WebAudio API)
+//   Jarvis / Stark FX | Hologram Engine | Intelligent Audio
 // ======================================================================
 
 let audioCtx = null;
@@ -23,7 +23,7 @@ const getCtx = () => {
 };
 
 // =======================================================
-//  GENERADOR DE TONEOS UNIVERSAL
+//  GENERADOR DE TONOS
 // =======================================================
 const tone = ({
   freq = 440,
@@ -37,6 +37,7 @@ const tone = ({
   if (!ctx) return;
 
   const now = ctx.currentTime;
+
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
 
@@ -55,7 +56,7 @@ const tone = ({
 };
 
 // =======================================================
-//  BARRIDO / SWEEP DE FRECUENCIAS (Jarvis Scan FX)
+//  SWEEP / BARRIDO JARVIS-STYLE
 // =======================================================
 const sweep = ({
   startFreq = 300,
@@ -88,39 +89,23 @@ const sweep = ({
 };
 
 // ======================================================================
-//   EFECTOS ESPECÍFICOS PARA AURA
+//      EFECTOS DE INTERFAZ AURA
 // ======================================================================
 
-// ----------------------------------------------------------------------
-//  1) BOOT de AURA — al iniciar el sistema (Jarvis Boot Sequence)
-// ----------------------------------------------------------------------
+// BOOT AURA
 export const playActivate = () => {
   try {
     tone({ freq: 250, duration: 0.25, volume: 0.35 });
     setTimeout(() => {
-      sweep({
-        startFreq: 500,
-        endFreq: 1800,
-        duration: 0.35,
-        volume: 0.28,
-      });
+      sweep({ startFreq: 500, endFreq: 1800, duration: 0.35, volume: 0.28 });
     }, 140);
-
-    // Glow energético final
     setTimeout(() => {
-      tone({
-        freq: 1200,
-        type: "triangle",
-        duration: 0.08,
-        volume: 0.18,
-      });
+      tone({ freq: 1200, type: "triangle", duration: 0.08, volume: 0.18 });
     }, 360);
   } catch {}
 };
 
-// ----------------------------------------------------------------------
-//  2) COMANDO EJECUTADO — “Entendido Gustavo, abriendo AguaRuta…”
-// ----------------------------------------------------------------------
+// COMANDO EJECUTADO
 export const playCommand = () => {
   try {
     sweep({
@@ -133,37 +118,21 @@ export const playCommand = () => {
   } catch {}
 };
 
-// ----------------------------------------------------------------------
-//  3) MIC ON — AURA comienza a escuchar (pip Stark)
-// ----------------------------------------------------------------------
+// MIC ON
 export const playListen = () => {
   try {
-    tone({
-      freq: 1500,
-      duration: 0.14,
-      type: "sine",
-      volume: 0.26,
-    });
+    tone({ freq: 1500, duration: 0.14, type: "sine", volume: 0.26 });
   } catch {}
 };
 
-// ----------------------------------------------------------------------
-//  4) MIC OFF — cuando el usuario corta el micrófono (pip grave)
-// ----------------------------------------------------------------------
+// MIC OFF
 export const playMicOff = () => {
   try {
-    tone({
-      freq: 420,
-      duration: 0.15,
-      type: "sine",
-      volume: 0.22,
-    });
+    tone({ freq: 420, duration: 0.15, type: "sine", volume: 0.22 });
   } catch {}
 };
 
-// ----------------------------------------------------------------------
-//  5) NOTIFICACIÓN AURA — “Listo Gustavo”
-// ----------------------------------------------------------------------
+// NOTIFICACIÓN
 export const playNotify = () => {
   try {
     tone({ freq: 1800, duration: 0.08, volume: 0.25 });
@@ -173,24 +142,21 @@ export const playNotify = () => {
   } catch {}
 };
 
-// ----------------------------------------------------------------------
-//  6) HUM CUÁNTICO CUANDO AURA HABLA
-// ----------------------------------------------------------------------
+// ======================================================================
+//   HUM HOLOGRÁFICO CUANDO AURA HABLA
+// ======================================================================
 export const startTalk = () => {
   try {
     const ctx = getCtx();
     if (!ctx) return;
-
-    // evitar múltiples loops
     if (talkNode) return;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.type = "sine";
-    osc.frequency.setValueAtTime(165, ctx.currentTime); // tono profundo IA
+    osc.frequency.setValueAtTime(165, ctx.currentTime);
 
-    // entrada suave
     gain.gain.setValueAtTime(0, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.2);
 
@@ -202,9 +168,6 @@ export const startTalk = () => {
   } catch {}
 };
 
-// ----------------------------------------------------------------------
-//  7) AURA TERMINA DE HABLAR — se apaga el hum holográfico
-// ----------------------------------------------------------------------
 export const stopTalk = () => {
   try {
     if (!talkNode) return;
@@ -222,9 +185,56 @@ export const stopTalk = () => {
 };
 
 // ======================================================================
-//  EXTRA FX OPCIONALES (Puedes pedirlos cuando quieras)
-//  - playError()
-//  - playScan()
-//  - playAlert()
-//  - playSuccess()
+//   **NUEVOS: ÉXITO / ERROR / ALERTA / ESCANEO** 
+//   (lo que faltaba para que Netlify compile)
 // ======================================================================
+
+// ✔ Operación exitosa (estilo holograma suave)
+export const playSuccess = () => {
+  try {
+    tone({ freq: 900, duration: 0.12, volume: 0.25 });
+    setTimeout(() => {
+      tone({ freq: 1400, duration: 0.12, volume: 0.22 });
+    }, 80);
+  } catch {}
+};
+
+// ✔ Error (grave + glitch)
+export const playError = () => {
+  try {
+    tone({ freq: 220, duration: 0.25, volume: 0.3 });
+    setTimeout(() => {
+      sweep({
+        startFreq: 900,
+        endFreq: 120,
+        duration: 0.18,
+        volume: 0.28,
+        type: "square",
+      });
+    }, 100);
+  } catch {}
+};
+
+// ✔ Alerta importante (notificación roja)
+export const playAlert = () => {
+  try {
+    tone({ freq: 1600, duration: 0.1, volume: 0.35 });
+    setTimeout(() => {
+      tone({ freq: 900, duration: 0.12, volume: 0.3 });
+    }, 90);
+  } catch {}
+};
+
+// ✔ Efecto de escaneo holográfico
+export const playScan = () => {
+  try {
+    sweep({
+      startFreq: 300,
+      endFreq: 2000,
+      duration: 0.45,
+      volume: 0.2,
+      type: "sine",
+    });
+  } catch {}
+};
+
