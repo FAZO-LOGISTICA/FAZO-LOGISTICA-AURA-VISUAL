@@ -1,22 +1,17 @@
-// src/components/AuraSounds.js
-
-/**
- * Módulo oficial de sonidos FAZO-Stark.
- * Usa Web Audio API para generar sonidos tipo Jarvis
- * sin depender de archivos .wav.
- *
- * Mantiene la misma interfaz:
- *  - playActivate()
- *  - playCommand()
- *  - playListen()
- *  - startTalk()
- *  - stopTalk()
- */
+// ======================================================================
+//   AURASounds.js — HOLOSONIC ENGINE v2025
+//   FAZO LOGÍSTICA — Gustavo Oliva
+//   Sonidos hiperrealistas sin archivos de audio (WebAudio API)
+//   Jarvis-Style | Hologram FX | Intelligent Volume Control
+// ======================================================================
 
 let audioCtx = null;
 let talkNode = null;
 
-const getAudioCtx = () => {
+// =======================================================
+//  CREA / RETORNA EL AUDIO CONTEXT
+// =======================================================
+const getCtx = () => {
   if (typeof window === "undefined") return null;
 
   if (!audioCtx) {
@@ -27,25 +22,18 @@ const getAudioCtx = () => {
   return audioCtx;
 };
 
-/**
- * Reproduce un tono corto con envolvente.
- * options:
- *  - freq: frecuencia principal
- *  - duration: en segundos
- *  - type: 'sine' | 'square' | 'sawtooth' | 'triangle'
- *  - volume: 0–1
- *  - attack: s
- *  - release: s
- */
-const playTone = ({
+// =======================================================
+//  GENERADOR DE TONEOS UNIVERSAL
+// =======================================================
+const tone = ({
   freq = 440,
-  duration = 0.25,
+  duration = 0.2,
   type = "sine",
-  volume = 0.25,
+  volume = 0.22,
   attack = 0.01,
-  release = 0.08,
+  release = 0.1,
 }) => {
-  const ctx = getAudioCtx();
+  const ctx = getCtx();
   if (!ctx) return;
 
   const now = ctx.currentTime;
@@ -55,7 +43,6 @@ const playTone = ({
   osc.type = type;
   osc.frequency.setValueAtTime(freq, now);
 
-  // Envolvente
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(volume, now + attack);
   gain.gain.linearRampToValueAtTime(0, now + duration - release);
@@ -67,23 +54,25 @@ const playTone = ({
   osc.stop(now + duration);
 };
 
-/**
- * Barrido de frecuencia (beep "Jarvis")
- */
-const playSweep = ({
-  startFreq = 400,
-  endFreq = 1200,
+// =======================================================
+//  BARRIDO / SWEEP DE FRECUENCIAS (Jarvis Scan FX)
+// =======================================================
+const sweep = ({
+  startFreq = 300,
+  endFreq = 2000,
   duration = 0.35,
-  volume = 0.25,
+  volume = 0.22,
+  type = "sine",
 }) => {
-  const ctx = getAudioCtx();
+  const ctx = getCtx();
   if (!ctx) return;
 
   const now = ctx.currentTime;
+
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
 
-  osc.type = "sine";
+  osc.type = type;
   osc.frequency.setValueAtTime(startFreq, now);
   osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
 
@@ -98,98 +87,128 @@ const playSweep = ({
   osc.stop(now + duration + 0.02);
 };
 
-/* ================================
-   SONIDOS ESPECÍFICOS AURA / FAZO
-   ================================ */
+// ======================================================================
+//   EFECTOS ESPECÍFICOS PARA AURA
+// ======================================================================
 
-/**
- * Sonido al iniciar AURA (boot Jarvis)
- * Dos tonos: uno grave + uno agudo corto
- */
+// ----------------------------------------------------------------------
+//  1) BOOT de AURA — al iniciar el sistema (Jarvis Boot Sequence)
+// ----------------------------------------------------------------------
 export const playActivate = () => {
   try {
-    playTone({ freq: 320, duration: 0.22, type: "sine", volume: 0.3 });
+    tone({ freq: 250, duration: 0.25, volume: 0.35 });
     setTimeout(() => {
-      playSweep({
-        startFreq: 600,
-        endFreq: 1600,
-        duration: 0.28,
+      sweep({
+        startFreq: 500,
+        endFreq: 1800,
+        duration: 0.35,
         volume: 0.28,
       });
-    }, 120);
-  } catch {
-    /* silencio si el navegador bloquea audio */
-  }
+    }, 140);
+
+    // Glow energético final
+    setTimeout(() => {
+      tone({
+        freq: 1200,
+        type: "triangle",
+        duration: 0.08,
+        volume: 0.18,
+      });
+    }, 360);
+  } catch {}
 };
 
-/**
- * Sonido cuando AURA reconoce un comando:
- * "Abriendo AguaRuta..." etc.
- */
+// ----------------------------------------------------------------------
+//  2) COMANDO EJECUTADO — “Entendido Gustavo, abriendo AguaRuta…”
+// ----------------------------------------------------------------------
 export const playCommand = () => {
   try {
-    playSweep({
-      startFreq: 800,
-      endFreq: 2000,
+    sweep({
+      startFreq: 900,
+      endFreq: 2600,
       duration: 0.25,
-      volume: 0.3,
+      volume: 0.32,
+      type: "triangle",
     });
   } catch {}
 };
 
-/**
- * Sonido cuando AURA empieza a escuchar.
- * Un pequeño "pip" agudo.
- */
+// ----------------------------------------------------------------------
+//  3) MIC ON — AURA comienza a escuchar (pip Stark)
+// ----------------------------------------------------------------------
 export const playListen = () => {
   try {
-    playTone({
-      freq: 1400,
-      duration: 0.12,
-      type: "triangle",
+    tone({
+      freq: 1500,
+      duration: 0.14,
+      type: "sine",
+      volume: 0.26,
+    });
+  } catch {}
+};
+
+// ----------------------------------------------------------------------
+//  4) MIC OFF — cuando el usuario corta el micrófono (pip grave)
+// ----------------------------------------------------------------------
+export const playMicOff = () => {
+  try {
+    tone({
+      freq: 420,
+      duration: 0.15,
+      type: "sine",
       volume: 0.22,
     });
   } catch {}
 };
 
-/**
- * Hum suave holográfico mientras AURA habla.
- * Se detiene con stopTalk().
- */
+// ----------------------------------------------------------------------
+//  5) NOTIFICACIÓN AURA — “Listo Gustavo”
+// ----------------------------------------------------------------------
+export const playNotify = () => {
+  try {
+    tone({ freq: 1800, duration: 0.08, volume: 0.25 });
+    setTimeout(() => {
+      tone({ freq: 1200, duration: 0.1, volume: 0.22 });
+    }, 80);
+  } catch {}
+};
+
+// ----------------------------------------------------------------------
+//  6) HUM CUÁNTICO CUANDO AURA HABLA
+// ----------------------------------------------------------------------
 export const startTalk = () => {
   try {
-    const ctx = getAudioCtx();
+    const ctx = getCtx();
     if (!ctx) return;
 
-    // Si ya hay un loop, no crear otro
-    if (talkNode && talkNode.osc && talkNode.gain) return;
+    // evitar múltiples loops
+    if (talkNode) return;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.type = "sine";
-    osc.frequency.setValueAtTime(180, ctx.currentTime); // hum grave
+    osc.frequency.setValueAtTime(165, ctx.currentTime); // tono profundo IA
 
-    gain.gain.setValueAtTime(0.0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.2);
+    // entrada suave
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.2);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
-
     osc.start();
 
     talkNode = { osc, gain, ctx };
-  } catch {
-    /* nada */
-  }
+  } catch {}
 };
 
-/**
- * Detiene el hum holográfico de AURA al terminar de hablar.
- */
+// ----------------------------------------------------------------------
+//  7) AURA TERMINA DE HABLAR — se apaga el hum holográfico
+// ----------------------------------------------------------------------
 export const stopTalk = () => {
   try {
-    if (!talkNode || !talkNode.osc || !talkNode.ctx) return;
+    if (!talkNode) return;
+
     const { osc, gain, ctx } = talkNode;
     const now = ctx.currentTime;
 
@@ -199,7 +218,13 @@ export const stopTalk = () => {
 
     osc.stop(now + 0.25);
     talkNode = null;
-  } catch {
-    /* nada */
-  }
+  } catch {}
 };
+
+// ======================================================================
+//  EXTRA FX OPCIONALES (Puedes pedirlos cuando quieras)
+//  - playError()
+//  - playScan()
+//  - playAlert()
+//  - playSuccess()
+// ======================================================================
