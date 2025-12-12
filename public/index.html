@@ -4,25 +4,25 @@
     <meta charset="utf-8" />
 
     <!-- =====================================================
-          IDENTIDAD FAZO OS / MUNICIPALIDAD
+          IDENTIDAD FAZO OS — Sistema Operativo Municipal
     ====================================================== -->
     <title>FAZO OS — AURA System</title>
     <meta name="theme-color" content="#0ea5e9" />
     <meta
       name="description"
-      content="FAZO OS — Sistema Operativo Municipal con núcleo AURA, logística avanzada, AguaRuta, Traslado y panel holográfico."
+      content="FAZO OS — Sistema Operativo Municipal con núcleo AURA, AguaRuta, Traslado Municipal, flota y panel holográfico IA."
     />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- ============================
-          ICONO PRINCIPAL
-    ============================= -->
+    <!-- =====================================================
+          ICONOS
+    ====================================================== -->
     <link rel="icon" href="/aura/aura1.png" />
     <link rel="apple-touch-icon" href="/aura/aura1.png" />
 
-    <!-- ============================
-          FUENTES PREMIUM
-    ============================= -->
+    <!-- =====================================================
+          FUENTES
+    ====================================================== -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -30,20 +30,19 @@
       rel="stylesheet"
     />
 
-    <!-- Preload del CSS -->
+    <!-- =====================================================
+          PRELOADS
+    ====================================================== -->
     <link rel="preload" href="/index.css" as="style" />
-
-    <!-- Sonidos cursor y hover -->
     <link rel="preload" href="/sfx/click.mp3" as="audio" />
     <link rel="preload" href="/sfx/hover.wav" as="audio" />
+    <link rel="preload" href="/sfx/error.wav" as="audio" />
+    <link rel="preload" href="/sfx/success.wav" as="audio" />
 
     <!-- =====================================================
-          ESTILOS: CURSOR HOLOGRÁFICO + SPLASH OS
+          ESTILOS: CURSOR + SPLASH
     ====================================================== -->
     <style>
-      /* ============================
-            CURSOR HOLOGRÁFICO
-      ============================= */
       body {
         margin: 0;
         font-family: "Inter", sans-serif;
@@ -52,81 +51,121 @@
         overflow: hidden;
       }
 
+      /* =====================================================
+            CURSOR HOLOGRÁFICO
+      ====================================================== */
       #cursor-holo {
         position: fixed;
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        background: rgba(0, 255, 255, 0.8);
+        background: rgba(0, 255, 255, 0.9);
         pointer-events: none;
         z-index: 9999;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 0 12px rgba(0, 255, 255, 0.75);
-        transition: transform 0.06s linear;
-        animation: cursorPulse 2.8s ease-in-out infinite;
+        transform: translate(-50%, -50%) scale(1);
+        transition: transform 0.045s linear;
+        box-shadow: 0 0 12px rgba(0, 255, 255, 0.8);
+        animation: cursorPulse 3s ease-in-out infinite;
       }
 
       @keyframes cursorPulse {
         0% {
-          box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+          box-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
         }
         50% {
-          box-shadow: 0 0 25px rgba(0, 255, 255, 1);
+          box-shadow: 0 0 28px rgba(0, 255, 255, 1);
         }
         100% {
-          box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+          box-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
         }
       }
 
-      /* Cuando AURA está hablando */
+      /* Cursor cuando AURA habla */
       .cursor-speaking {
-        background: rgba(255, 20, 147, 0.9) !important;
-        box-shadow: 0 0 20px rgba(255, 20, 147, 1) !important;
+        background: rgba(255, 20, 147, 0.95) !important;
+        box-shadow: 0 0 22px rgba(255, 20, 147, 1) !important;
       }
 
-      /* ============================
-            SPLASH BOOT FAZO OS
-      ============================= */
+      /* Cursor cuando AURA escucha */
+      .cursor-listening {
+        background: rgba(0, 255, 127, 0.95) !important;
+        box-shadow: 0 0 22px rgba(0, 255, 127, 1) !important;
+      }
+
+      /* Cursor alerta */
+      .cursor-alert {
+        background: rgba(255, 120, 20, 0.95) !important;
+        box-shadow: 0 0 22px rgba(255, 120, 20, 1) !important;
+      }
+
+      /* =====================================================
+            SPLASH OS — Arranque tipo sistema operativo
+      ====================================================== */
       #splash-fazo {
         position: fixed;
         inset: 0;
-        background: radial-gradient(circle at center, #0a0f1f, #000814 70%);
+        background: radial-gradient(circle at center, #0a0f1f, #000814 75%);
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         z-index: 9998;
-        animation: splashFade 1.1s ease forwards;
-        animation-delay: 2.6s;
         text-align: center;
+        overflow: hidden;
+        opacity: 1;
+        animation: splashFade 1s ease forwards;
+        animation-delay: 3.3s;
+      }
+
+      /* Parallax de fondo */
+      #splash-fazo::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: url("/aura/grid.png");
+        opacity: 0.07;
+        transform: scale(1.2);
+        animation: parallax 16s linear infinite;
+      }
+
+      @keyframes parallax {
+        0% {
+          transform: scale(1.1) translateY(0px);
+        }
+        50% {
+          transform: scale(1.2) translateY(-18px);
+        }
+        100% {
+          transform: scale(1.1) translateY(0px);
+        }
       }
 
       #splash-fazo img {
-        width: 180px;
-        filter: drop-shadow(0 0 42px #3b82f6);
-        animation: logoGlow 2.4s ease-in-out infinite;
+        width: 170px;
+        filter: drop-shadow(0 0 35px #3b82f6);
+        animation: logoGlow 2.6s ease-in-out infinite;
       }
 
       @keyframes logoGlow {
         0% {
-          filter: drop-shadow(0 0 8px #1e40af);
+          filter: drop-shadow(0 0 12px #1e3a8a);
         }
         50% {
-          filter: drop-shadow(0 0 45px #60a5fa);
+          filter: drop-shadow(0 0 52px #60a5fa);
         }
         100% {
-          filter: drop-shadow(0 0 8px #1e40af);
+          filter: drop-shadow(0 0 12px #1e3a8a);
         }
       }
 
       #splash-text {
-        margin-top: 18px;
+        margin-top: 22px;
         color: #93c5fd;
         font-size: 18px;
         letter-spacing: 2px;
         opacity: 0;
-        animation: textAppear 1.3s ease forwards;
-        animation-delay: 0.5s;
+        animation: textAppear 1.2s ease forwards;
+        animation-delay: 0.6s;
       }
 
       @keyframes textAppear {
@@ -137,13 +176,13 @@
       }
 
       .spinner-fazo {
-        margin-top: 25px;
-        width: 70px;
-        height: 70px;
+        margin-top: 30px;
+        width: 80px;
+        height: 80px;
         border-radius: 50%;
-        border: 6px solid #1e3a8a50;
-        border-top-color: #60a5fa;
-        animation: spin 1.1s linear infinite, glow 2s infinite ease-in-out;
+        border: 6px solid #1e3a8a60;
+        border-top-color: #3b82f6;
+        animation: spin 1s linear infinite, glow 2s ease-in-out infinite;
       }
 
       @keyframes spin {
@@ -154,13 +193,13 @@
 
       @keyframes glow {
         0% {
-          box-shadow: 0 0 12px #3b82f660;
+          box-shadow: 0 0 16px #3b82f660;
         }
         50% {
-          box-shadow: 0 0 30px #60a5fa;
+          box-shadow: 0 0 40px #60a5fa;
         }
         100% {
-          box-shadow: 0 0 12px #3b82f660;
+          box-shadow: 0 0 16px #3b82f660;
         }
       }
 
@@ -175,7 +214,7 @@
 
   <body>
     <!-- =====================================================
-              CURSOR HOLOGRÁFICO (ANTES DE REACT)
+          CURSOR HOLOGRÁFICO
     ====================================================== -->
     <div id="cursor-holo"></div>
 
@@ -187,54 +226,64 @@
         cursor.style.top = e.clientY + "px";
       });
 
-      // Sonido hover
+      // Sonidos con bloqueo anti-lag
       const hoverSound = new Audio("/sfx/hover.wav");
+      hoverSound.volume = 0.25;
+
+      const clickSound = new Audio("/sfx/click.mp3");
+      clickSound.volume = 0.35;
+
+      let allowHover = true;
       document.addEventListener("mouseover", () => {
-        hoverSound.volume = 0.25;
+        if (!allowHover) return;
+        allowHover = false;
+        hoverSound.currentTime = 0;
         hoverSound.play().catch(() => {});
+        setTimeout(() => (allowHover = true), 100);
       });
 
-      // Sonido click
-      const clickSound = new Audio("/sfx/click.mp3");
       document.addEventListener("mousedown", () => {
-        clickSound.volume = 0.35;
+        clickSound.currentTime = 0;
         clickSound.play().catch(() => {});
       });
 
-      // AURA hablando → cursor cambia de color
+      // Eventos AURA → Cursor
       window.addEventListener("AURA_TALKING", () => {
         cursor.classList.add("cursor-speaking");
       });
-
+      window.addEventListener("AURA_LISTENING", () => {
+        cursor.classList.add("cursor-listening");
+      });
+      window.addEventListener("AURA_ALERT", () => {
+        cursor.classList.add("cursor-alert");
+      });
       window.addEventListener("AURA_IDLE", () => {
-        cursor.classList.remove("cursor-speaking");
+        cursor.classList.remove("cursor-speaking", "cursor-listening", "cursor-alert");
       });
     </script>
 
     <!-- =====================================================
-              SPLASH FAZO OS (ANTES DE REACT)
+          SPLASH DE ARRANQUE
     ====================================================== -->
     <div id="splash-fazo">
-      <img src="/aura/aura1.png" alt="FAZO" />
-      <div id="splash-text">Inicializando módulos FAZO...</div>
+      <img src="/aura/aura1.png" alt="FAZO Logo" />
+      <div id="splash-text">Inicializando módulos FAZO OS...</div>
       <div class="spinner-fazo"></div>
     </div>
 
+    <!-- Evento desde React para ocultar splash -->
     <script>
-      // React dispara este evento para retirar splash
       window.addEventListener("FAZO_READY", () => {
         const splash = document.getElementById("splash-fazo");
         splash.style.opacity = "0";
-        setTimeout(() => splash.remove(), 650);
+        setTimeout(() => splash.remove(), 700);
       });
     </script>
 
     <!-- =====================================================
-                      ROOT REACT
+          ROOT REACT
     ====================================================== -->
     <div id="root"></div>
-
-    <!-- Entry React -->
     <script type="module" src="/src/index.js"></script>
   </body>
 </html>
