@@ -1,39 +1,53 @@
-// src/App.js
+// =====================================================
+//  FAZO OS — App.js 2025
+//  Núcleo gráfico + navegación + integración AURA
+//  Ultra Optimizado — Versión Oficial Final
+// =====================================================
+
 import React, { useState, useEffect, useRef } from "react";
-import Splash from "./components/Splash";
+
+// Componentes FAZO OS
 import SidebarFazo from "./components/SidebarFazo";
 import AuraFloatingPanel from "./components/AuraFloatingPanel";
 import AuraOrb from "./components/AuraOrb";
 import Login from "./components/Login";
+
 import "./index.css";
 
-// FAZO OS — Sistema Operativo Municipal 2025
 export default function App() {
-  const [splash, setSplash] = useState(true);
+  // Estados OS
   const [acceso, setAcceso] = useState(false);
   const [vista, setVista] = useState("aguaruta");
   const [subrutaAgua, setSubrutaAgua] = useState("");
   const [auraVisible, setAuraVisible] = useState(false);
 
+  // Referencias para módulos externos
   const aguarutaIframeRef = useRef(null);
   const trasladoIframeRef = useRef(null);
 
-  // Splash → 2.5s
+  // =====================================================
+  //  1) Splash FAZO OS (viene DESDE index.html)
+  // =====================================================
   useEffect(() => {
-    const timer = setTimeout(() => setSplash(false), 2600);
-    return () => clearTimeout(timer);
+    // Le avisamos al index.html que React ya está listo
+    setTimeout(() => {
+      window.dispatchEvent(new Event("FAZO_READY"));
+    }, 350);
   }, []);
 
-  // Persistencia Login
+  // =====================================================
+  //  2) Persistencia del Login
+  // =====================================================
   useEffect(() => {
     const saved = localStorage.getItem("aura-acceso");
     if (saved === "ok") setAcceso(true);
   }, []);
 
-  if (splash) return <Splash />;
   if (!acceso) return <Login onLogin={() => setAcceso(true)} />;
 
-  // FAZO Bridge → enviar comandos a módulos
+  // =====================================================
+  //  3) FAZO Bridge — Comunicación con módulos externos
+  // =====================================================
   const sendToIframe = (app, payload) => {
     try {
       if (!payload) return;
@@ -53,25 +67,28 @@ export default function App() {
     }
   };
 
-  // Comandos que AURA envía a FAZO OS
+  // =====================================================
+  //  4) AURA → FAZO OS  (Comandos)
+  // =====================================================
   const handleComandoAura = (cmd) => {
     if (!cmd) return;
 
-    // Comando básico tipo string
+    // ● Comando directo tipo string
     if (typeof cmd === "string") {
       setVista(cmd);
       return;
     }
 
-    // Módulos principales
+    // ● Cambiar módulo principal
     if (cmd.tipo === "modulo") {
       setVista(cmd.modulo);
       if (cmd.modulo === "aguaruta") setSubrutaAgua("");
     }
 
-    // Subrutas AguaRuta
+    // ● Subrutas propias de AguaRuta
     if (cmd.tipo === "subruta" && cmd.modulo === "aguaruta") {
       setVista("aguaruta");
+
       const clean = (cmd.ruta || "").replace(/^\//, "");
       setSubrutaAgua(clean);
 
@@ -82,7 +99,7 @@ export default function App() {
       });
     }
 
-    // Acciones internas
+    // ● Acciones generales
     if (cmd.tipo === "accion") {
       switch (cmd.accion) {
         case "logout":
@@ -102,19 +119,27 @@ export default function App() {
           setVista("aguaruta");
           setSubrutaAgua("rutas-activas");
           break;
+
+        default:
+          console.log("⚠️ Acción AURA no reconocida:", cmd);
       }
     }
   };
 
+  // =====================================================
+  //  5) RENDER PRINCIPAL — FAZO OS Layout
+  // =====================================================
   return (
     <div
       className="
         flex min-h-screen text-white
         bg-gradient-to-br from-black via-slate-900 to-black
-        overflow-hidden relative
+        overflow-hidden relative fade-in
       "
     >
-      {/* MENÚ LATERAL FAZO */}
+      {/* ===============================
+          MENÚ LATERAL FAZO OS
+       =============================== */}
       <SidebarFazo
         active={vista}
         onNavigate={(slug) => {
@@ -123,11 +148,13 @@ export default function App() {
         }}
       />
 
-      {/* PANEL PRINCIPAL */}
+      {/* ===============================
+          PANEL PRINCIPAL
+       =============================== */}
       <div className="flex-1 flex flex-col p-6 overflow-y-auto ml-64">
-        <main className="flex-1 holo-fade">
+        <main className="flex-1 holo-fade smooth">
 
-          {/* AGUARUTA */}
+          {/* AGUARUTA ===================================== */}
           {vista === "aguaruta" && (
             <iframe
               ref={aguarutaIframeRef}
@@ -138,12 +165,12 @@ export default function App() {
                 border border-cyan-400/40
                 bg-black/40 backdrop-blur-xl
                 shadow-[0_0_25px_rgba(0,255,255,0.25)]
-                transition-all duration-300
+                transition-all duration-500 jarvis-frame
               "
             />
           )}
 
-          {/* TRASLADO MUNICIPAL */}
+          {/* TRASLADO MUNICIPAL ============================ */}
           {vista === "traslado" && (
             <iframe
               ref={trasladoIframeRef}
@@ -151,43 +178,44 @@ export default function App() {
               title="Traslado Municipal"
               className="
                 w-full h-[88vh] rounded-2xl
-                border border-cyan-400/40
+                border border-emerald-400/40
                 bg-black/40 backdrop-blur-xl
                 shadow-[0_0_25px_rgba(0,255,255,0.25)]
+                transition-all duration-500 jarvis-frame
               "
             />
           )}
 
-          {/* FLOTA */}
+          {/* FLOTA MUNICIPAL =============================== */}
           {vista === "flota" && (
-            <div className="card-fazo-strong p-10 text-center">
-              <h2 className="text-3xl font-bold text-cyan-300 mb-2">
+            <div className="card-fazo-strong p-10 text-center blur-in">
+              <h2 className="text-3xl font-bold text-cyan-300 mb-2 glow-stark">
                 Flota Municipal
               </h2>
               <p className="text-cyan-200/80">
-                Control total de vehículos, mantenimiento y disponibilidad.
+                Control total de vehículos, disponibilidad y mantención.
               </p>
               <p className="text-cyan-300/40 mt-3">(En construcción)</p>
             </div>
           )}
 
-          {/* REPORTES */}
+          {/* REPORTES =============================== */}
           {vista === "reportes" && (
-            <div className="card-fazo-strong p-10 text-center">
-              <h2 className="text-3xl font-bold text-cyan-300 mb-2">
-                Reportes FAZO
+            <div className="card-fazo-strong p-10 text-center blur-in">
+              <h2 className="text-3xl font-bold text-cyan-300 mb-2 glow-stark">
+                Panel de Reportes FAZO
               </h2>
               <p className="text-cyan-200/80">
-                Estadísticas avanzadas y análisis municipales.
+                Análisis avanzado de AguaRuta, Flota y Operaciones.
               </p>
               <p className="text-cyan-300/40 mt-3">(En construcción)</p>
             </div>
           )}
 
-          {/* AJUSTES */}
+          {/* AJUSTES =============================== */}
           {vista === "ajustes" && (
-            <div className="card-fazo p-10">
-              <h2 className="text-2xl font-bold text-cyan-300 mb-4">
+            <div className="card-fazo p-10 blur-in">
+              <h2 className="text-2xl font-bold text-cyan-300 mb-4 glow-stark">
                 Ajustes del Sistema
               </h2>
 
@@ -196,20 +224,26 @@ export default function App() {
                   localStorage.removeItem("aura-acceso");
                   window.location.reload();
                 }}
-                className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700"
+                className="
+                  px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 
+                  shadow-lg transition-all
+                "
               >
                 Cerrar sesión
               </button>
             </div>
           )}
-
         </main>
       </div>
 
-      {/* BOTÓN ORB AURA */}
+      {/* ===============================
+          ORBE HOLOGRÁFICO DE AURA
+       =============================== */}
       <AuraOrb onClick={() => setAuraVisible(true)} />
 
-      {/* PANEL FLOTANTE AURA */}
+      {/* ===============================
+          PANEL FLOTANTE AURA
+       =============================== */}
       <AuraFloatingPanel
         visible={auraVisible}
         onClose={() => setAuraVisible(false)}
