@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
 // =======================================================
-//   AURAChat.js — ULTRA PRO MAX 2025 (VERSIÓN DEFINITIVA)
+//   AURAChat.js — GOD MODE 2025 (VERSIÓN DEFINITIVA)
 //   FAZO LOGÍSTICA — Gustavo Oliva
-//   Mateo (IA) — Arquitectura completa + AURA OPERATIVA
+//   Mateo IA — Motor conversacional + HUD + AURA Operativa
 // =======================================================
 
 import React, { useState, useEffect, useRef } from "react";
@@ -17,18 +17,19 @@ import {
   playListen,
   startTalk,
   stopTalk,
+  playClick,
 } from "./AuraSounds";
 
 import config from "../config";
 
 // =======================================================
-//   LIMPIAR EMOJIS PARA QUE AURA NO LOS LEA EN VOZ
+//   UTILS — Limpieza de texto
 // =======================================================
-const limpiarEmojis = (texto) =>
-  texto.replace(
-    /([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g,
-    ""
-  );
+const limpiar = (t) =>
+  t
+    .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 // =======================================================
 //   BACKEND AURA
@@ -37,92 +38,72 @@ const AURA_API_URL = config.AURA_BACKEND_URL;
 const AURA_PROVIDER = config.AURA_PRIMARY || "claude";
 
 console.log("🔗 AURA API:", AURA_API_URL);
-console.log("🧠 MODELO AURA:", AURA_PROVIDER);
+console.log("🤖 MODELO:", AURA_PROVIDER);
 
 // =======================================================
 //   SUBRUTAS AGUARUTA
 // =======================================================
-const detectarSubrutaAguaRuta = (texto) => {
+const SUBS = [
+  ["rutas activas", "rutas-activas", "Abriendo Rutas Activas."],
+  ["no entregadas", "no-entregadas", "Mostrando panel de No Entregadas."],
+  ["comparacion semanal", "comparacion-semanal", "Cargando Comparación Semanal."],
+  ["estadisticas por camion", "camion-estadisticas", "Estadísticas por Camión listas."],
+  ["registrar entrega", "registrar-entrega", "Abriendo Registro de Entrega."],
+  ["nueva distribucion", "nueva-distribucion", "Ingresando a Nueva Distribución."],
+  ["editar redistribucion", "editar-redistribucion", "Editor de Redistribución listo."],
+  ["inicio", "", "Volviendo al Inicio de AguaRuta."],
+];
+
+const detectarSub = (texto) => {
   if (!texto) return null;
-  const norm = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const n = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  const rutas = [
-    ["rutas activas", "/rutas-activas", "Abriendo Rutas Activas de AguaRuta."],
-    ["no entregadas", "/no-entregadas", "Abriendo panel de No Entregadas."],
-    ["comparacion semanal", "/comparacion-semanal", "Mostrando Comparación Semanal."],
-    ["estadisticas por camion", "/camion-estadisticas", "Estadísticas por Camión listas."],
-    ["registrar entrega", "/registrar-entrega", "Abriendo Registro de Entrega."],
-    ["nueva distribucion", "/nueva-distribucion", "Ingresando a Nueva Distribución."],
-    ["editar redistribucion", "/editar-redistribucion", "Editor de Redistribución cargado."],
-    ["inicio aguaruta", "/", "Volviendo al Inicio de AguaRuta."],
-  ];
-
-  for (let r of rutas) {
-    if (norm.includes(r[0])) {
-      return { tipo: "subruta", modulo: "aguaruta", ruta: r[1], frase: r[2] };
+  for (let [palabra, ruta, frase] of SUBS) {
+    if (n.includes(palabra)) {
+      return {
+        tipo: "subruta",
+        modulo: "aguaruta",
+        ruta: "/" + ruta,
+        frase,
+      };
     }
   }
   return null;
 };
 
 // =======================================================
-//   COMANDOS DE MÓDULOS FAZO
+//   DETECTOR DE MÓDULOS
 // =======================================================
-const detectarComandoModulo = (texto) => {
-  const t = texto?.toLowerCase() || "";
+const detectarModulo = (txt) => {
+  const t = txt.toLowerCase();
 
-  if (t.includes("aguaruta") || (t.includes("agua") && t.includes("laguna")))
-    return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo módulo AguaRuta." };
+  if (t.includes("agua")) return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo AguaRuta." };
+  if (t.includes("traslado")) return { tipo: "modulo", modulo: "traslado", frase: "Cargando Traslado Municipal." };
+  if (t.includes("flota")) return { tipo: "modulo", modulo: "flota", frase: "Abriendo Flota Municipal." };
+  if (t.includes("reporte")) return { tipo: "modulo", modulo: "reportes", frase: "Generando panel de Reportes." };
+  if (t.includes("ajuste")) return { tipo: "modulo", modulo: "ajustes", frase: "Abriendo Ajustes del Sistema." };
 
-  if (t.includes("traslado"))
-    return { tipo: "modulo", modulo: "traslado", frase: "Cargando módulo Traslado Municipal." };
-
-  if (t.includes("flota"))
-    return { tipo: "modulo", modulo: "flota", frase: "Mostrando panel de Flota Municipal." };
-
-  if (t.includes("reporte") || t.includes("informe"))
-    return { tipo: "modulo", modulo: "reportes", frase: "Generando módulo de Reportes FAZO." };
-
-  if (t.includes("ajustes"))
-    return { tipo: "modulo", modulo: "ajustes", frase: "Abriendo Ajustes del Sistema." };
-
-  if (t.includes("aura") || t.includes("inicio"))
-    return { tipo: "modulo", modulo: "aura", frase: "Volviendo al panel principal de AURA." };
+  if (t.includes("inicio") || t.includes("aura"))
+    return { tipo: "modulo", modulo: "aura", frase: "Volviendo al panel principal." };
 
   return null;
 };
 
 // =======================================================
-//   AURA OPERATIVA — DETECTOR DE ACCIONES REALES
+//   DETECTOR DE ACCIONES PRECISAS
 // =======================================================
-const detectarAccionAura = (texto) => {
-  const t = texto.toLowerCase();
+const detectarAccion = (txt) => {
+  const t = txt.toLowerCase();
 
-  // ABRIR MÓDULOS
-  if (t.includes("abre") || t.includes("abrir")) {
-    if (t.includes("mapa")) return { tipo: "accion", accion: "abrir-mapa" };
-    if (t.includes("rutas")) return { tipo: "accion", accion: "abrir-rutas" };
-    if (t.includes("traslado")) return { tipo: "accion", accion: "abrir-traslado" };
-    if (t.includes("ajustes")) return { tipo: "accion", accion: "abrir-ajustes" };
-  }
+  if (t.includes("abrir rutas")) return { tipo: "accion", accion: "abrir-rutas" };
+  if (t.includes("abrir mapa")) return { tipo: "accion", accion: "abrir-mapa" };
+  if (t.includes("abrir traslado")) return { tipo: "accion", accion: "abrir-traslado" };
+  if (t.includes("cerrar sesion")) return { tipo: "accion", accion: "logout" };
 
-  // FILTROS
-  if (t.includes("filtra") || t.includes("filtro")) {
-    if (t.includes("camion a1")) return { tipo: "accion", accion: "filtro-camion", valor: "A1" };
-    if (t.includes("camion a2")) return { tipo: "accion", accion: "filtro-camion", valor: "A2" };
-    if (t.includes("camion a3")) return { tipo: "accion", accion: "filtro-camion", valor: "A3" };
-  }
-
-  // BUSCAR
-  if (t.includes("buscar") || t.includes("busca")) {
-    const value = t.replace("buscar", "").replace("busca", "").trim();
-    return { tipo: "accion", accion: "buscar", valor: value };
-  }
-
-  // LOGOUT
-  if (t.includes("cerrar sesion")) {
-    return { tipo: "accion", accion: "logout" };
-  }
+  // FILTROS CAMIONES
+  if (t.includes("filtra camion a1")) return { tipo: "accion", accion: "filtro-camion", valor: "A1" };
+  if (t.includes("filtra camion a2")) return { tipo: "accion", accion: "filtro-camion", valor: "A2" };
+  if (t.includes("filtra camion a3")) return { tipo: "accion", accion: "filtro-camion", valor: "A3" };
 
   return null;
 };
@@ -135,133 +116,121 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     {
       id: 1,
       from: "aura",
-      text: `Hola Gustavo 👋, soy AURA (${config.BRAND.version}). ¿Qué módulo necesitas hoy?`,
-      timestamp: new Date().toISOString(),
+      text: `Hola Gustavo 👋, soy AURA (${config.BRAND.version}). ¿Qué hacemos hoy?`,
     },
   ]);
 
   const [input, setInput] = useState("");
-  const [isThinking, setIsThinking] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const [emotion, setEmotion] = useState("neutral");
   const [voices, setVoices] = useState([]);
-  const [selectedVoice, setSelectedVoice] = useState(null);
-  const [isTalking, setIsTalking] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [voice, setVoice] = useState(null);
+  const [talking, setTalking] = useState(false);
+  const [listening, setListening] = useState(false);
 
-  const recognitionRef = useRef(null);
-  const bottomRef = useRef(null);
+  const recRef = useRef(null);
+  const endRef = useRef(null);
 
-// =======================================================
-//   ACTIVACIÓN
-// =======================================================
-  useEffect(() => {
-    playActivate();
-  }, []);
+  // =======================================================
+  //   ACTIVAR SONIDO DE INICIO
+  // =======================================================
+  useEffect(() => playActivate(), []);
 
-// =======================================================
-//   CARGA VOCES TTS
-// =======================================================
+  // =======================================================
+  //   CARGAR VOCES
+  // =======================================================
   useEffect(() => {
     if (!window.speechSynthesis) return;
 
-    const load = () => {
-      const all = window.speechSynthesis.getVoices();
-      setVoices(all);
+    const loadVoices = () => {
+      const list = window.speechSynthesis.getVoices();
+      setVoices(list);
 
-      const guardada = localStorage.getItem("aura-voice");
+      const guardada = localStorage.getItem("auraVoice");
       const preferida =
-        all.find((v) => v.name === guardada) ||
-        all.find((v) => v.lang.startsWith("es") && v.name.includes("female")) ||
-        all.find((v) => v.lang.startsWith("es")) ||
-        all[0];
+        list.find((v) => v.name === guardada) ||
+        list.find((v) => v.lang.startsWith("es") && v.name.includes("female")) ||
+        list.find((v) => v.lang.startsWith("es")) ||
+        list[0];
 
-      setSelectedVoice(preferida);
+      setVoice(preferida);
     };
 
-    load();
-    window.speechSynthesis.onvoiceschanged = load;
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
   }, []);
 
-// =======================================================
-//   SPEECH RECOGNITION
-// =======================================================
+  // =======================================================
+  //   RECONOCIMIENTO DE VOZ
+  // =======================================================
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
 
     const rec = new SR();
     rec.lang = "es-CL";
-    rec.interimResults = false;
-
     rec.onresult = (e) => {
       const tx = e.results[0][0].transcript.trim();
-      if (tx) handleSendMessage(tx);
+      if (tx) sendMessage(tx);
     };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
 
-    rec.onerror = () => setIsListening(false);
-    rec.onend = () => setIsListening(false);
-
-    recognitionRef.current = rec;
+    recRef.current = rec;
   }, []);
 
-// =======================================================
-//   AUTO SCROLL
-// =======================================================
+  // =======================================================
+  //   AUTO SCROLL
+  // =======================================================
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, thinking]);
 
-// =======================================================
-//   TTS AMPLIADO
-// =======================================================
+  // =======================================================
+  //   HABLAR (TTS)
+  // =======================================================
   const speak = (text) => {
-    if (!window.speechSynthesis || !text) return;
+    if (!window.speechSynthesis) return;
 
-    const limpio = limpiarEmojis(text).replace(/\s+/g, " ").trim();
-
+    const clean = limpiar(text);
     window.speechSynthesis.cancel();
 
-    const u = new SpeechSynthesisUtterance(limpio);
-    if (selectedVoice) u.voice = selectedVoice;
-
-    u.rate = 0.96;
-    u.pitch = 1.03;
-    u.volume = 1;
+    const u = new SpeechSynthesisUtterance(clean);
+    if (voice) u.voice = voice;
+    u.rate = 0.97;
+    u.pitch = 1.02;
 
     u.onstart = () => {
       startTalk();
-      setIsTalking(true);
+      setTalking(true);
       setEmotion("hablando");
     };
-
     u.onend = () => {
       stopTalk();
-      setIsTalking(false);
+      setTalking(false);
       setEmotion("neutral");
     };
 
     window.speechSynthesis.speak(u);
   };
 
-// =======================================================
-//   LLAMADO A BACKEND
-// =======================================================
-  const callAuraBackend = async (history) => {
+  // =======================================================
+  //   CONSULTA AL BACKEND
+  // =======================================================
+  const consultaBackend = async (hist) => {
     if (!AURA_API_URL) return null;
-
-    const payload = {
-      provider: AURA_PROVIDER,
-      messages: history.map((m) => ({
-        role: m.from === "user" ? "user" : "assistant",
-        content: m.text.trim(),
-      })),
-    };
 
     try {
       const res = await fetch(AURA_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          provider: AURA_PROVIDER,
+          messages: hist.map((m) => ({
+            role: m.from === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
       });
 
       if (res.ok) {
@@ -273,164 +242,116 @@ export default function AuraChat({ onComando, onSendToIframe }) {
     return null;
   };
 
-// =======================================================
-//   FALLBACK LOCAL
-// =======================================================
-  const getLocalReply = (txt) => {
-    if (txt.includes("agua")) return "Perfecto, reviso AguaRuta.";
-    if (txt.includes("traslado")) return "Entendido, abro Traslado Municipal.";
-    return "Listo Gustavo, cuéntame qué hacemos.";
+  // =======================================================
+  //   FALLBACK
+  // =======================================================
+  const fallback = (t) => {
+    if (t.includes("agua")) return "Revisando módulo AguaRuta.";
+    if (t.includes("traslado")) return "Abriendo Traslado Municipal.";
+    return "Listo Gustavo, dime qué hacemos.";
   };
 
-// =======================================================
-//   ENVÍO DE MENSAJES
-// =======================================================
-  const handleSendMessage = async (texto) => {
-    const finalText = (texto || input).trim();
-    if (!finalText) return;
+  // =======================================================
+  //   ENVÍO DE MENSAJES
+  // =======================================================
+  const sendMessage = async (texto) => {
+    const msgText = limpiar(texto || input);
+    if (!msgText) return;
 
-    if (isTalking) {
+    if (talking) {
       window.speechSynthesis.cancel();
       stopTalk();
-      setIsTalking(false);
     }
 
-    const userMsg = {
-      id: Date.now(),
-      from: "user",
-      text: finalText,
-      timestamp: new Date().toISOString(),
-    };
-
+    const userMsg = { id: Date.now(), from: "user", text: msgText };
     setMessages((m) => [...m, userMsg]);
     setInput("");
-    setIsThinking(true);
+    setThinking(true);
 
-// =======================================================
-//   EMOCIÓN DEL USUARIO
-// =======================================================
+    // Emoción del usuario
     try {
-      setEmotion(detectarEmocion(limpiarEmojis(finalText)) || "neutral");
+      setEmotion(detectarEmocion(msgText) || "neutral");
     } catch {}
 
-// =======================================================
-//   AURA OPERATIVA — ACCIONES
-// =======================================================
-    const accion = detectarAccionAura(finalText);
+    // ACCIONES DIRECTAS
+    const accion = detectarAccion(msgText);
     if (accion) {
-      const frase = "Ejecutando instrucción, Gustavo.";
-      speak(frase);
       playCommand();
-
-      setMessages((m) => [...m, { id: Date.now(), from: "aura", text: frase }]);
-      setIsThinking(false);
-
-      if (onComando) onComando(accion);
-
+      speak("Ejecutando instrucción.");
+      setMessages((m) => [...m, { id: Date.now(), from: "aura", text: "Ejecutando instrucción." }]);
+      setThinking(false);
+      onComando?.(accion);
       return;
     }
 
-// =======================================================
-//   SUBRUTAS AguaRuta
-// =======================================================
-    const sub = detectarSubrutaAguaRuta(finalText);
+    // SUBRUTA AGUARUTA
+    const sub = detectarSub(msgText);
     if (sub) {
+      playCommand();
       speak(sub.frase);
-      playCommand();
-
       setMessages((m) => [...m, { id: Date.now(), from: "aura", text: sub.frase }]);
-      setIsThinking(false);
+      setThinking(false);
 
-      if (onComando) onComando(sub);
-
-      if (onSendToIframe) {
-        onSendToIframe("aguaruta", {
-          type: "FAZO_CMD",
-          command: "open-tab",
-          tab: sub.ruta.replace("/", ""),
-        });
-      }
+      onComando?.(sub);
+      onSendToIframe?.("aguaruta", {
+        type: "FAZO_CMD",
+        command: "open-tab",
+        tab: sub.ruta.replace("/", ""),
+      });
 
       return;
     }
 
-// =======================================================
-//   MODULOS GENERALES
-// =======================================================
-    const cmd = detectarComandoModulo(finalText);
-    if (cmd) {
-      speak(cmd.frase);
+    // MÓDULO PRINCIPAL
+    const mod = detectarModulo(msgText);
+    if (mod) {
       playCommand();
-
-      setMessages((m) => [...m, { id: Date.now(), from: "aura", text: cmd.frase }]);
-      setIsThinking(false);
-
-      if (onComando) onComando(cmd);
+      speak(mod.frase);
+      setMessages((m) => [...m, { id: Date.now(), from: "aura", text: mod.frase }]);
+      setThinking(false);
+      onComando?.(mod);
       return;
     }
 
-// =======================================================
-//   BACKEND
-// =======================================================
-    const history = [...messages, userMsg];
-    let reply = await callAuraBackend(history);
+    // BACKEND
+    const hist = [...messages, userMsg];
+    let reply = await consultaBackend(hist);
+    if (!reply) reply = fallback(msgText);
 
-    if (!reply) reply = getLocalReply(finalText);
-
-    reply = reply.trim();
-
-    const auraMsg = {
-      id: Date.now() + 1,
-      from: "aura",
-      text: reply,
-      timestamp: new Date().toISOString(),
-    };
-
+    const auraMsg = { id: Date.now() + 1, from: "aura", text: reply };
     setMessages((m) => [...m, auraMsg]);
 
-    try {
-      setEmotion(detectarEmocion(limpiarEmojis(reply)) || "neutral");
-    } catch {}
-
     speak(reply);
-    setIsThinking(false);
+    playClick();
+    setThinking(false);
+
+    try {
+      setEmotion(detectarEmocion(limpiar(reply)) || "neutral");
+    } catch {}
   };
 
-// =======================================================
-//   HUD VISUAL
-// =======================================================
-  const hudPanel =
-    "bg-black/40 border border-cyan-500/40 rounded-2xl shadow-[0_0_25px_rgba(0,255,255,0.35)] backdrop-blur-xl";
+  // =======================================================
+  //   HUD VISUAL
+  // =======================================================
+  const box = "bg-black/40 border border-cyan-500/40 rounded-2xl backdrop-blur-xl p-4";
 
-  const hudChat =
-    "bg-black/30 border border-cyan-400/30 shadow-inner shadow-cyan-400/20";
-
-  const hudBubbleAura =
-    "bg-cyan-600/30 text-cyan-100 border border-cyan-300/30 rounded-bl-sm";
-
-  const hudBubbleUser =
-    "bg-cyan-800 text-white border border-cyan-500/30 rounded-br-sm";
-
-// =======================================================
-//   RENDER COMPLETO
-// =======================================================
   return (
-    <section className={`${hudPanel} p-4`}>
+    <section className={box}>
       {/* HEADER */}
-      <div className="flex items-center justify-between pb-3 border-b border-cyan-500/30">
-        <span className="text-cyan-300 font-semibold flex items-center gap-2">
+      <div className="flex justify-between items-center border-b border-cyan-400/30 pb-2">
+        <span className="text-cyan-300 text-sm flex items-center gap-2">
           <span className="h-2 w-2 bg-cyan-300 rounded-full animate-pulse" />
-          AURA en línea — FAZO HUD
+          AURA Operativa — FAZO OS
         </span>
 
         {voices.length > 0 && (
           <select
-            className="bg-black/60 border border-cyan-400/30 rounded-lg px-2 py-1 text-xs text-cyan-200"
-            value={selectedVoice?.name || ""}
+            className="bg-black/60 border border-cyan-400/30 rounded px-2 py-1 text-xs"
+            value={voice?.name || ""}
             onChange={(e) => {
               const v = voices.find((x) => x.name === e.target.value);
-              setSelectedVoice(v);
-              localStorage.setItem("aura-voice", v?.name || "");
+              setVoice(v);
+              localStorage.setItem("auraVoice", v.name);
             }}
           >
             {voices.map((v) => (
@@ -443,84 +364,76 @@ export default function AuraChat({ onComando, onSendToIframe }) {
       </div>
 
       {/* BODY */}
-      <div className="flex flex-col md:flex-row gap-6 mt-4">
+      <div className="flex flex-col md:flex-row gap-4 mt-4">
+
         {/* AVATAR */}
         <div className="md:w-1/3 flex flex-col items-center">
-          <div className="w-48 h-48 border border-cyan-400/30 rounded-3xl bg-black/40 shadow-[0_0_20px_rgba(0,255,255,0.2)] flex items-center justify-center overflow-hidden">
-            <AuraRealistic emotion={emotion} talking={isTalking} listening={isListening} />
+          <div className="w-44 h-44 rounded-3xl bg-black/50 border border-cyan-300/30 shadow-[0_0_20px_rgba(0,255,255,0.4)] flex items-center justify-center overflow-hidden">
+            <AuraRealistic emotion={emotion} talking={talking} listening={listening} />
           </div>
 
-          <p className="text-xs text-cyan-300/80 mt-3">
-            Emoción: <span className="text-cyan-200">{emotion}</span>
+          <p className="text-xs mt-3 text-cyan-200/70">
+            Estado emocional: <span className="text-cyan-300">{emotion}</span>
           </p>
         </div>
 
         {/* CHAT */}
         <div className="md:w-2/3 flex flex-col">
-          <div
-            className={`${hudChat} rounded-2xl p-4 flex flex-col gap-3 max-h-[24rem] overflow-y-auto`}
-          >
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}
-              >
+          <div className="bg-black/30 border border-cyan-400/30 rounded-xl p-4 max-h-[420px] overflow-y-auto custom-scroll">
+            {messages.map((m) => (
+              <div key={m.id} className={`my-1 flex ${m.from === "user" ? "justify-end" : ""}`}>
                 <div
-                  className={`max-w-[80%] px-3 py-2 text-sm border shadow-lg ${
-                    msg.from === "user" ? hudBubbleUser : hudBubbleAura
+                  className={`px-3 py-2 text-sm rounded-xl border ${
+                    m.from === "user"
+                      ? "bg-cyan-800 text-white border-cyan-500/30"
+                      : "bg-cyan-600/20 text-cyan-100 border-cyan-300/30"
                   }`}
                 >
-                  {msg.text}
+                  {m.text}
                 </div>
               </div>
             ))}
 
-            {isThinking && <div className="text-cyan-300/70 text-xs">Procesando…</div>}
+            {thinking && <p className="text-cyan-300/70 text-xs">AURA está pensando...</p>}
 
-            <div ref={bottomRef} />
+            <div ref={endRef} />
           </div>
 
           {/* INPUT */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleSendMessage();
+              sendMessage();
             }}
-            className="mt-3 flex gap-3"
+            className="flex gap-2 mt-3"
           >
             <textarea
-              className="flex-1 resize-none rounded-xl bg-black/40 border border-cyan-400/30 text-sm p-3 text-cyan-100 placeholder-cyan-300/40"
               rows={2}
+              className="flex-1 bg-black/40 border border-cyan-300/30 rounded-xl text-sm p-3 text-cyan-100"
+              placeholder="Escríbeme lo que necesites, Gustavo..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Habla conmigo, Gustavo…"
             />
 
             <div className="flex flex-col items-center">
               <FloatingMic
-                isListening={isListening}
-                disabled={isThinking}
+                isListening={listening}
                 onToggle={() => {
-                  if (!recognitionRef.current) return;
-
-                  if (isListening) {
-                    recognitionRef.current.stop();
-                    setIsListening(false);
+                  if (!recRef.current) return;
+                  if (listening) {
+                    recRef.current.stop();
+                    setListening(false);
                   } else {
-                    try {
-                      playListen();
-                      recognitionRef.current.start();
-                      setIsListening(true);
-                    } catch {
-                      setIsListening(false);
-                    }
+                    playListen();
+                    recRef.current.start();
+                    setListening(true);
                   }
                 }}
               />
 
               <button
                 type="submit"
-                className="mt-2 px-4 py-2 bg-cyan-600 text-white rounded-xl shadow hover:bg-cyan-700"
+                className="mt-2 px-4 py-2 bg-cyan-600 text-white rounded-xl hover:bg-cyan-700"
               >
                 ➤
               </button>
