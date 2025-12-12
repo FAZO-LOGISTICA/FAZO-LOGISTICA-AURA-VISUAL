@@ -1,7 +1,7 @@
 // ===========================================================
-// SidebarFazo.js — FAZO OS 2025
-// Navegación holográfica estilo Sistema Operativo Municipal
-// Integración total con AURA, módulos y submódulos
+// SidebarFazo.js — FAZO OS HOLOGRAPHIC 2025 (VERSIÓN SUPREMA)
+// Navegación holográfica con energía IA, radar activo y luz
+// dinámica por módulo. 100% integrado con AURA y FAZO OS.
 // By FAZO Logística + Mateo IA
 // ===========================================================
 
@@ -17,14 +17,15 @@ import {
   FiSettings,
   FiTruck,
   FiUsers,
+  FiActivity,
 } from "react-icons/fi";
+import { motion } from "framer-motion";
 
 export default function SidebarFazo({ active, onNavigate }) {
-  
+  // ===========================================================
+  // Estructura del menú
+  // ===========================================================
   const menu = [
-    // --------------------------
-    // SISTEMA PRINCIPAL FAZO OS
-    // --------------------------
     {
       title: "FAZO OS",
       items: [
@@ -32,10 +33,6 @@ export default function SidebarFazo({ active, onNavigate }) {
         { name: "AURA", slug: "aura", icon: <FiMic /> },
       ],
     },
-
-    // --------------------------
-    // MÓDULO AGUARUTA
-    // --------------------------
     {
       title: "AguaRuta",
       items: [
@@ -45,15 +42,11 @@ export default function SidebarFazo({ active, onNavigate }) {
         { name: "Comparación Semanal", slug: "comparacion-semanal", icon: <FiBarChart2 /> },
         { name: "Registrar Entrega", slug: "registrar-entrega", icon: <FiUserCheck /> },
         { name: "No Entregadas", slug: "no-entregadas", icon: <FiTruck /> },
-        { name: "Camión Estadísticas", slug: "camion-estadisticas", icon: <FiTruck /> },
+        { name: "Camión Estadísticas", slug: "camion-estadisticas", icon: <FiActivity /> },
         { name: "Nueva Distribución", slug: "nueva-distribucion", icon: <FiSettings /> },
         { name: "Editar Redistribución", slug: "editar-redistribucion", icon: <FiSettings /> },
       ],
     },
-
-    // --------------------------
-    // OTROS MÓDULOS
-    // --------------------------
     {
       title: "Módulos Adicionales",
       items: [
@@ -67,70 +60,117 @@ export default function SidebarFazo({ active, onNavigate }) {
   return (
     <aside
       className="
-        w-64 fixed left-0 top-0 bottom-0
-        bg-black/40 backdrop-blur-xl
-        text-cyan-200
-        border-r border-cyan-500/20
-        shadow-[5px_0_25px_rgba(0,255,255,0.15)]
+        w-64 fixed left-0 top-0 bottom-0 z-40
+        bg-black/45 backdrop-blur-2xl
+        border-r border-cyan-400/20
+        shadow-[12px_0_45px_rgba(0,255,255,0.15)]
         flex flex-col
+        overflow-hidden
       "
     >
-      {/* LOGO */}
-      <div
+      {/* ===========================================================
+          LOGO FAZO OS CON EFECTO HOLOGRÁFICO
+      =========================================================== */}
+      <motion.div
         className="
-          p-6 text-xl font-bold text-cyan-300 tracking-wider
-          drop-shadow-[0_0_8px_rgba(0,255,255,0.7)]
+          p-6 text-2xl font-extrabold tracking-widest text-cyan-300 
+          drop-shadow-[0_0_12px_cyan]
+          flex items-center gap-3
         "
+        animate={{
+          opacity: [0.8, 1, 0.8],
+          scale: [1, 1.03, 1],
+        }}
+        transition={{ duration: 4, repeat: Infinity }}
       >
+        <FiCpu className="text-cyan-300" size={26} />
         FAZO OS
-      </div>
+      </motion.div>
 
-      {/* MENU */}
+      {/* ===========================================================
+          MENÚ PRINCIPAL
+      =========================================================== */}
       <nav className="flex-1 overflow-y-auto px-3 pr-4">
         {menu.map((section) => (
-          <div key={section.title} className="mb-6">
+          <div key={section.title} className="mb-7">
 
-            {/* TITULO DE SECCIÓN */}
-            <div className="text-xs uppercase text-cyan-400/70 mb-2 pl-2 tracking-wider">
+            {/* TÍTULO DE SECCIÓN */}
+            <div className="text-xs uppercase text-cyan-400/60 pl-2 tracking-wider mb-3">
               {section.title}
             </div>
 
             {/* ITEMS */}
-            {section.items.map((item) => (
-              <button
-                key={item.slug}
-                onClick={() => onNavigate(item.slug)}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-2 mb-1
-                  rounded-lg transition-all duration-150
-                  group relative
-                  ${
-                    active === item.slug
-                      ? "bg-cyan-500/30 border border-cyan-400/50 text-white shadow-lg shadow-cyan-500/20"
-                      : "hover:bg-cyan-500/10 hover:shadow-md hover:shadow-cyan-500/10"
-                  }
-                `}
-              >
-                {/* ICONO */}
-                <span
-                  className="
-                    text-lg transition-transform duration-200 
-                    group-hover:scale-110
-                  "
-                >
-                  {item.icon}
-                </span>
+            {section.items.map((item) => {
+              const isActive = active === item.slug;
 
-                {/* TEXTO */}
-                <span className="text-sm tracking-wide">{item.name}</span>
-              </button>
-            ))}
+              return (
+                <motion.button
+                  key={item.slug}
+                  onClick={() => onNavigate(item.slug)}
+                  className={`
+                    relative w-full flex items-center gap-3 px-4 py-2 mb-2
+                    rounded-lg transition-all duration-150
+                    ${
+                      isActive
+                        ? "bg-cyan-500/25 border border-cyan-400/50 text-white shadow-lg shadow-cyan-500/20"
+                        : "hover:bg-cyan-500/10 hover:text-white"
+                    }
+                  `}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  {/* ICONO */}
+                  <motion.span
+                    className="text-lg"
+                    animate={{
+                      scale: isActive ? [1, 1.2, 1] : 1,
+                      color: isActive ? "#67e8f9" : "#bae6fd",
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: isActive ? Infinity : 0,
+                    }}
+                  >
+                    {item.icon}
+                  </motion.span>
+
+                  {/* TEXTO */}
+                  <span className="text-sm tracking-wide">{item.name}</span>
+
+                  {/* RADAR ACTIVO — EFECTO HOLOGRÁFICO */}
+                  {isActive && (
+                    <motion.div
+                      className="
+                        absolute right-2 top-1/2 -translate-y-1/2
+                        w-2 h-2 rounded-full bg-cyan-300
+                      "
+                      animate={{
+                        scale: [1, 1.8, 1],
+                        opacity: [0.8, 0.2, 0.8],
+                        boxShadow: [
+                          "0 0 6px #22d3ee",
+                          "0 0 12px #22d3ee",
+                          "0 0 6px #22d3ee",
+                        ],
+                      }}
+                      transition={{ duration: 1.8, repeat: Infinity }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
           </div>
         ))}
       </nav>
 
-      {/* FOOTER */}
-      <div className="p-4 text-xs text-cyan-300/60 text-center border-t border-cyan-500/10">
+      {/* ===========================================================
+          FOOTER
+      =========================================================== */}
+      <div
+        className="
+          p-4 text-xs text-cyan-300/60 text-center border-t border-cyan-500/10
+        "
+      >
         © 2025 FAZO — Sistema Municipal Avanzado
       </div>
     </aside>
