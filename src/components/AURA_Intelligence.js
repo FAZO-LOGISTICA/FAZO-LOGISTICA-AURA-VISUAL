@@ -1,135 +1,166 @@
 // =======================================================
-//  AURA_Intelligence.js — CEREBRO CENTRAL 2025
+//  AURA_Intelligence.js — CENTRAL INTELLIGENCE CORE 2025
 //  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Motor de intenciones + semántica + acciones
+//  Mateo IA — Motor semántico + intenciones + módulos
+// =======================================================
+//
+//  AURAChat → usa este archivo para:
+//
+//   ✔ entender lo que dice Gustavo
+//   ✔ detectar intenciones profundas
+//   ✔ activar módulos FAZO OS
+//   ✔ elegir subrutas internas
+//   ✔ activar acciones reales (AURA_Actions)
+//   ✔ decidir si debe hablar, ejecutar o preguntar
+//
 // =======================================================
 
-/* 
-   Este módulo NO muestra nada en pantalla. 
-   Es el “cerebro” que interpreta lo que dice el usuario.
-
-   AURAChat importa este archivo para:
-   → detectar intenciones
-   → abrir módulos
-   → abrir subrutas
-   → ejecutar comandos
-   → decidir cómo responder
-*/
-
 export function interpretarMensaje(texto = "") {
-  const t = texto.toLowerCase().trim();
+  const t = normalizar(texto);
 
   // =======================================================
-  // 1) DETECCIÓN DE INTENCIÓN PRINCIPAL
+  // 1) INTENCIONES GLOBALES (FUNCIONAN PARA CUALQUIER PROYECTO)
   // =======================================================
 
-  // ---- AguaRuta (módulo completo)
-  if (match(t, ["agua", "aguaruta", "camiones", "rutas de agua"])) {
-    return modulo("aguaruta", "Abriendo AguaRuta.");
+  if (intenta(t, ["crear", "generar", "hacer"]) &&
+      intenta(t, ["reporte", "informe", "pdf"])) {
+    return accion("crear-reporte", "Generando reporte solicitado.");
   }
 
-  // ---- Traslado Municipal
-  if (match(t, ["traslado", "vehículos", "traslado municipal"])) {
-    return modulo("traslado", "Cargando Traslado Municipal.");
+  if (intenta(t, ["buscar", "encontrar"]) &&
+      intenta(t, ["persona", "usuario", "punto"])) {
+    return accion("buscar-registro", "Buscando información.");
   }
 
-  // ---- Flota Municipal
-  if (match(t, ["flota", "maestranza", "camionetas"])) {
-    return modulo("flota", "Mostrando Flota Municipal.");
-  }
-
-  // ---- Reportes
-  if (match(t, ["reporte", "informes", "analisis"])) {
-    return modulo("reportes", "Generando módulo de reportes.");
-  }
-
-  // ---- Ajustes
-  if (match(t, ["ajustes", "configuracion", "preferencias"])) {
-    return modulo("ajustes", "Abriendo preferencias del sistema.");
-  }
-
-  // ---- Inicio / AURA Home
-  if (match(t, ["inicio", "home", "aura"])) {
-    return modulo("aura", "Volviendo al inicio.");
+  if (intenta(t, ["optimizar", "mejorar", "redistribuir"])) {
+    return accion("optimizar", "Ejecutando optimización.");
   }
 
   // =======================================================
-  // 2) SUBRUTAS DE AGUARUTA
+  // 2) MÓDULOS FAZO OS — UNIVERSALES
   // =======================================================
 
-  if (match(t, ["rutas activas", "activos", "activa ruta"])) {
+  if (intenta(t, ["agua", "aguaruta", "agua ruta", "camiones"])) {
+    return modulo("aguaruta", "Abriendo módulo AguaRuta.");
+  }
+
+  if (intenta(t, ["traslado", "vehiculos", "taxi municipal"])) {
+    return modulo("traslado", "Mostrando Traslado Municipal.");
+  }
+
+  if (intenta(t, ["flota", "maestranza", "vehículo municipal"])) {
+    return modulo("flota", "Panel de Flota Municipal cargado.");
+  }
+
+  if (intenta(t, ["reporte", "reportes", "analisis"])) {
+    return modulo("reportes", "Abriendo sistema de reportes FAZO.");
+  }
+
+  if (intenta(t, ["ajustes", "configuracion", "preferencias"])) {
+    return modulo("ajustes", "Cargando ajustes del sistema FAZO.");
+  }
+
+  if (intenta(t, ["inicio", "home", "aura"])) {
+    return modulo("aura", "Regresando al inicio.");
+  }
+
+  // =======================================================
+  // 3) SUBRUTAS INTERNAS DE AGUARUTA
+  // =======================================================
+
+  if (intenta(t, ["rutas activas", "activos", "activa ruta"])) {
     return subruta("rutas-activas", "Abriendo Rutas Activas.");
   }
 
-  if (match(t, ["no entregadas", "no entregada", "faltantes"])) {
-    return subruta("no-entregadas", "Mostrando No Entregadas.");
+  if (intenta(t, ["mapa", "ver mapa"])) {
+    return subruta("mapa", "Mostrando Mapa de AguaRuta.");
   }
 
-  if (match(t, ["comparacion", "semanal", "comparar"])) {
-    return subruta("comparacion-semanal", "Cargando Comparación Semanal.");
+  if (intenta(t, ["graficos", "estadisticas globales"])) {
+    return subruta("graficos", "Mostrando Gráficos.");
   }
 
-  if (match(t, ["estadistica", "camion", "camión", "litros por día"])) {
-    return subruta("camion-estadisticas", "Mostrando Estadísticas por Camión.");
+  if (intenta(t, ["no entregadas", "faltantes"])) {
+    return subruta("no-entregadas", "Mostrando entregas no realizadas.");
   }
 
-  if (match(t, ["registrar entrega", "ingresar entrega", "agregar entrega"])) {
-    return subruta("registrar-entrega", "Abriendo Registro de Entrega.");
+  if (intenta(t, ["registrar entrega", "nueva entrega"])) {
+    return subruta("registrar-entrega", "Abriendo formulario de entrega.");
   }
 
-  if (match(t, ["nueva distribucion", "redistribucion nueva"])) {
-    return subruta("nueva-distribucion", "Entrando a Nueva Distribución.");
+  if (intenta(t, ["comparacion", "semanal"])) {
+    return subruta("comparacion-semanal", "Comparación semanal lista.");
   }
 
-  if (match(t, ["editar redistribucion", "editar distribucion"])) {
-    return subruta("editar-redistribucion", "Herramienta de Redistribución abierta.");
+  if (intenta(t, ["estadistica camion", "litros por dia"])) {
+    return subruta("camion-estadisticas", "Estadísticas por camión.");
+  }
+
+  if (intenta(t, ["nueva distribucion"])) {
+    return subruta("nueva-distribucion", "Nueva distribución abierta.");
+  }
+
+  if (intenta(t, ["editar distribucion", "editar redistribucion"])) {
+    return subruta("editar-redistribucion", "Editor de redistribución listo.");
   }
 
   // =======================================================
-  // 3) ACCIONES DIRECTAS
+  // 4) ACCIONES GENÉRICAS
   // =======================================================
 
-  if (match(t, ["cerrar sesion", "logout"])) {
+  if (intenta(t, ["cerrar sesion", "logout"])) {
     return accion("logout", "Cerrando sesión.");
   }
 
-  if (match(t, ["abrir mapa", "mostrar mapa"])) {
-    return accion("abrir-mapa", "Abriendo Mapa de AguaRuta.");
-  }
-
-  if (match(t, ["abrir rutas", "ver rutas"])) {
+  if (intenta(t, ["abrir rutas"])) {
     return accion("abrir-rutas", "Abriendo rutas asignadas.");
   }
 
-  // =======================================================
-  // 4) EMOCIONES / TONO / ESTADO
-  // =======================================================
-
-  if (match(t, ["estoy mal", "triste", "apenado"])) {
-    return respuesta("Lamento eso Gustavo… aquí estoy para ayudarte en lo que necesites.");
+  if (intenta(t, ["abrir mapa"])) {
+    return accion("abrir-mapa", "Mostrando mapa.");
   }
 
-  if (match(t, ["enojado", "molesto"])) {
-    return respuesta("Te escucho Gustavo… dime qué pasó y vemos cómo lo resolvemos.");
-  }
-
-  if (match(t, ["feliz", "contento"])) {
-    return respuesta("Qué bueno escuchar eso 😊 ¿Seguimos avanzando?");
+  if (intenta(t, ["limpiar", "resetear"])) {
+    return accion("limpiar", "Limpiando datos y estado.");
   }
 
   // =======================================================
-  // 5) SI NO ENTIENDE → va al backend
+  // 5) RECONOCIMIENTO EMOCIONAL
+  // =======================================================
+
+  if (intenta(t, ["estresado", "cansado", "agotado"])) {
+    return respuesta("Entiendo, Gustavo… respira. Estoy aquí para ayudarte.");
+  }
+
+  if (intenta(t, ["triste", "apenado"])) {
+    return respuesta("Lamento que te sientas así… ¿qué pasó?");
+  }
+
+  if (intenta(t, ["feliz", "contento"])) {
+    return respuesta("¡Qué buena noticia Gustavo! Sigamos avanzando.");
+  }
+
+  // =======================================================
+  // 6) SI NO SE DETECTA NADA → BACKEND IA
   // =======================================================
 
   return { tipo: "backend", textoOriginal: texto };
 }
 
-/* =======================================================
-   UTILIDADES
-======================================================= */
+/* ======================================================= */
+// UTILIDADES PROFESIONALES
+/* ======================================================= */
 
-function match(texto, palabras) {
-  return palabras.some((p) => texto.includes(p));
+function intenta(texto, patrones) {
+  return patrones.some((p) => texto.includes(p));
+}
+
+function normalizar(t) {
+  return t
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }
 
 function modulo(nombre, frase) {
@@ -144,6 +175,6 @@ function accion(nombre, frase) {
   return { tipo: "accion", accion: nombre, frase };
 }
 
-function respuesta(text) {
-  return { tipo: "respuesta", texto: text };
+function respuesta(texto) {
+  return { tipo: "respuesta", texto };
 }
