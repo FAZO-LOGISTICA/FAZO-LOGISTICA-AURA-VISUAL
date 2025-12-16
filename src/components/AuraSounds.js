@@ -1,15 +1,15 @@
 // ======================================================================
-//   AURASounds.js — HOLOSONIC ENGINE v2025 (VERSIÓN COMPLETA)
+//   AURASounds.js — HOLOSONIC ENGINE v2025 (VERSIÓN DEFINITIVA)
 //   FAZO LOGÍSTICA — Gustavo Oliva
-//   Sonidos hiperrealistas sin archivos (WebAudio API)
-//   Jarvis / Stark FX | Hologram Engine | Intelligent Audio
+//   Motor de sonido holográfico sin archivos externos (WebAudio API)
+//   Jarvis / Stark / AURA Neural FX
 // ======================================================================
 
 let audioCtx = null;
 let talkNode = null;
 
 // =======================================================
-//  CREA / RETORNA EL AUDIO CONTEXT
+//  CREA O RETORNA EL AUDIO CONTEXT
 // =======================================================
 const getCtx = () => {
   if (typeof window === "undefined") return null;
@@ -23,7 +23,7 @@ const getCtx = () => {
 };
 
 // =======================================================
-//  GENERADOR DE TONOS
+//  TONO BÁSICO
 // =======================================================
 const tone = ({
   freq = 440,
@@ -37,7 +37,6 @@ const tone = ({
   if (!ctx) return;
 
   const now = ctx.currentTime;
-
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
 
@@ -56,7 +55,7 @@ const tone = ({
 };
 
 // =======================================================
-//  SWEEP / BARRIDO JARVIS-STYLE
+//  BARRIDO / SWEEP
 // =======================================================
 const sweep = ({
   startFreq = 300,
@@ -69,7 +68,6 @@ const sweep = ({
   if (!ctx) return;
 
   const now = ctx.currentTime;
-
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
 
@@ -89,10 +87,10 @@ const sweep = ({
 };
 
 // ======================================================================
-//      EFECTOS DE INTERFAZ AURA
+//      EFECTOS AURA PRINCIPALES
 // ======================================================================
 
-// BOOT AURA
+// BOOT DEL SISTEMA
 export const playActivate = () => {
   try {
     tone({ freq: 250, duration: 0.25, volume: 0.35 });
@@ -105,7 +103,7 @@ export const playActivate = () => {
   } catch {}
 };
 
-// COMANDO EJECUTADO
+// COMANDO ACEPTADO
 export const playCommand = () => {
   try {
     sweep({
@@ -118,21 +116,21 @@ export const playCommand = () => {
   } catch {}
 };
 
-// MIC ON
+// MIC ON — escuchando
 export const playListen = () => {
   try {
     tone({ freq: 1500, duration: 0.14, type: "sine", volume: 0.26 });
   } catch {}
 };
 
-// MIC OFF
+// MIC OFF — corte
 export const playMicOff = () => {
   try {
     tone({ freq: 420, duration: 0.15, type: "sine", volume: 0.22 });
   } catch {}
 };
 
-// NOTIFICACIÓN
+// NOTIFICACIÓN AURA
 export const playNotify = () => {
   try {
     tone({ freq: 1800, duration: 0.08, volume: 0.25 });
@@ -143,7 +141,7 @@ export const playNotify = () => {
 };
 
 // ======================================================================
-//   HUM HOLOGRÁFICO CUANDO AURA HABLA
+//      HUM HOLOGRÁFICO CUANDO AURA HABLA
 // ======================================================================
 export const startTalk = () => {
   try {
@@ -162,6 +160,7 @@ export const startTalk = () => {
 
     osc.connect(gain);
     gain.connect(ctx.destination);
+
     osc.start();
 
     talkNode = { osc, gain, ctx };
@@ -185,21 +184,20 @@ export const stopTalk = () => {
 };
 
 // ======================================================================
-//   **NUEVOS: ÉXITO / ERROR / ALERTA / ESCANEO** 
-//   (lo que faltaba para que Netlify compile)
+//      SONIDOS ADICIONALES (ÉXITO, ERROR, ALERTA, ESCANEO)
 // ======================================================================
 
-// ✔ Operación exitosa (estilo holograma suave)
+// ÉXITO
 export const playSuccess = () => {
   try {
     tone({ freq: 900, duration: 0.12, volume: 0.25 });
     setTimeout(() => {
       tone({ freq: 1400, duration: 0.12, volume: 0.22 });
-    }, 80);
+    }, 90);
   } catch {}
 };
 
-// ✔ Error (grave + glitch)
+// ERROR
 export const playError = () => {
   try {
     tone({ freq: 220, duration: 0.25, volume: 0.3 });
@@ -211,11 +209,11 @@ export const playError = () => {
         volume: 0.28,
         type: "square",
       });
-    }, 100);
+    }, 120);
   } catch {}
 };
 
-// ✔ Alerta importante (notificación roja)
+// ALERTA
 export const playAlert = () => {
   try {
     tone({ freq: 1600, duration: 0.1, volume: 0.35 });
@@ -225,7 +223,7 @@ export const playAlert = () => {
   } catch {}
 };
 
-// ✔ Efecto de escaneo holográfico
+// ESCANEO AURA
 export const playScan = () => {
   try {
     sweep({
@@ -233,8 +231,27 @@ export const playScan = () => {
       endFreq: 2000,
       duration: 0.45,
       volume: 0.2,
-      type: "sine",
     });
   } catch {}
 };
 
+// ======================================================================
+//      🔥 SONIDOS DE INTERFAZ — CLICK & HOVER (lo que FALTABA)
+// ======================================================================
+
+// CLICK — requerido por tu UI
+export const playClick = () => {
+  try {
+    tone({ freq: 1100, duration: 0.07, type: "triangle", volume: 0.22 });
+    setTimeout(() => {
+      tone({ freq: 1600, duration: 0.05, volume: 0.20 });
+    }, 40);
+  } catch {}
+};
+
+// HOVER — opcional, suave
+export const playHover = () => {
+  try {
+    tone({ freq: 900, duration: 0.08, volume: 0.15 });
+  } catch {}
+};
