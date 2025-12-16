@@ -1,137 +1,110 @@
-// ========================================================================
-//   AURA_Agent.js — Motor Autónomo FAZO OS v1.0
-//   Razonamiento • Análisis de rutas • Decisiones automáticas
-//   Autor: Mateo IA — Para Gustavo Oliva (FAZO LOGÍSTICA)
-// ========================================================================
+// ======================================================================
+//  AURA_Agent.js — FAZO OS Autonomous Agent v2025
+//  Gustavo Oliva — FAZO LOGÍSTICA
+//  Motor oficial de autonomía de AURA
+//  Ejecuta intenciones → crea planes → llama acciones reales
+// ======================================================================
 
-import interpretar from "./AURA_NaturalLanguage";
+import { AURA_Intelligence } from "../intelligence/AURA_Intelligence";
+import { AURA_Actions } from "../actions/AURA_Actions";
 
-/*
-ESTRUCTURA DEL AGENTE
----------------------
-1) Interpreta el texto natural (modismos, frases ambiguas)
-2) Deduce la INTENCIÓN REAL del usuario
-3) Aplica reglas inteligentes
-4) Devuelve una acción clara para el sistema:
+// ======================================================================
+//  DEFICIÓN DEL AGENTE
+// ======================================================================
+export const AURA_Agent = {
+  
+  async procesarMensaje(texto) {
+    try {
+      if (!texto || typeof texto !== "string") return null;
 
-{
-  tipo: "accion",
-  accion: "analizar-rutas",
-  objetivo: "A1",
-  frase: "Analizando rutas del camión A1…"
-}
-*/
+      // 1) Pedimos a la IA que analice intención + plan
+      const ai = await AURA_Intelligence.analizar(texto);
 
-export function AURA_Agent(texto) {
-  if (!texto) return null;
+      if (!ai) {
+        return {
+          respuesta: "No pude procesar esa instrucción todavía, Gustavo.",
+          accionEjecutada: false,
+        };
+      }
 
-  const base = interpretar(texto);
-  const t = texto.toLowerCase();
+      const { intencion, modulo, accion, datos, plan, respuesta } = ai;
 
-  // ============================================================
-  //   1) REGLAS DE DIAGNÓSTICO INTELIGENTE
-  // ============================================================
-  if (
-    t.includes("raro") ||
-    t.includes("mal") ||
-    t.includes("desbalanceado") ||
-    t.includes("mucho") ||
-    t.includes("poco")
-  ) {
+      // 2) Si el usuario solo está conversando → no ejecutar nada
+      if (intencion === "conversacion") {
+        return {
+          respuesta: respuesta || "Entendido.",
+          accionEjecutada: false,
+        };
+      }
+
+      // 3) Si existe una acción reconocida en AURA_Actions
+      if (accion && AURA_Actions[accion]) {
+        const resultado = await AURA_Actions[accion]({
+          modulo,
+          datos,
+          plan,
+          textoOriginal: texto,
+        });
+
+        return {
+          respuesta: resultado?.mensaje || respuesta || "Listo Gustavo.",
+          accionEjecutada: true,
+          detalle: resultado,
+        };
+      }
+
+      // 4) SI NO SE RECONOCE LA ACCIÓN, PERO HAY MÓDULO → abrir módulo
+      if (modulo && accion === "abrir-modulo") {
+        return {
+          respuesta: respuesta || `Abriendo ${modulo} Gustavo.`,
+          accionEjecutada: true,
+          accionFAZO: { tipo: "modulo", modulo },
+        };
+      }
+
+      // 5) SI NO SE RECONOCE LA ACCIÓN → responder normal
+      return {
+        respuesta: respuesta || "Entendido Gustavo.",
+        accionEjecutada: false,
+      };
+
+    } catch (err) {
+      console.error("❌ Error en AURA_Agent:", err);
+      return {
+        respuesta: "Tuve un problema procesando la instrucción Gustavo.",
+        accionEjecutada: false,
+      };
+    }
+  },
+
+  // ======================================================================
+  //   FUNCIONES ESPECIALES DEL AGENTE
+  // ======================================================================
+
+  async ejecutarModulo(modulo) {
     return {
-      tipo: "analisis",
-      accion: "diagnostico-operacional",
-      frase: "Ejecutando diagnóstico inteligente de la operación.",
+      respuesta: `Abriendo módulo ${modulo} ahora.`,
+      accionFAZO: { tipo: "modulo", modulo },
     };
-  }
+  },
 
-  // diagnosticar camión específico
-  const camiones = ["a1", "a2", "a3", "a4", "a5", "m1", "m2", "m3"];
-  const camionDetectado = camiones.find((c) => t.includes(c));
-
-  if (camionDetectado) {
+  async ejecutarSubruta(modulo, ruta) {
     return {
-      tipo: "analisis",
-      accion: "analizar-camion",
-      objetivo: camionDetectado.toUpperCase(),
-      frase: `Revisando comportamiento del camión ${camionDetectado.toUpperCase()}.`,
+      respuesta: `Entrando en ${ruta} dentro de ${modulo}.`,
+      accionFAZO: { tipo: "subruta", modulo, ruta },
     };
-  }
+  },
 
-  // ============================================================
-  //   2) REGLAS DE REDISTRIBUCIÓN
-  // ============================================================
-  if (t.includes("redistribuye") || t.includes("rebalancea") || t.includes("mueve rutas")) {
-    return {
-      tipo: "accion",
-      accion: "redistribuir",
-      modo: "total",
-      frase: "Iniciando redistribución completa de rutas.",
-    };
-  }
+  async ejecutarPlan(plan) {
+    if (!Array.isArray(plan)) return null;
 
-  if (t.includes("equilibra") || t.includes("balancea")) {
-    return {
-      tipo: "accion",
-      accion: "redistribuir",
-      modo: "parcial",
-      frase: "Realizando un balance de carga parcial.",
-    };
-  }
+    const logs = [];
 
-  // ============================================================
-  //   3) ANÁLISIS DE DÍAS
-  // ============================================================
-  if (t.includes("viernes")) {
-    return {
-      tipo: "analisis",
-      accion: "analizar-viernes",
-      frase: "Analizando la carga del día viernes.",
-    };
-  }
+    for (const paso of plan) {
+      logs.push(`→ ${paso}`);
+      await new Promise((r) => setTimeout(r, 80));
+    }
 
-  if (t.includes("lunes")) {
-    return {
-      tipo: "analisis",
-      accion: "analizar-dia",
-      objetivo: "lunes",
-      frase: "Revisando operación del lunes.",
-    };
-  }
-
-  // ============================================================
-  //   4) PROBLEMAS POTENCIALES
-  // ============================================================
-  if (t.includes("duplicado") || t.includes("dos veces")) {
-    return {
-      tipo: "analisis",
-      accion: "buscar-duplicados",
-      frase: "Buscando registros duplicados.",
-    };
-  }
-
-  if (t.includes("muchos litros") || t.includes("pocos litros")) {
-    return {
-      tipo: "analisis",
-      accion: "analizar-litros",
-      frase: "Verificando distribución de litros.",
-    };
-  }
-
-  // ============================================================
-  //   5) FALLBACK INTELIGENTE
-  // ============================================================
-  if (base?.tipo === "general") {
-    return {
-      tipo: "general",
-      frase: "¿Quieres revisar rutas, litros, camiones o redistribución?",
-    };
-  }
-
-  // ============================================================
-  //   6) SI EL MÓDULO BASE YA DIO UNA RESPUESTA → USARLA
-  // ============================================================
-  return base;
-}
-
-export default AURA_Agent;
+    return logs.join("\n");
+  },
+};
