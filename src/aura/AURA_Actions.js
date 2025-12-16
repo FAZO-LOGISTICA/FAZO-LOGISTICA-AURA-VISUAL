@@ -1,123 +1,187 @@
-// ===========================================================
-//   AURA_Actions.js — FAZO OS (Autonomía Moderada)
-//   Motor de acciones reales: módulos, subrutas y backend
-// ===========================================================
+// ========================================================================
+//   AURA_Actions.js — Ejecutor Inteligente FAZO OS v1.0
+//   Aquí AURA hace acciones reales en AguaRuta y FAZO OS
+//   Autor: Mateo IA — Para Gustavo Oliva (FAZO LOGÍSTICA)
+// ========================================================================
 
-export const AURA_Actions = {
-  
-  // -------------------------------------------------------
-  // 1) ABRIR MÓDULOS PRINCIPALES FAZO OS
-  // -------------------------------------------------------
-  abrirModulo(modulo, onComando) {
-    const rutas = {
-      aguaruta: "/aguaruta",
-      traslado: "/traslado",
-      flota: "/flota",
-      reportes: "/reportes",
-      ajustes: "/ajustes",
-      aura: "/",
-    };
+import config from "../config";
 
-    onComando?.({
-      tipo: "modulo",
-      modulo,
-      ruta: rutas[modulo] || "/",
-    });
+/*
+RECIBE:
+{
+  tipo: "accion" | "analisis" | "general",
+  accion: "redistribuir" | "analizar-camion" | "analizar-viernes" | ...
+  objetivo: "A1" | "lunes" | null
+  modo: "total" | "parcial"
+  frase: "texto que AURA va a hablar"
+}
 
-    return `Abriendo módulo ${modulo}…`;
-  },
+DEVUELVE:
+{
+  ok: true | false,
+  mensaje: "frase para AURA",
+  data: (resultado real),
+  sendToIframe: { ... }   // si debemos disparar algo en AguaRuta
+}
+*/
 
-  // -------------------------------------------------------
-  // 2) ABRIR SUBRUTAS INTERNAS DE AGUARUTA
-  // -------------------------------------------------------
-  abrirSubruta(ruta, frase, onComando, onSendToIframe) {
-    onComando?.({ tipo: "subruta", ruta, frase });
+export async function ejecutarAccion(agent, onSendToIframe) {
+  if (!agent) {
+    return { ok: false, mensaje: "No entendí la instrucción." };
+  }
 
-    onSendToIframe?.("aguaruta", {
-      type: "FAZO_CMD",
-      command: "open-tab",
-      tab: ruta.replace("/", ""),
-    });
+  const { tipo, accion, objetivo, modo } = agent;
 
-    return frase;
-  },
+  // ===========================================================
+  //   1) DIAGNÓSTICO DE CAMIÓN
+  // ===========================================================
+  if (accion === "analizar-camion") {
+    const camion = objetivo;
 
-  // -------------------------------------------------------
-  // 3) ACCIONES DIRECTAS (logout, abrir mapa, etc.)
-  // -------------------------------------------------------
-  ejecutarAccion(accion, onComando) {
-    onComando?.({ tipo: "accion", accion });
-
-    const frases = {
-      "abrir-rutas": "Abriendo rutas activas…",
-      "abrir-mapa": "Mostrando mapa…",
-      "abrir-traslado": "Cargando Traslado Municipal…",
-      logout: "Cerrando sesión…",
-    };
-
-    return frases[accion] || "Ejecutando acción…";
-  },
-
-  // -------------------------------------------------------
-  // 4) ACCIONES REALISTAS CON BACKEND (AURA PRO)
-  // -------------------------------------------------------
-  async llamarBackend(url, payload = {}) {
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`${config.AGUARUTA_API}/diagnostico/${camion}`);
+      const data = await res.json();
+
+      return {
+        ok: true,
+        mensaje: `Análisis del camión ${camion}: ${data.resumen}`,
+        data,
+      };
+    } catch (err) {
+      return { ok: false, mensaje: "No pude analizar ese camión ahora." };
+    }
+  }
+
+  // ===========================================================
+  //   2) DIAGNÓSTICO GENERAL
+  // ===========================================================
+  if (accion === "diagnostico-operacional") {
+    try {
+      const res = await fetch(`${config.AGUARUTA_API}/diagnostico-general`);
+      const data = await res.json();
+
+      return {
+        ok: true,
+        mensaje: "Análisis general completado.",
+        data,
+      };
+    } catch {
+      return { ok: false, mensaje: "No pude realizar el diagnóstico general." };
+    }
+  }
+
+  // ===========================================================
+  //   3) REDISTRIBUCIÓN COMPLETA
+  // ===========================================================
+  if (accion === "redistribuir" && modo === "total") {
+    try {
+      const res = await fetch(`${config.AGUARUTA_API}/redistribuir`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      onSendToIframe?.("aguaruta", {
+        type: "FAZO_CMD",
+        command: "update-redistribucion",
+        payload: data,
       });
 
-      if (!res.ok) return null;
-      return await res.json();
-
-    } catch (err) {
-      return null;
-    }
-  },
-
-  // -------------------------------------------------------
-  // 5) EJEMPLOS DE AUTONOMÍA MODERADA
-  // -------------------------------------------------------
-  async sugerenciaRedistribucion(datosActuales) {
-    // Aquí AURA revisa si hay camiones sobrecargados
-    const problemas = [];
-    const sugerencias = [];
-
-    datosActuales.forEach((camion) => {
-      if (camion.litros > 45000) {
-        problemas.push(`El camión ${camion.id} está sobre los 45.000 litros.`);
-        sugerencias.push(`Mover 3–5 puntos desde ${camion.id} hacia A5 o M2.`);
-      }
-
-      if (camion.entregas < 5) {
-        problemas.push(`El camión ${camion.id} tiene muy pocas entregas.`);
-        sugerencias.push(`Revisar su ruta del día viernes.`);
-      }
-    });
-
-    return { problemas, sugerencias };
-  },
-
-  async validarViernesLiviano(datosSemana) {
-    let viernesTotal = datosSemana
-      .filter((d) => d.dia === "viernes")
-      .reduce((acc, cur) => acc + cur.litros, 0);
-
-    if (viernesTotal > 320000) {
       return {
-        alerta: true,
-        mensaje:
-          "El viernes está muy cargado. Recomiendo mover 10.000–15.000 L al jueves.",
+        ok: true,
+        mensaje: "Redistribución completa ejecutada con éxito.",
+        data,
+      };
+    } catch {
+      return { ok: false, mensaje: "Redistribución falló." };
+    }
+  }
+
+  // ===========================================================
+  //   4) REDISTRIBUCIÓN PARCIAL
+  // ===========================================================
+  if (accion === "redistribuir" && modo === "parcial") {
+    try {
+      const res = await fetch(`${config.AGUARUTA_API}/redistribuir-parcial`, {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      return {
+        ok: true,
+        mensaje: "Balance parcial realizado.",
+        data,
+      };
+    } catch {
+      return { ok: false, mensaje: "No pude realizar el rebalanceo parcial." };
+    }
+  }
+
+  // ===========================================================
+  //   5) ANÁLISIS DE DÍA (viernes, lunes, etc.)
+  // ===========================================================
+  if (accion === "analizar-viernes" || accion === "analizar-dia") {
+    const dia = objetivo || "viernes";
+
+    try {
+      const res = await fetch(`${config.AGUARUTA_API}/analisis-dia/${dia}`);
+      const data = await res.json();
+
+      return {
+        ok: true,
+        mensaje: `Carga del día ${dia}: ${data.detalle}`,
+        data,
+      };
+    } catch {
+      return { ok: false, mensaje: `No pude analizar el día ${dia}.` };
+    }
+  }
+
+  // ===========================================================
+  //   6) BUSCAR DUPLICADOS
+  // ===========================================================
+  if (accion === "buscar-duplicados") {
+    try {
+      const res = await fetch(`${config.AGUARUTA_API}/duplicados`);
+      const data = await res.json();
+
+      return {
+        ok: true,
+        mensaje: `Encontré ${data.total} registros duplicados.`,
+        data,
+      };
+    } catch {
+      return {
+        ok: false,
+        mensaje: "No pude buscar duplicados ahora.",
       };
     }
+  }
 
-    return {
-      alerta: false,
-      mensaje: "Viernes dentro del rango aceptable.",
-    };
-  },
-};
+  // ===========================================================
+  //   7) CONTROL DE LITROS
+  // ===========================================================
+  if (accion === "analizar-litros") {
+    try {
+      const res = await fetch(`${config.AGUARUTA_API}/analizar-litros`);
+      const data = await res.json();
 
-export default AURA_Actions;
+      return {
+        ok: true,
+        mensaje: "Revisé los litros: " + data.resumen,
+        data,
+      };
+    } catch {
+      return { ok: false, mensaje: "No pude analizar los litros." };
+    }
+  }
+
+  // ===========================================================
+  //   8) FALLBACK
+  // ===========================================================
+  return {
+    ok: false,
+    mensaje: "Tengo intención detectada, pero aún no tengo acción vinculada.",
+  };
+}
+
+export default ejecutarAccion;
