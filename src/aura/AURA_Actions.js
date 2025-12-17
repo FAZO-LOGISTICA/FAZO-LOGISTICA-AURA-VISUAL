@@ -1,187 +1,208 @@
-// ========================================================================
-//   AURA_Actions.js — Ejecutor Inteligente FAZO OS v1.0
-//   Aquí AURA hace acciones reales en AguaRuta y FAZO OS
-//   Autor: Mateo IA — Para Gustavo Oliva (FAZO LOGÍSTICA)
-// ========================================================================
+// =======================================================
+//  AURA_Actions.js — MOTOR DE ACCIONES REALES 2025
+//  FAZO LOGÍSTICA — Gustavo Oliva
+//  Mateo IA — Ejecutor universal FAZO OS
+// =======================================================
+//
+//  Este archivo define TODO lo que AURA puede hacer:
+//  → Abrir módulos
+//  → Abrir pestañas internas (AguaRuta, Traslado…)
+//  → Ejecutar funciones reales
+//  → Integrarse a cualquier nuevo módulo FAZO
+//
+//  El AURA_Agent analiza el mensaje
+//  El AURA_Actions ejecuta
+//
+// =======================================================
 
-import config from "../config";
+console.log("AURA_Actions cargado correctamente ✔");
 
-/*
-RECIBE:
-{
-  tipo: "accion" | "analisis" | "general",
-  accion: "redistribuir" | "analizar-camion" | "analizar-viernes" | ...
-  objetivo: "A1" | "lunes" | null
-  modo: "total" | "parcial"
-  frase: "texto que AURA va a hablar"
+
+// =======================================================
+// 🔥 1) ABRIR MÓDULOS PRINCIPALES FAZO OS
+// =======================================================
+
+export function ejecutarModulo(tipo, callback) {
+  switch (tipo) {
+    case "aguaruta":
+      callback({ type: "OPEN_MODULE", module: "aguaruta" });
+      return "Abriendo AguaRuta.";
+
+    case "traslado":
+      callback({ type: "OPEN_MODULE", module: "traslado" });
+      return "Cargando módulo Traslado Municipal.";
+
+    case "flota":
+      callback({ type: "OPEN_MODULE", module: "flota" });
+      return "Mostrando Flota Municipal.";
+
+    case "reportes":
+      callback({ type: "OPEN_MODULE", module: "reportes" });
+      return "Generando módulo de reportes.";
+
+    case "ajustes":
+      callback({ type: "OPEN_MODULE", module: "ajustes" });
+      return "Abriendo ajustes del sistema.";
+
+    case "aura":
+      callback({ type: "OPEN_MODULE", module: "inicio" });
+      return "Volviendo al panel principal.";
+
+    default:
+      return "No reconozco ese módulo aún, Gustavo.";
+  }
 }
 
-DEVUELVE:
-{
-  ok: true | false,
-  mensaje: "frase para AURA",
-  data: (resultado real),
-  sendToIframe: { ... }   // si debemos disparar algo en AguaRuta
-}
-*/
 
-export async function ejecutarAccion(agent, onSendToIframe) {
-  if (!agent) {
-    return { ok: false, mensaje: "No entendí la instrucción." };
-  }
 
-  const { tipo, accion, objetivo, modo } = agent;
+// =======================================================
+// 🔥 2) SUBRUTAS INTERNAS (AguaRuta, Traslado…)
+// =======================================================
 
-  // ===========================================================
-  //   1) DIAGNÓSTICO DE CAMIÓN
-  // ===========================================================
-  if (accion === "analizar-camion") {
-    const camion = objetivo;
+export function ejecutarSubruta(ruta, callback) {
+  callback({
+    type: "OPEN_SUBTAB",
+    tab: ruta,
+  });
 
-    try {
-      const res = await fetch(`${config.AGUARUTA_API}/diagnostico/${camion}`);
-      const data = await res.json();
-
-      return {
-        ok: true,
-        mensaje: `Análisis del camión ${camion}: ${data.resumen}`,
-        data,
-      };
-    } catch (err) {
-      return { ok: false, mensaje: "No pude analizar ese camión ahora." };
-    }
-  }
-
-  // ===========================================================
-  //   2) DIAGNÓSTICO GENERAL
-  // ===========================================================
-  if (accion === "diagnostico-operacional") {
-    try {
-      const res = await fetch(`${config.AGUARUTA_API}/diagnostico-general`);
-      const data = await res.json();
-
-      return {
-        ok: true,
-        mensaje: "Análisis general completado.",
-        data,
-      };
-    } catch {
-      return { ok: false, mensaje: "No pude realizar el diagnóstico general." };
-    }
-  }
-
-  // ===========================================================
-  //   3) REDISTRIBUCIÓN COMPLETA
-  // ===========================================================
-  if (accion === "redistribuir" && modo === "total") {
-    try {
-      const res = await fetch(`${config.AGUARUTA_API}/redistribuir`, {
-        method: "POST",
-      });
-      const data = await res.json();
-
-      onSendToIframe?.("aguaruta", {
-        type: "FAZO_CMD",
-        command: "update-redistribucion",
-        payload: data,
-      });
-
-      return {
-        ok: true,
-        mensaje: "Redistribución completa ejecutada con éxito.",
-        data,
-      };
-    } catch {
-      return { ok: false, mensaje: "Redistribución falló." };
-    }
-  }
-
-  // ===========================================================
-  //   4) REDISTRIBUCIÓN PARCIAL
-  // ===========================================================
-  if (accion === "redistribuir" && modo === "parcial") {
-    try {
-      const res = await fetch(`${config.AGUARUTA_API}/redistribuir-parcial`, {
-        method: "POST",
-      });
-      const data = await res.json();
-
-      return {
-        ok: true,
-        mensaje: "Balance parcial realizado.",
-        data,
-      };
-    } catch {
-      return { ok: false, mensaje: "No pude realizar el rebalanceo parcial." };
-    }
-  }
-
-  // ===========================================================
-  //   5) ANÁLISIS DE DÍA (viernes, lunes, etc.)
-  // ===========================================================
-  if (accion === "analizar-viernes" || accion === "analizar-dia") {
-    const dia = objetivo || "viernes";
-
-    try {
-      const res = await fetch(`${config.AGUARUTA_API}/analisis-dia/${dia}`);
-      const data = await res.json();
-
-      return {
-        ok: true,
-        mensaje: `Carga del día ${dia}: ${data.detalle}`,
-        data,
-      };
-    } catch {
-      return { ok: false, mensaje: `No pude analizar el día ${dia}.` };
-    }
-  }
-
-  // ===========================================================
-  //   6) BUSCAR DUPLICADOS
-  // ===========================================================
-  if (accion === "buscar-duplicados") {
-    try {
-      const res = await fetch(`${config.AGUARUTA_API}/duplicados`);
-      const data = await res.json();
-
-      return {
-        ok: true,
-        mensaje: `Encontré ${data.total} registros duplicados.`,
-        data,
-      };
-    } catch {
-      return {
-        ok: false,
-        mensaje: "No pude buscar duplicados ahora.",
-      };
-    }
-  }
-
-  // ===========================================================
-  //   7) CONTROL DE LITROS
-  // ===========================================================
-  if (accion === "analizar-litros") {
-    try {
-      const res = await fetch(`${config.AGUARUTA_API}/analizar-litros`);
-      const data = await res.json();
-
-      return {
-        ok: true,
-        mensaje: "Revisé los litros: " + data.resumen,
-        data,
-      };
-    } catch {
-      return { ok: false, mensaje: "No pude analizar los litros." };
-    }
-  }
-
-  // ===========================================================
-  //   8) FALLBACK
-  // ===========================================================
-  return {
-    ok: false,
-    mensaje: "Tengo intención detectada, pero aún no tengo acción vinculada.",
+  // AURA ANNOUNCE
+  const frases = {
+    "rutas-activas": "Abriendo Rutas Activas.",
+    "no-entregadas": "Mostrando No Entregadas.",
+    "comparacion-semanal": "Cargando Comparación Semanal.",
+    "camion-estadisticas": "Mostrando Estadísticas por Camión.",
+    "registrar-entrega": "Abriendo formulario de entrega.",
+    "nueva-distribucion": "Iniciando herramienta de nueva redistribución.",
+    "editar-redistribucion": "Abriendo editor de redistribución.",
   };
+
+  return frases[ruta] || "Abriendo sección interna.";
 }
 
-export default ejecutarAccion;
+
+
+// =======================================================
+// 🔥 3) ACCIONES DIRECTAS DEL SISTEMA
+//    (Cerrar sesión, abrir mapa, abrir rutas, etc.)
+// =======================================================
+
+export function ejecutarAccion(accion, callback) {
+  switch (accion) {
+    case "logout":
+      callback({ type: "LOGOUT" });
+      return "Cerrando sesión…";
+
+    case "abrir-mapa":
+      callback({ type: "OPEN_MAP" });
+      return "Abriendo mapa.";
+
+    case "abrir-rutas":
+      callback({ type: "OPEN_ROUTES" });
+      return "Abriendo rutas del sistema.";
+
+    default:
+      return "Acción no implementada todavía.";
+  }
+}
+
+
+
+// =======================================================
+// 🔥 4) ACCIONES AVANZADAS (FAZO FUTURE ENGINE)
+//    — Aquí se conectan funciones inteligentes reales
+// =======================================================
+
+// ⚙ Ejecutar Redistribución Automática
+export function ejecutarRedistribucion(payload, callback) {
+  callback({
+    type: "EXEC_REDISPATCH",
+    data: payload,
+  });
+
+  return "Ejecutando redistribución automática de rutas.";
+}
+
+
+// ⚙ Crear reporte PDF
+export function generarReporte(tipo, callback) {
+  callback({
+    type: "GENERATE_REPORT",
+    format: tipo || "pdf",
+  });
+
+  return "Generando informe profesional.";
+}
+
+
+// ⚙ Enviar correo automático
+export function enviarCorreo(datos, callback) {
+  callback({
+    type: "SEND_EMAIL",
+    email: datos,
+  });
+
+  return "Enviando correo electrónico.";
+}
+
+
+// ⚙ Registrar un nuevo punto en AguaRuta u otros módulos
+export function registrarNuevoPunto(datos, callback) {
+  callback({
+    type: "REGISTER_POINT",
+    payload: datos,
+  });
+
+  return "Registrando nuevo punto en la base de datos.";
+}
+
+
+
+// =======================================================
+// 🔥 5) ACCIONES ESPECIALIZADAS PARA FUTUROS PROYECTOS
+//    — FAZO ES EXPANDIBLE: e-commerce, flota, educación,
+//      migrantes, Municipalidad, external clients.
+// =======================================================
+
+// Ejemplo: Reservar vehículo de Traslado Municipal
+export function reservarVehiculo(info, callback) {
+  callback({
+    type: "BOOK_VEHICLE",
+    payload: info,
+  });
+
+  return "Reservando vehículo municipal.";
+}
+
+
+// Ejemplo: Registrar mantención de flota
+export function registrarMantencion(info, callback) {
+  callback({
+    type: "REGISTER_MAINTENANCE",
+    payload: info,
+  });
+
+  return "Registrando mantención de vehículo.";
+}
+
+
+
+// =======================================================
+// 🔥 6) FUNCIÓN UNIVERSAL — PUENTE
+//    AURA_Agent usa esta para cualquier acción general
+// =======================================================
+
+export function ejecutarAccionGeneral(data, callback) {
+  callback({
+    type: "GENERAL_ACTION",
+    payload: data,
+  });
+
+  return "Ejecutando instrucción general.";
+}
+
+
+
+// =======================================================
+//  FIN DEL ARCHIVO
+// =======================================================
+
