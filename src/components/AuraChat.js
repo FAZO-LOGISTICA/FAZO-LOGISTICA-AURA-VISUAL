@@ -3,8 +3,8 @@
 /* =======================================================
    AURAChat.js — GOD MODE ULTRA PRO 2025
    FAZO LOGÍSTICA — Gustavo Oliva
-   Mateo IA — Motor: Voz + IA + Emociones + Offline + HoloSphere
-   Compilado especialmente para Netlify (sin errores)
+   Mateo IA — Motor: Voz + IA + Emociones + Autonomía
+   Integrado con: AURA_Intelligence + Agent + Actions
 ======================================================= */
 
 import React, { useState, useEffect, useRef } from "react";
@@ -26,6 +26,22 @@ import {
 
 import config from "../config";
 
+// =======================================================
+// IMPORTAMOS EL CEREBRO
+// =======================================================
+import interpretarMensaje from "../aura/AURA_NaturalLanguage";
+import AURA_Agent from "../aura/AURA_Agent";
+
+// =======================================================
+// IMPORTAMOS LAS ACCIONES (FAZO OS)
+// =======================================================
+import {
+  ejecutarModulo,
+  ejecutarSubruta,
+  ejecutarAccion,
+  ejecutarAccionGeneral,
+} from "../aura/AURA_Actions";
+
 /* =======================================================
    UTIL — LIMPIEZA
 ======================================================= */
@@ -43,64 +59,6 @@ const limpiar = (t) =>
 ======================================================= */
 const AURA_API = config.AURA_BACKEND_URL;
 const MODEL = config.AURA_PRIMARY;
-
-/* =======================================================
-   SUBRUTAS AGUARUTA
-======================================================= */
-const SUBS = [
-  ["rutas activas", "rutas-activas", "Abriendo Rutas Activas."],
-  ["no entregadas", "no-entregadas", "Mostrando No Entregadas."],
-  ["comparacion semanal", "comparacion-semanal", "Cargando Comparación Semanal."],
-  ["estadisticas", "camion-estadisticas", "Mostrando Estadísticas por Camión."],
-  ["registrar entrega", "registrar-entrega", "Abriendo Registro de Entrega."],
-  ["nueva distribucion", "nueva-distribucion", "Entrando a Nueva Distribución."],
-  ["editar redistribucion", "editar-redistribucion", "Herramienta de Redistribución abierta."],
-];
-
-const detectarSubruta = (text) => {
-  const t = limpiar(text).toLowerCase();
-  for (let [k, ruta, frase] of SUBS) {
-    if (t.includes(k)) return { tipo: "subruta", ruta: "/" + ruta, frase };
-  }
-  return null;
-};
-
-/* =======================================================
-   MÓDULOS FAZO PRINCIPALES
-======================================================= */
-const detectarModulo = (text) => {
-  const t = text.toLowerCase();
-
-  if (t.includes("agua"))
-    return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo AguaRuta." };
-  if (t.includes("traslado"))
-    return { tipo: "modulo", modulo: "traslado", frase: "Cargando Traslado Municipal." };
-  if (t.includes("flota"))
-    return { tipo: "modulo", modulo: "flota", frase: "Mostrando Flota Municipal." };
-  if (t.includes("reporte"))
-    return { tipo: "modulo", modulo: "reportes", frase: "Generando Reportes." };
-  if (t.includes("ajuste"))
-    return { tipo: "modulo", modulo: "ajustes", frase: "Abriendo Ajustes." };
-  if (t.includes("inicio") || t.includes("aura"))
-    return { tipo: "modulo", modulo: "aura", frase: "Volviendo a inicio." };
-
-  return null;
-};
-
-/* =======================================================
-   ACCIONES DIRECTAS
-======================================================= */
-const detectarAccion = (text) => {
-  const t = text.toLowerCase();
-
-  if (t.includes("abrir rutas")) return { tipo: "accion", accion: "abrir-rutas" };
-  if (t.includes("abrir mapa")) return { tipo: "accion", accion: "abrir-mapa" };
-  if (t.includes("abrir traslado")) return { tipo: "accion", accion: "abrir-traslado" };
-  if (t.includes("logout") || t.includes("cerrar sesion"))
-    return { tipo: "accion", accion: "logout" };
-
-  return null;
-};
 
 /* =======================================================
    COMPONENTE PRINCIPAL
@@ -128,18 +86,18 @@ export default function AURAChat({ onComando, onSendToIframe }) {
 
   const recRef = useRef(null);
 
-/* =======================================================
-   BOOT INICIAL — PLAY ACTIVATE
-======================================================= */
+  /* =======================================================
+     BOOT — SONIDO DE INICIO
+  ======================================================== */
   useEffect(() => {
     try {
-      playActivate(); // SONIDO INICIAL HOLOGRÁFICO
+      playActivate();
     } catch {}
   }, []);
 
-/* =======================================================
-   DETECCIÓN ONLINE / OFFLINE
-======================================================= */
+  /* =======================================================
+     DETECCIÓN ONLINE / OFFLINE
+  ======================================================== */
   useEffect(() => {
     const on = () => {
       setOnline(true);
@@ -151,7 +109,7 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     const off = () => {
       setOnline(false);
       playAlert();
-      agregar("aura", "Sin internet… sigo operativa en modo local.");
+      agregar("aura", "Sin conexión… sigo operativa en modo local.");
       setEmotion("sad");
     };
 
@@ -163,9 +121,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     };
   }, []);
 
-/* =======================================================
-   MIC ANALYZER — ANIMACIÓN HOLÔNICA
-======================================================= */
+  /* =======================================================
+     MIC ANALYZER — animación holográfica
+  ======================================================== */
   useEffect(() => {
     let stream, audioCtx, analyser, dataArray;
 
@@ -198,18 +156,18 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     return () => stream?.getTracks().forEach((t) => t.stop());
   }, []);
 
-/* =======================================================
-   AGREGAR MENSAJE
-======================================================= */
+  /* =======================================================
+     AGREGAR MENSAJE
+  ======================================================== */
   const agregar = (from, text) =>
     setMessages((prev) => [
       ...prev,
       { id: Date.now() + Math.random(), from, text },
     ]);
 
-/* =======================================================
-   TTS — VOZ NATIVA
-======================================================= */
+  /* =======================================================
+     TTS — VOZ REAL
+  ======================================================== */
   const speak = (txt) => {
     if (!window.speechSynthesis) return;
 
@@ -237,9 +195,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     window.speechSynthesis.speak(u);
   };
 
-/* =======================================================
-   SPEECH RECOGNITION
-======================================================= */
+  /* =======================================================
+     SPEECH RECOGNITION
+  ======================================================== */
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
@@ -259,9 +217,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     recRef.current = rec;
   }, []);
 
-/* =======================================================
-   CARGA DE VOCES TTS
-======================================================= */
+  /* =======================================================
+     CARGA DE VOCES
+  ======================================================== */
   useEffect(() => {
     const load = () => {
       const v = window.speechSynthesis.getVoices();
@@ -280,9 +238,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     window.speechSynthesis.onvoiceschanged = load;
   }, []);
 
-/* =======================================================
-   CONSULTAR BACKEND (ONLINE)
-======================================================= */
+  /* =======================================================
+     CONSULTAR BACKEND
+  ======================================================== */
   const consultarBackend = async (hist) => {
     if (!online) return null;
     if (!AURA_API) return null;
@@ -301,7 +259,6 @@ export default function AURAChat({ onComando, onSendToIframe }) {
       });
 
       if (!res.ok) return null;
-
       const data = await res.json();
       return data.reply || null;
     } catch {
@@ -309,9 +266,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     }
   };
 
-/* =======================================================
-   FALLBACK OFFLINE
-======================================================= */
+  /* =======================================================
+     FALLBACK OFFLINE
+  ======================================================== */
   const fallback = (t) => {
     t = t.toLowerCase();
 
@@ -324,9 +281,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     return "Modo offline activo. Funciones limitadas, pero sigo operativa.";
   };
 
-/* =======================================================
-   ENVÍO PRINCIPAL
-======================================================= */
+  /* =======================================================
+     ENVÍO PRINCIPAL — AQUI SE USA EL AGENTE
+  ======================================================== */
   const sendMessage = async (txt) => {
     const cleaned = limpiar(txt || input);
     if (!cleaned) return;
@@ -337,48 +294,58 @@ export default function AURAChat({ onComando, onSendToIframe }) {
 
     setEmotion(detectarEmocion(cleaned));
 
-    // ACCIÓN DIRECTA
-    const acc = detectarAccion(cleaned);
-    if (acc) {
+    // ======================================================
+    // 1) Interpretar mensaje → INTELIGENCIA
+    // ======================================================
+    const analisis = interpretarMensaje(cleaned);
+
+    // ======================================================
+    // 2) AURA_Agent decide qué hacer
+    // ======================================================
+    const decision = AURA_Agent(analisis);
+
+    // ======================================================
+    // 3) Ejecutar acciones, módulos o subrutas
+    // ======================================================
+    if (decision.tipo === "modulo") {
       playCommand();
-      speak("Ejecutando instrucción.");
-      agregar("aura", "Ejecutando instrucción…");
-      onComando?.(acc);
+      const frase = ejecutarModulo(decision.modulo, onComando);
+      agregar("aura", frase);
+      speak(frase);
       setThinking(false);
       return;
     }
 
-    // SUBRUTA
-    const sub = detectarSubruta(cleaned);
-    if (sub) {
+    if (decision.tipo === "subruta") {
       playCommand();
-      speak(sub.frase);
-      agregar("aura", sub.frase);
-
-      onComando?.(sub);
-
-      onSendToIframe?.("aguaruta", {
-        type: "FAZO_CMD",
-        command: "open-tab",
-        tab: sub.ruta.replace("/", ""),
-      });
-
+      const frase = ejecutarSubruta(decision.ruta, onComando);
+      agregar("aura", frase);
+      speak(frase);
       setThinking(false);
       return;
     }
 
-    // MÓDULO
-    const mod = detectarModulo(cleaned);
-    if (mod) {
+    if (decision.tipo === "accion") {
       playCommand();
-      speak(mod.frase);
-      agregar("aura", mod.frase);
-      onComando?.(mod);
+      const frase = ejecutarAccion(decision.accion, onComando);
+      agregar("aura", frase);
+      speak(frase);
       setThinking(false);
       return;
     }
 
-    // BACKEND
+    if (decision.tipo === "accion-general") {
+      playCommand();
+      const frase = ejecutarAccionGeneral(decision.payload, onComando);
+      agregar("aura", frase);
+      speak(frase);
+      setThinking(false);
+      return;
+    }
+
+    // ======================================================
+    // 4) Si llega aquí → BACKEND (GPT)
+    // ======================================================
     const hist = [...messages, { from: "user", text: cleaned }];
     let reply = await consultarBackend(hist);
 
@@ -396,8 +363,8 @@ export default function AURAChat({ onComando, onSendToIframe }) {
   };
 
   /* =======================================================
-     RENDER UI
-  ======================================================= */
+     UI RENDER
+  ======================================================== */
 
   const cont =
     "bg-black/40 border border-cyan-500/40 rounded-2xl backdrop-blur-xl p-4 shadow-[0_0_25px_rgba(0,255,255,0.25)]";
