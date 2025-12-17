@@ -1,99 +1,177 @@
-// ========================================================================
-//   AURA_NaturalLanguage.js — Cerebro Lingüístico FAZO OS
-//   Comprensión natural | Modismos chilenos | IA simbólica intermedia
-//   Autor: Mateo IA — Para Gustavo Oliva (FAZO LOGÍSTICA)
-// ========================================================================
+// =======================================================
+//  AURA_NaturalLanguage.js — CEREBRO LINGÜÍSTICO 2025
+//  FAZO LOGÍSTICA — Gustavo Oliva
+//  Mateo IA — Motor semántico + detección de intenciones
+// =======================================================
 
 /*
-OBJETIVO:
---------
-Transformar lenguaje humano → comandos claros para AURA:
+   Este módulo interpreta lo que dice el usuario de forma
+   humana: detecta intención, sinónimos, contexto general,
+   comandos implícitos y solicitudes ambiguas.
 
-Ejemplos:
-- “Aura abre las weás de rutas poh” → { tipo: "subruta", ruta: "/rutas-activas" }
-- “Necesito ver lo del agua” → { tipo: "modulo", modulo: "aguaruta" }
-- “Ábreme lo de los viernes” → interpretar como: estadísticas
-- “Está raro el reparto” → activar módulo de análisis
+   AURA_Agent.js usa este resultado para decidir qué hacer.
 */
 
-export function interpretarLenguajeNatural(texto) {
-  if (!texto) return null;
+// =======================================================
+// UTILIDADES
+// =======================================================
 
-  const t = texto.toLowerCase().trim();
-
-  // =========================================================
-  // 1) MODISMOS CHILENOS / FRASES COTIDIANAS
-  // =========================================================
-  const slang = {
-    rutas: ["wea de rutas", "las rutas", "abre las rutas", "lo de las rutas"],
-    agua: ["lo del agua", "agua ruta", "las aguas", "las entregas"],
-    mapa: ["el mapa", "la cuestión del mapa", "abre mapa"],
-    traslado: ["traslado", "los traslados", "movilización"],
-    flota: ["flota", "los vehículos", "maestranza", "camiones"],
-    viernes: ["viernes", "día viernes", "las entregas del viernes"],
-    problemas: ["está raro", "algo anda mal", "la weá anda mal"],
-    revisar: ["revisa", "comprueba", "analiza", "verifica"],
-  };
-
-  // Helpers para detectar palabras sueltas o modismos
-  const contiene = (arr) => arr.some((p) => t.includes(p));
-
-  // =========================================================
-  // 2) DETECCIÓN DE MÓDULOS PRINCIPALES
-  // =========================================================
-  if (contiene(slang.agua))
-    return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo AguaRuta…" };
-
-  if (contiene(slang.traslado))
-    return { tipo: "modulo", modulo: "traslado", frase: "Cargando Traslado Municipal…" };
-
-  if (contiene(slang.flota))
-    return { tipo: "modulo", modulo: "flota", frase: "Mostrando Flota Municipal…" };
-
-  // =========================================================
-  // 3) SUBRUTAS DE AGUARUTA
-  // =========================================================
-  if (contiene(slang.rutas))
-    return { tipo: "subruta", ruta: "/rutas-activas", frase: "Abriendo rutas activas…" };
-
-  if (contiene(slang.mapa))
-    return { tipo: "subruta", ruta: "/mapa", frase: "Mostrando el mapa de entregas…" };
-
-  if (contiene(slang.viernes))
-    return { tipo: "subruta", ruta: "/camion-estadisticas", frase: "Revisando viernes…" };
-
-  // =========================================================
-  // 4) ANÁLISIS INTELIGENTE ("algo anda mal con las rutas")
-  // =========================================================
-  if (contiene(slang.problemas))
-    return { tipo: "analisis", accion: "detectar-problemas", frase: "Analizando operación…" };
-
-  if (contiene(slang.revisar))
-    return { tipo: "analisis", accion: "revision-general", frase: "Revisando todo el sistema…" };
-
-  // =========================================================
-  // 5) PATRONES COMPLEJOS (GPT-like simplificado)
-  // =========================================================
-  if (t.match(/(abre|muestra|enseña|carga)\s+.*(agua|ruta)/))
-    return { tipo: "modulo", modulo: "aguaruta", frase: "Abriendo AguaRuta…" };
-
-  if (t.match(/(abre|muestra|enseña|carga)\s+.*(mapa)/))
-    return { tipo: "subruta", ruta: "/mapa", frase: "Mostrando el mapa…" };
-
-  if (t.match(/(estad(isticas|ísticas)|grafico|gráfico)/))
-    return { tipo: "subruta", ruta: "/camion-estadisticas", frase: "Mostrando estadísticas…" };
-
-  if (t.match(/registr(ar|a).*entrega/))
-    return { tipo: "subruta", ruta: "/registrar-entrega", frase: "Abriendo registro…" };
-
-  // =========================================================
-  // 6) FALLBACK NATURAL
-  // =========================================================
-  return {
-    tipo: "general",
-    frase:
-      "Estoy interpretando lo que dijiste… ¿Quieres revisar AguaRuta, Traslado o Flota?",
-  };
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
-export default interpretarLenguajeNatural;
+function includesAny(text, words) {
+  return words.some((w) => text.includes(w));
+}
+
+// =======================================================
+// INTELIGENCIA PRINCIPAL
+// =======================================================
+
+export default function interpretarMensaje(texto = "") {
+  const t = normalize(texto.trim());
+
+  // Si está vacío → nada que interpretar
+  if (!t) return { tipo: "vacio", textoOriginal: texto };
+
+  // =====================================================
+  // 1) INTENCIONES TIPO: SALUDOS / CONVERSACIÓN
+  // =====================================================
+  if (includesAny(t, ["hola", "buenas", "que tal", "saludos"])) {
+    return { tipo: "conversacion", subtipo: "saludo" };
+  }
+
+  if (includesAny(t, ["como estas", "como vai", "que haces"])) {
+    return { tipo: "conversacion", subtipo: "estado" };
+  }
+
+  if (includesAny(t, ["gracias", "te pasaste", "genial"])) {
+    return { tipo: "conversacion", subtipo: "agradecimiento" };
+  }
+
+  // =====================================================
+  // 2) MÓDULOS FAZO OS (sistemas completos)
+  // =====================================================
+
+  // --- AguaRuta
+  if (includesAny(t, ["agua", "aguaruta", "camiones", "aljibe"])) {
+    return { tipo: "modulo", modulo: "aguaruta" };
+  }
+
+  // --- Traslado Municipal
+  if (includesAny(t, ["traslado", "movil", "reserva", "vehiculo"])) {
+    return { tipo: "modulo", modulo: "traslado" };
+  }
+
+  // --- Flota Municipal
+  if (includesAny(t, ["flota", "maestranza", "mantencion", "reparacion"])) {
+    return { tipo: "modulo", modulo: "flota" };
+  }
+
+  // --- Reportes / Informes
+  if (includesAny(t, ["reporte", "informe", "analisis", "estudio"])) {
+    return { tipo: "modulo", modulo: "reportes" };
+  }
+
+  // --- Ajustes, configuración
+  if (includesAny(t, ["ajustes", "configuracion", "preferencias"])) {
+    return { tipo: "modulo", modulo: "ajustes" };
+  }
+
+  // --- Panel principal AURA
+  if (includesAny(t, ["inicio", "panel", "aura"])) {
+    return { tipo: "modulo", modulo: "aura" };
+  }
+
+  // =====================================================
+  // 3) SUBRUTAS DE AguaRuta
+  // =====================================================
+
+  if (includesAny(t, ["rutas activas", "activos", "puntos activos"])) {
+    return { tipo: "subruta", ruta: "rutas-activas" };
+  }
+
+  if (includesAny(t, ["no entregadas", "faltantes", "sin entregar"])) {
+    return { tipo: "subruta", ruta: "no-entregadas" };
+  }
+
+  if (includesAny(t, ["comparacion", "semanal", "comparar semana"])) {
+    return { tipo: "subruta", ruta: "comparacion-semanal" };
+  }
+
+  if (includesAny(t, ["estadistica", "litros por dia", "camion"])) {
+    return { tipo: "subruta", ruta: "camion-estadisticas" };
+  }
+
+  if (includesAny(t, ["registrar entrega", "nueva entrega", "agregar entrega"])) {
+    return { tipo: "subruta", ruta: "registrar-entrega" };
+  }
+
+  if (includesAny(t, ["nueva distribucion", "redistribucion nueva"])) {
+    return { tipo: "subruta", ruta: "nueva-distribucion" };
+  }
+
+  if (includesAny(t, ["editar redistribucion", "editar distribucion"])) {
+    return { tipo: "subruta", ruta: "editar-redistribucion" };
+  }
+
+  // =====================================================
+  // 4) ACCIONES DIRECTAS (comandos explícitos)
+  // =====================================================
+
+  if (includesAny(t, ["logout", "cerrar sesion"])) {
+    return { tipo: "accion", accion: "logout" };
+  }
+
+  if (includesAny(t, ["abrir mapa", "mostrar mapa"])) {
+    return { tipo: "accion", accion: "abrir-mapa" };
+  }
+
+  if (includesAny(t, ["abrir rutas", "ver rutas"])) {
+    return { tipo: "accion", accion: "abrir-rutas" };
+  }
+
+  if (includesAny(t, ["actualiza", "refresh", "recargar"])) {
+    return { tipo: "accion-general", payload: { event: "refresh" } };
+  }
+
+  // =====================================================
+  // 5) COMANDOS AVANZADOS (AUTONOMÍA DEL AGENTE)
+  // =====================================================
+
+  // --- Duplicados AguaRuta
+  if (includesAny(t, ["duplicados", "repetidos", "limpiar base"])) {
+    return {
+      tipo: "accion-general",
+      payload: { event: "limpiar-duplicados", modulo: "aguaruta" },
+    };
+  }
+
+  // --- Redistribución automática
+  if (includesAny(t, ["redistribuye", "organiza rutas", "distribucion inteligente"])) {
+    return {
+      tipo: "accion-general",
+      payload: { event: "redistribuir", modulo: "aguaruta" },
+    };
+  }
+
+  // --- Reportes automáticos
+  if (includesAny(t, ["crea informe", "haz reporte", "genera analisis"])) {
+    return {
+      tipo: "accion-general",
+      payload: { event: "crear-reporte", modulo: "reportes" },
+    };
+  }
+
+  // =====================================================
+  // 6) SI LLEGA AQUÍ → TEXTO LIBRE / GPT
+  // =====================================================
+
+  return {
+    tipo: "backend",
+    textoOriginal: texto,
+  };
+}
