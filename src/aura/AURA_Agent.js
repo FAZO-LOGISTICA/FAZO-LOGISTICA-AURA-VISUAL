@@ -1,110 +1,188 @@
 // ======================================================================
-//  AURA_Agent.js — FAZO OS Autonomous Agent v2025
-//  Gustavo Oliva — FAZO LOGÍSTICA
-//  Motor oficial de autonomía de AURA
-//  Ejecuta intenciones → crea planes → llama acciones reales
+//  AURA_Agent.js — Autonomous Decision Engine 2025
+//  FAZO LOGÍSTICA — Gustavo Oliva
+//  Mateo IA — Motor de autonomía + reglas + acciones inteligentes
 // ======================================================================
 
-import { AURA_Intelligence } from "../intelligence/AURA_Intelligence";
-import { AURA_Actions } from "../actions/AURA_Actions";
+/*
+   AURA AGENT = El cerebro que toma decisiones por sí mismo.
+
+   Sus funciones principales:
+   ✔ Detectar riesgos
+   ✔ Detectar problemas operacionales
+   ✔ Tomar decisiones sin que Gustavo lo pida
+   ✔ Enviar sugerencias inteligentes
+   ✔ Ejecutar acciones automáticas (AURA_Actions.js)
+   ✔ Supervisar módulos FAZO (AguaRuta, Flota, Traslado, etc.)
+
+   Este archivo NO tiene interfaz.
+   Lo importa AURAChat o cualquier módulo FAZO.
+*/
 
 // ======================================================================
-//  DEFICIÓN DEL AGENTE
+//  IMPORTAR MOTOR DE ACCIONES
 // ======================================================================
+import { ejecutarAccion } from "../core/AURA_Actions";
+
+// ======================================================================
+//  MOTOR DE AUTONOMÍA
+// ======================================================================
+
 export const AURA_Agent = {
-  
-  async procesarMensaje(texto) {
+  // Estado interno del agente
+  estado: {
+    ultimaRevision: null,
+    problemasDetectados: [],
+    sugerencias: [],
+  },
+
+  // ================================================================
+  // 1. ANÁLISIS PRINCIPAL
+  // ================================================================
+  analizarContexto(datos) {
+    const reporte = [];
+
+    // ------------------------------------------------------------
+    // A) Detectar rutas desbalanceadas
+    // ------------------------------------------------------------
+    if (datos.rutas) {
+      const warningRutas = this.detectarDesbalance(datos.rutas);
+      if (warningRutas) reporte.push(warningRutas);
+    }
+
+    // ------------------------------------------------------------
+    // B) Detectar camiones críticos
+    // ------------------------------------------------------------
+    if (datos.camiones) {
+      const warningCamion = this.detectarFallasCamiones(datos.camiones);
+      if (warningCamion) reporte.push(warningCamion);
+    }
+
+    // ------------------------------------------------------------
+    // C) Detectar viernes sobrecargados
+    // ------------------------------------------------------------
+    if (datos.rutas) {
+      const warnViernes = this.detectarProblemasViernes(datos.rutas);
+      if (warnViernes) reporte.push(warnViernes);
+    }
+
+    this.estado.ultimaRevision = new Date();
+    this.estado.problemasDetectados = reporte;
+
+    return reporte;
+  },
+
+  // ================================================================
+  // 2. REGLA — Rutas desbalanceadas
+  // ================================================================
+  detectarDesbalance(rutas) {
     try {
-      if (!texto || typeof texto !== "string") return null;
+      const litrosPorCamion = {};
 
-      // 1) Pedimos a la IA que analice intención + plan
-      const ai = await AURA_Intelligence.analizar(texto);
+      rutas.forEach((r) => {
+        const c = r.camion;
+        litrosPorCamion[c] = (litrosPorCamion[c] || 0) + r.litros;
+      });
 
-      if (!ai) {
+      const entries = Object.entries(litrosPorCamion);
+
+      const max = Math.max(...entries.map((x) => x[1]));
+      const min = Math.min(...entries.map((x) => x[1]));
+
+      if (max - min > 12000) {
         return {
-          respuesta: "No pude procesar esa instrucción todavía, Gustavo.",
-          accionEjecutada: false,
+          tipo: "alerta",
+          mensaje:
+            "Detecté un desbalance importante entre camiones. Sugiero redistribuir.",
+          datos: { litrosPorCamion },
         };
       }
+    } catch (err) {}
 
-      const { intencion, modulo, accion, datos, plan, respuesta } = ai;
+    return null;
+  },
 
-      // 2) Si el usuario solo está conversando → no ejecutar nada
-      if (intencion === "conversacion") {
-        return {
-          respuesta: respuesta || "Entendido.",
-          accionEjecutada: false,
-        };
-      }
+  // ================================================================
+  // 3. REGLA — Camiones críticos
+  // ================================================================
+  detectarFallasCamiones(camiones) {
+    const criticos = camiones.filter((c) => c.estado === "critico");
 
-      // 3) Si existe una acción reconocida en AURA_Actions
-      if (accion && AURA_Actions[accion]) {
-        const resultado = await AURA_Actions[accion]({
-          modulo,
-          datos,
-          plan,
-          textoOriginal: texto,
-        });
-
-        return {
-          respuesta: resultado?.mensaje || respuesta || "Listo Gustavo.",
-          accionEjecutada: true,
-          detalle: resultado,
-        };
-      }
-
-      // 4) SI NO SE RECONOCE LA ACCIÓN, PERO HAY MÓDULO → abrir módulo
-      if (modulo && accion === "abrir-modulo") {
-        return {
-          respuesta: respuesta || `Abriendo ${modulo} Gustavo.`,
-          accionEjecutada: true,
-          accionFAZO: { tipo: "modulo", modulo },
-        };
-      }
-
-      // 5) SI NO SE RECONOCE LA ACCIÓN → responder normal
+    if (criticos.length > 0) {
       return {
-        respuesta: respuesta || "Entendido Gustavo.",
-        accionEjecutada: false,
-      };
-
-    } catch (err) {
-      console.error("❌ Error en AURA_Agent:", err);
-      return {
-        respuesta: "Tuve un problema procesando la instrucción Gustavo.",
-        accionEjecutada: false,
+        tipo: "alerta",
+        mensaje: `Detecté ${criticos.length} camión(es) en estado crítico.`,
+        datos: criticos,
       };
     }
+
+    return null;
   },
 
-  // ======================================================================
-  //   FUNCIONES ESPECIALES DEL AGENTE
-  // ======================================================================
+  // ================================================================
+  // 4. REGLA — Viernes deben ser livianos
+  // ================================================================
+  detectarProblemasViernes(rutas) {
+    const viernes = rutas.filter((r) => r.dia === "Viernes");
 
-  async ejecutarModulo(modulo) {
-    return {
-      respuesta: `Abriendo módulo ${modulo} ahora.`,
-      accionFAZO: { tipo: "modulo", modulo },
-    };
-  },
+    const total = viernes.reduce((a, b) => a + b.litros, 0);
 
-  async ejecutarSubruta(modulo, ruta) {
-    return {
-      respuesta: `Entrando en ${ruta} dentro de ${modulo}.`,
-      accionFAZO: { tipo: "subruta", modulo, ruta },
-    };
-  },
-
-  async ejecutarPlan(plan) {
-    if (!Array.isArray(plan)) return null;
-
-    const logs = [];
-
-    for (const paso of plan) {
-      logs.push(`→ ${paso}`);
-      await new Promise((r) => setTimeout(r, 80));
+    if (total > 26000) {
+      return {
+        tipo: "alerta",
+        mensaje: "El viernes está sobrecargado. Sugiero reducción para terminar temprano.",
+        litros: total,
+      };
     }
 
-    return logs.join("\n");
+    return null;
+  },
+
+  // ================================================================
+  // 5. SUGERENCIAS AUTOMÁTICAS
+  // ================================================================
+  generarSugerencias() {
+    const out = [];
+
+    if (this.estado.problemasDetectados.length === 0) {
+      out.push("Todo se ve estable ahora mismo.");
+    } else {
+      this.estado.problemasDetectados.forEach((p) => {
+        out.push("🔍 " + p.mensaje);
+      });
+    }
+
+    this.estado.sugerencias = out;
+    return out;
+  },
+
+  // ================================================================
+  // 6. AUTONOMÍA — EL AGENTE TOMA DECISIONES
+  // ================================================================
+  actuarSiEsNecesario() {
+    const problemas = this.estado.problemasDetectados;
+
+    problemas.forEach((p) => {
+      if (p.mensaje.includes("redistribuir")) {
+        ejecutarAccion("redistribuir-automatico", p.datos);
+      }
+
+      if (p.mensaje.includes("crítico")) {
+        ejecutarAccion("alertar-mantenimiento", p.datos);
+      }
+    });
+
+    return true;
+  },
+
+  // ================================================================
+  // 7. CONSULTA RÁPIDA PARA AURAChat
+  // ================================================================
+  obtenerEstado() {
+    return {
+      ultimaRevision: this.estado.ultimaRevision,
+      problemas: this.estado.problemasDetectados,
+      sugerencias: this.estado.sugerencias,
+    };
   },
 };
