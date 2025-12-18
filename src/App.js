@@ -8,7 +8,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 // Componentes centrales FAZO OS
 import SidebarFazo from "./components/SidebarFazo";
-import AuraFloatingPanel from "./components/AuraFloatingPanel";
+import AuraCyberPanel from "./components/AuraCyberPanel";
 import AuraOrb from "./components/AuraOrb";
 import Login from "./components/Login";
 
@@ -265,7 +265,7 @@ export default function App() {
       {/* =============================== */}
       {/*     PANEL IA — AURA OS          */}
       {/* =============================== */}
-      <AuraFloatingPanel
+     <AuraCyberPanel
         visible={auraVisible}
         onClose={() => setAuraVisible(false)}
         onComando={handleComandoAura}
