@@ -4,7 +4,9 @@
 //  Mateo IA — Acciones universales, modulares y expansibles
 // ======================================================================
 
-// Todas las acciones disparan eventos que App.js (FAZO OS) escucha
+// ============================================================
+//   UTILIDAD: ENVIAR EVENTOS AL SISTEMA (FAZO OS / App.js)
+// ============================================================
 function dispatchToOS(evento, data = {}) {
   window.dispatchEvent(
     new CustomEvent("AURA_EVENT", {
@@ -13,16 +15,15 @@ function dispatchToOS(evento, data = {}) {
   );
 }
 
-// ======================================================================
-//  LISTADO DE ACCIONES — OS, AguaRuta, Traslado, Flota, Global
-// ======================================================================
-
+// ============================================================
+//   MOTOR CENTRAL DE ACCIONES
+// ============================================================
 export function ejecutarAccion(accion, payload = {}) {
   console.log("⚡ AURA ejecutando acción:", accion, payload);
 
   switch (accion) {
     // ============================================================
-    // SISTEMA / FAZO OS
+    // 🔵 SISTEMA (OS)
     // ============================================================
     case "logout":
       dispatchToOS("AURA_COMANDO_OS", {
@@ -54,4 +55,78 @@ export function ejecutarAccion(accion, payload = {}) {
 
     case "abrir-flota":
       dispatchToOS("AURA_COMANDO_OS", {
-        tipo
+        tipo: "modulo",
+        modulo: "flota",
+      });
+      break;
+
+    case "abrir-reportes":
+      dispatchToOS("AURA_COMANDO_OS", {
+        tipo: "modulo",
+        modulo: "reportes",
+      });
+      break;
+
+    case "abrir-ajustes":
+      dispatchToOS("AURA_COMANDO_OS", {
+        tipo: "modulo",
+        modulo: "ajustes",
+      });
+      break;
+
+    // ============================================================
+    // 🔵 SUBRUTAS — AGUARUTA
+    // ============================================================
+    case "aguaruta-open-tab":
+      dispatchToOS("AURA_COMANDO_OS", {
+        tipo: "subruta",
+        modulo: "aguaruta",
+        ruta: payload.tab,
+      });
+      break;
+
+    case "aguaruta-filtrar-camion":
+      dispatchToOS("AURA_COMANDO_OS", {
+        tipo: "accion",
+        accion: "filtrar-camion",
+        valor: payload.camion,
+      });
+      break;
+
+    // ============================================================
+    // 🔵 COMANDOS GENERALES
+    // ============================================================
+    case "filtro-camion":
+      dispatchToOS("AURA_COMANDO_OS", {
+        tipo: "accion",
+        accion: "filtro-camion",
+        valor: payload.valor,
+      });
+      break;
+
+    case "refrescar":
+      dispatchToOS("AURA_COMANDO_OS", {
+        tipo: "accion",
+        accion: "refrescar",
+      });
+      break;
+
+    // ============================================================
+    // 🔵 FUTURO: EXTENSIONES
+    // ============================================================
+    case "notificacion":
+      dispatchToOS("AURA_COMANDO_OS", {
+        tipo: "accion",
+        accion: "notificacion",
+        mensaje: payload.mensaje,
+      });
+      break;
+
+    // ============================================================
+    // 🔴 SI NO EXISTE → ADVERTENCIA
+    // ============================================================
+    default:
+      console.warn("⚠️ AURA_Actions: acción no reconocida →", accion);
+      break;
+  }
+}
