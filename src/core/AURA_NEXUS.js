@@ -1,95 +1,56 @@
 // ======================================================================
-//  AURA_NEXUS.js — El núcleo de decisión inteligente de AURA
-//  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Integración total entre NLP, acciones, agente y multimodel
+//  AURA_NEXUS.js — Event Matrix & Router 2025 (Versión Final)
+//  FAZO LOGÍSTICA — Conexión central entre AURA_Agent, AURAChat y FAZO OS
 // ======================================================================
 
-import { interpretar } from "./AURA_NaturalLanguage";
-import { ejecutarAccion } from "./AURA_Actions";
-import { AURA_Agent } from "./AURA_Agent";
-import { AURA_MultiModel_Process } from "./AURA_MultiModel";
-import { analizarManual } from "./FAZO_OS_Router";
+const listeners = new Set();
 
-/*
-   NEXUS IA:
-   --------------------------------------------
-   Decide QUÉ debe hacer AURA con cada mensaje.
-
-   Orden de decisión:
-   1) ¿Es instrucción del sistema? (NLP)
-   2) ¿Es acción del OS?
-   3) ¿Es análisis operativo?
-   4) ¿Es una consulta para IA Multimodel?
-*/
-
-export async function AURA_NEXUS(texto, historial, online) {
-  const intent = interpretar(texto);
-
-  // ============================================================
-  // 1) ACCIONES DIRECTAS DEL SISTEMA
-  // ============================================================
-  if (intent.tipo === "accion") {
-    ejecutarAccion(intent.accion, intent.payload || {});
-    return {
-      tipo: "accion",
-      respuesta: intent.frase,
-    };
-  }
-
-  // ============================================================
-  // 2) SUBRUTAS AGUA RUTA
-  // ============================================================
-  if (intent.tipo === "subruta") {
-    ejecutarAccion("aguaruta-open-tab", { tab: intent.ruta });
-    return {
-      tipo: "subruta",
-      respuesta: intent.frase,
-    };
-  }
-
-  // ============================================================
-  // 3) MÓDULOS COMPLETOS (AGUARUTA, FLOTa, TRASLADO, etc.)
-  // ============================================================
-  if (intent.tipo === "modulo") {
-    ejecutarAccion("abrir-" + intent.modulo);
-    return {
-      tipo: "modulo",
-      respuesta: intent.frase,
-    };
-  }
-
-  // ============================================================
-  // 4) ANÁLISIS OPERACIONAL MANUAL
-  // ============================================================
-  if (texto.includes("revisa") || texto.includes("analiza")) {
-    const analisis = await analizarManual(() => window.__FAZO_DATA__);
-    const resumen = analisis.sugerencias.join("\n");
-
-    return {
-      tipo: "analisis",
-      respuesta: "Análisis operativo completado:\n" + resumen,
-    };
-  }
-
-  // ============================================================
-  // 5) IA MULTIMODEL (OpenAI / Claude / Gemini / Local)
-  // ============================================================
-  if (online) {
-    const { proveedor, respuesta } =
-      await AURA_MultiModel_Process(texto, historial);
-
-    return {
-      tipo: "ia",
-      proveedor,
-      respuesta,
-    };
-  }
-
-  // ============================================================
-  // 6) MODO OFFLINE
-  // ============================================================
-  return {
-    tipo: "offline",
-    respuesta: "Estoy sin conexión, pero sigo operativa.",
-  };
+// ===============================================================
+// 1) Subscribirse a eventos del sistema (AURAChat / FAZO / Agent)
+// ===============================================================
+export function nexus_subscribe(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
 }
+
+// ===============================================================
+// 2) Emitir evento a todos los subsistemas
+// ===============================================================
+export function nexus_emit(evento, data = {}) {
+  listeners.forEach((fn) => {
+    try {
+      fn({ evento, data });
+    } catch (e) {
+      console.error("Error manejando evento en Nexus:", e);
+    }
+  });
+}
+
+// ===============================================================
+// 3) Métodos rápidos para disparar eventos
+// ===============================================================
+
+export const Nexus = {
+  // AURA AGENT → NOTIFICACIONES AUTOMÁTICAS
+  alerta_operacional(sugerencias) {
+    nexus_emit("AURA_ALERTA_OPERACIONAL", { sugerencias });
+  },
+
+  // AURA Inteligencia interna
+  accion_interna(accion, payload) {
+    nexus_emit("AURA_ACCION", { accion, payload });
+  },
+
+  // AURA → FAZO OS (navegación, subrutas, etc.)
+  comando_fazo(cmd) {
+    nexus_emit("AURA_COMANDO_OS", cmd);
+  },
+
+  // Logs útiles
+  log(msg) {
+    nexus_emit("AURA_LOG", { msg });
+  },
+};
+
+// Export por defecto
+export default Nexus;
