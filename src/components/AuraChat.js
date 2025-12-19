@@ -1,10 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
-/* ======================================================================
-   AURAChat.js — GOD MODE ULTRA PRO 2025 + MULTIMODEL IA
-   FAZO LOGÍSTICA — Gustavo Oliva
-   Mateo IA — Voz, emociones, autonomía, análisis + IA híbrida.
-====================================================================== */
+/* ============================================================
+   AURAChat.js — GOD MODE ULTRA PRO 2025 (Versión Definitiva)
+   FAZO LOGÍSTICA — AURA OS + MultiModel IA + FAZO Router
+   Incluye: Intent Engine, MultiModel AI, TTS, STT, Avatar, FAZO Bridge
+===============================================================*/
 
 import React, { useState, useEffect, useRef } from "react";
 
@@ -26,28 +26,25 @@ import {
 
 import config from "../config";
 
-// PROCESADORES CENTRALES
+// CORE FAZO OS
 import { interpretar } from "../core/AURA_NaturalLanguage";
 import { analizarManual, registrarSubsistema } from "../core/FAZO_OS_Router";
 
-// 🔥 ROUTER DE IA MULTIMODEL
+// MULTIMODEL IA
 import { AURA_MultiModel_Process } from "../core/AURA_MultiModel";
 
-/* ======================================================================
+/* ============================================================
    LIMPIEZA
-====================================================================== */
+===============================================================*/
 const limpiar = (t) =>
   t
-    ?.replace(
-      /([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g,
-      ""
-    )
+    ?.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g, "")
     .replace(/\s+/g, " ")
     .trim() || "";
 
-/* ======================================================================
-   COMPONENTE AURA
-====================================================================== */
+/* ============================================================
+   AURAChat
+===============================================================*/
 export default function AURAChat({ onComando, onSendToIframe }) {
   const [messages, setMessages] = useState([
     {
@@ -67,18 +64,18 @@ export default function AURAChat({ onComando, onSendToIframe }) {
 
   const recRef = useRef(null);
 
-  /* ======================================================================
-     BOOT — SONIDO INICIAL
-  ======================================================================= */
+  /* ============================================================
+     BOOT
+  ===============================================================*/
   useEffect(() => {
     try {
       playActivate();
     } catch {}
   }, []);
 
-  /* ======================================================================
-     SUSCRIPCIÓN A EVENTOS AUTOMÁTICOS FAZO OS
-  ======================================================================= */
+  /* ============================================================
+     SUSCRIPCIONES FAZO OS
+  ===============================================================*/
   useEffect(() => {
     registrarSubsistema((evento) => {
       if (evento.tipo === "AURA_ANALISIS_AUTOMATICO") {
@@ -89,9 +86,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     });
   }, []);
 
-  /* ======================================================================
-     ESTADO ONLINE/OFFLINE
-  ======================================================================= */
+  /* ============================================================
+     INTERNET — ONLINE/OFFLINE
+  ===============================================================*/
   useEffect(() => {
     const on = () => {
       setOnline(true);
@@ -103,7 +100,6 @@ export default function AURAChat({ onComando, onSendToIframe }) {
       playAlert();
       agregar("aura", "Sin internet. Activando modo local.");
     };
-
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
     return () => {
@@ -112,9 +108,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     };
   }, []);
 
-  /* ======================================================================
-     ANALIZADOR DE AUDIO PARA AVATAR
-  ======================================================================= */
+  /* ============================================================
+     ANALIZADOR DE AUDIO (Avatar mic reactivo)
+  ===============================================================*/
   useEffect(() => {
     let stream, audioCtx, analyser, dataArray;
 
@@ -127,7 +123,6 @@ export default function AURAChat({ onComando, onSendToIframe }) {
 
         analyser.fftSize = 256;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
-
         src.connect(analyser);
 
         const loop = () => {
@@ -148,25 +143,24 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     return () => stream?.getTracks().forEach((t) => t.stop());
   }, []);
 
-  /* ======================================================================
+  /* ============================================================
      AGREGAR MENSAJE
-  ======================================================================= */
+  ===============================================================*/
   const agregar = (from, text) =>
     setMessages((prev) => [
       ...prev,
       { id: Date.now() + Math.random(), from, text },
     ]);
 
-  /* ======================================================================
-     TTS — VOZ DE AURA
-  ======================================================================= */
+  /* ============================================================
+     TTS — Voz de AURA
+  ===============================================================*/
   const speak = (txt) => {
     if (!window.speechSynthesis) return;
-
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(limpiar(txt));
 
-    u.rate = 0.95;
+    const u = new SpeechSynthesisUtterance(limpiar(txt));
+    u.rate = 0.96;
     u.pitch = 1.05;
 
     u.onstart = () => {
@@ -184,9 +178,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     window.speechSynthesis.speak(u);
   };
 
-  /* ======================================================================
-     SPEECH RECOGNITION
-  ======================================================================= */
+  /* ============================================================
+     STT — Reconocimiento de voz
+  ===============================================================*/
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
@@ -196,19 +190,17 @@ export default function AURAChat({ onComando, onSendToIframe }) {
     rec.interimResults = false;
 
     rec.onresult = (e) => {
-      const t = e.results[0][0].transcript.trim();
-      sendMessage(t);
+      sendMessage(e.results[0][0].transcript.trim());
     };
-
     rec.onerror = () => playError();
     rec.onend = () => setListening(false);
 
     recRef.current = rec;
   }, []);
 
-  /* ======================================================================
-     MOTOR PRINCIPAL DE MENSAJES
-  ======================================================================= */
+  /* ============================================================
+     MOTOR PRINCIPAL — AURA
+  ===============================================================*/
   const sendMessage = async (txt) => {
     const cleaned = limpiar(txt || input);
     if (!cleaned) return;
@@ -219,14 +211,9 @@ export default function AURAChat({ onComando, onSendToIframe }) {
 
     setEmotion(detectarEmocion(cleaned));
 
-    // ===============================================================
-    // 1) Interpretación avanzada con AURA_NaturalLanguage.js
-    // ===============================================================
+    // 1) Intent Engine
     const intent = interpretar(cleaned);
 
-    // ------------------------
-    // ACCIÓN DIRECTA
-    // ------------------------
     if (intent.tipo === "accion") {
       playCommand();
       agregar("aura", intent.frase);
@@ -236,9 +223,6 @@ export default function AURAChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // ------------------------
-    // SUBRUTA
-    // ------------------------
     if (intent.tipo === "subruta") {
       playCommand();
       agregar("aura", intent.frase);
@@ -254,9 +238,6 @@ export default function AURAChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // ------------------------
-    // MÓDULO COMPLETO
-    // ------------------------
     if (intent.tipo === "modulo") {
       playCommand();
       agregar("aura", intent.frase);
@@ -266,9 +247,7 @@ export default function AURAChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // ------------------------
-    // ANÁLISIS OPERACIONAL
-    // ------------------------
+    // 2) Análisis operativo FAZO OS
     if (cleaned.includes("revisa") || cleaned.includes("analiza")) {
       playCommand();
       agregar("aura", "Analizando estructura operativa…");
@@ -281,9 +260,7 @@ export default function AURAChat({ onComando, onSendToIframe }) {
       return;
     }
 
-    // ===============================================================
-    // 2) IA MULTIMODEL (OpenAI / Claude / Gemini)
-    // ===============================================================
+    // 3) IA Multimodel
     if (online) {
       const historial = messages.map((m) => ({
         role: m.from === "user" ? "user" : "assistant",
@@ -297,28 +274,26 @@ export default function AURAChat({ onComando, onSendToIframe }) {
 
       agregar("aura", `🧠 (${proveedor.toUpperCase()}) → ${respuesta}`);
       speak(respuesta);
-      setThinking(false);
       playClick();
+      setThinking(false);
       return;
     }
 
-    // ===============================================================
-    // 3) OFFLINE
-    // ===============================================================
-    agregar("aura", "Estoy sin conexión. Activando modo local.");
+    // 4) MODO OFFLINE
+    agregar("aura", "Sin conexión. Activando modo local.");
     speak("Estoy sin conexión, pero sigo operativa.");
     playAlert();
     setThinking(false);
   };
 
-  /* ======================================================================
-     RENDER UI
-  ======================================================================= */
+  /* ============================================================
+     UI
+  ===============================================================*/
   return (
     <section className="bg-black/40 border border-cyan-500/40 rounded-2xl backdrop-blur-xl p-4">
       <div className="flex justify-between items-center border-b border-cyan-400/30 pb-2">
         <span className="text-cyan-300 text-sm">
-          {online ? "AURA Online — Multimodel IA" : "AURA Offline"}
+          {online ? "AURA Online — IA Multimodel" : "AURA Offline"}
         </span>
       </div>
 
