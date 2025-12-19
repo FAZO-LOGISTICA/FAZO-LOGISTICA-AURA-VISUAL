@@ -1,7 +1,11 @@
 // =====================================================
-//  FAZO OS — App.js 2025 (VERSIÓN DEFINITIVA)
-//  Integración total con AURAChat GOD MODE Offline/Online
-//  Ultra Optimizado — Compatible con avatar realista 2025
+//  FAZO OS — App.js 2025 (VERSIÓN DEFINITIVA NEXUS)
+//  Integración completa:
+//  - AURAChat GOD MODE
+//  - AURA_NEXUS
+//  - MultiModel IA
+//  - FAZO Bridge
+//  - AguaRuta + Traslado Municipal
 // =====================================================
 
 import React, { useState, useEffect, useRef } from "react";
@@ -12,10 +16,15 @@ import AuraCyberPanel from "./components/AuraCyberPanel";
 import AuraOrb from "./components/AuraOrb";
 import Login from "./components/Login";
 
+// Núcleo FAZO OS
+import { AURA_NEXUS } from "./core/AURA_NEXUS";
+
 import "./index.css";
 
 export default function App() {
-  // ESTADOS PRINCIPALES DEL OS
+  // =====================================================
+  //  ESTADOS PRINCIPALES DEL SISTEMA OPERATIVO
+  // =====================================================
   const [acceso, setAcceso] = useState(false);
   const [vista, setVista] = useState("aguaruta");
   const [subrutaAgua, setSubrutaAgua] = useState("");
@@ -26,7 +35,7 @@ export default function App() {
   const trasladoIframeRef = useRef(null);
 
   // =====================================================
-  //  1) Splash FAZO OS (index.html → AURA READY)
+  //  1) Splash FAZO OS (arranque visual)
   // =====================================================
   useEffect(() => {
     setTimeout(() => {
@@ -62,7 +71,7 @@ export default function App() {
         target.contentWindow.postMessage(payload, "*");
       }
     } catch (error) {
-      console.error("❌ Error enviando comando a iframe:", error);
+      console.error("❌ Error enviando comando:", error);
     }
   };
 
@@ -72,45 +81,40 @@ export default function App() {
   const handleComandoAura = (cmd) => {
     if (!cmd) return;
 
-    // -----------------------------
-    // 1) Acceso directo tipo string
-    // -----------------------------
+    // 1) Comando simple como string
     if (typeof cmd === "string") {
       setVista(cmd);
       return;
     }
 
-    // -----------------------------
-    // 2) Módulos principales
-    // -----------------------------
+    // 2) Navegación de módulos principales
     if (cmd.tipo === "modulo") {
       setVista(cmd.modulo);
-      if (cmd.modulo === "aguaruta") setSubrutaAgua("");
+
+      if (cmd.modulo === "aguaruta") {
+        setSubrutaAgua("");
+      }
+
       return;
     }
 
-    // -----------------------------
-    // 3) Subrutas AguaRuta
-    // -----------------------------
+    // 3) Subrutas internas de AguaRuta
     if (cmd.tipo === "subruta" && cmd.modulo === "aguaruta") {
       setVista("aguaruta");
 
-      const clean = (cmd.ruta || "").replace(/^\//, "");
-      setSubrutaAgua(clean);
+      const cleanTab = (cmd.ruta || "").replace(/^\//, "");
+      setSubrutaAgua(cleanTab);
 
-      // Comando al iframe
       sendToIframe("aguaruta", {
         type: "FAZO_CMD",
         command: "open-tab",
-        tab: clean,
+        tab: cleanTab,
       });
 
       return;
     }
 
-    // -----------------------------
-    // 4) Acciones generales
-    // -----------------------------
+    // 4) Acciones directas del sistema
     if (cmd.tipo === "accion") {
       switch (cmd.accion) {
         case "logout":
@@ -132,13 +136,48 @@ export default function App() {
           break;
 
         default:
-          console.warn("⚠️ Acción de AURA no reconocida:", cmd);
+          console.warn("⚠️ Acción no reconocida:", cmd);
       }
     }
   };
 
   // =====================================================
-  //  5) RENDER OFICIAL — FAZO OS DESKTOP HUD
+  //  5) NEXUS — Acciones autónomas hacia App.js
+  // =====================================================
+  useEffect(() => {
+    const sub = AURA_NEXUS.subscribe((evento) => {
+      if (!evento) return;
+
+      switch (evento.tipo) {
+        case "CAMBIO_MODULO":
+          setVista(evento.modulo);
+          break;
+
+        case "SUBRUTA_AGUARUTA":
+          setVista("aguaruta");
+          setSubrutaAgua(evento.subruta);
+
+          sendToIframe("aguaruta", {
+            type: "FAZO_CMD",
+            command: "open-tab",
+            tab: evento.subruta,
+          });
+          break;
+
+        case "COMANDO_IFRAME":
+          sendToIframe(evento.app, evento.payload);
+          break;
+
+        default:
+          console.log("📡 Evento NEXUS ignorado:", evento);
+      }
+    });
+
+    return () => sub?.unsubscribe?.();
+  }, []);
+
+  // =====================================================
+  //  6) RENDER OFICIAL — ESCRITORIO FAZO OS
   // =====================================================
   return (
     <div
@@ -148,9 +187,7 @@ export default function App() {
         overflow-hidden relative fade-in
       "
     >
-      {/* =============================== */}
-      {/*     MENÚ LATERAL FAZO OS        */}
-      {/* =============================== */}
+      {/* MENÚ LATERAL OS */}
       <SidebarFazo
         active={vista}
         onNavigate={(slug) => {
@@ -159,15 +196,13 @@ export default function App() {
         }}
       />
 
-      {/* =============================== */}
-      {/*        PANEL PRINCIPAL          */}
-      {/* =============================== */}
+      {/* PANEL PRINCIPAL */}
       <div className="flex-1 flex flex-col p-6 overflow-y-auto ml-64">
         <main className="flex-1 holo-fade smooth">
 
-          {/* =============================== */}
-          {/*     AGUARUTA — iFrame          */}
-          {/* =============================== */}
+          {/* ======================= */}
+          {/*    AGUARUTA — IFRAME    */}
+          {/* ======================= */}
           {vista === "aguaruta" && (
             <iframe
               ref={aguarutaIframeRef}
@@ -183,9 +218,9 @@ export default function App() {
             />
           )}
 
-          {/* =============================== */}
-          {/*     TRASLADO MUNICIPAL         */}
-          {/* =============================== */}
+          {/* ======================= */}
+          {/*   TRASLADO MUNICIPAL   */}
+          {/* ======================= */}
           {vista === "traslado" && (
             <iframe
               ref={trasladoIframeRef}
@@ -201,9 +236,9 @@ export default function App() {
             />
           )}
 
-          {/* =============================== */}
-          {/*     FLOTA MUNICIPAL            */}
-          {/* =============================== */}
+          {/* ======================= */}
+          {/*     FLOTA MUNICIPAL    */}
+          {/* ======================= */}
           {vista === "flota" && (
             <div className="card-fazo-strong p-10 text-center blur-in">
               <h2 className="text-3xl font-bold text-cyan-300 mb-2 glow-stark">
@@ -216,9 +251,9 @@ export default function App() {
             </div>
           )}
 
-          {/* =============================== */}
-          {/*     REPORTES FAZO OS           */}
-          {/* =============================== */}
+          {/* ======================= */}
+          {/*        REPORTES        */}
+          {/* ======================= */}
           {vista === "reportes" && (
             <div className="card-fazo-strong p-10 text-center blur-in">
               <h2 className="text-3xl font-bold text-cyan-300 mb-2 glow-stark">
@@ -231,9 +266,9 @@ export default function App() {
             </div>
           )}
 
-          {/* =============================== */}
-          {/*     AJUSTES DEL SISTEMA        */}
-          {/* =============================== */}
+          {/* ======================= */}
+          {/*        AJUSTES         */}
+          {/* ======================= */}
           {vista === "ajustes" && (
             <div className="card-fazo p-10 blur-in">
               <h2 className="text-2xl font-bold text-cyan-300 mb-4 glow-stark">
@@ -257,15 +292,11 @@ export default function App() {
         </main>
       </div>
 
-      {/* =============================== */}
-      {/*     ORBE HOLOGRÁFICO AURA       */}
-      {/* =============================== */}
+      {/* ORBE AURA */}
       <AuraOrb onClick={() => setAuraVisible(true)} />
 
-      {/* =============================== */}
-      {/*     PANEL IA — AURA OS          */}
-      {/* =============================== */}
-     <AuraCyberPanel
+      {/* PANEL IA */}
+      <AuraCyberPanel
         visible={auraVisible}
         onClose={() => setAuraVisible(false)}
         onComando={handleComandoAura}
