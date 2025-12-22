@@ -1,154 +1,100 @@
 // ======================================================================
-//  AURA_Actions.js — Sistema de Acciones Oficial FAZO OS 2025
-//  Conexión directa con:
-//  - AURA_NEXUS
-//  - AURA_Agent (autonomía inteligente)
-//  - EventBridge (FAZO_OS_EventBridge.js)
-//  - App.js (módulos, subrutas, filtros, logout)
+//  AURA_Actions.js — Acciones reales que ejecuta el sistema FAZO OS
+//  FAZO LOGÍSTICA — Gustavo Oliva
+//  Mateo IA — Integración con EventBridge + MultiLog
 // ======================================================================
 
-import { emitirEvento } from "./FAZO_OS_EventBridge";
+import { FAZO_OS_EventBridge } from "./FAZO_OS_EventBridge";
+import { LOG } from "./FAZO_OS_Log"; // 🔵 Nuevo: Logging total
 
-/*
-   Todas las acciones del sistema van aquí.
-   Son simples, limpias, y NO requieren conocer el intérprete de NLP.
-
-   Desde este archivo, AURA puede:
-   ✔ Abrir módulos completos
-   ✔ Abrir subrutas de AguaRuta
-   ✔ Ejecutar acciones del sistema
-   ✔ Enviar filtros y comandos a iframes
-   ✔ Cerrar sesión
-   ✔ Enviar órdenes a AURA_Agent (futuro)
+/* 
+   Todas las acciones reales del sistema pasan por aquí.
+   AURA_NEXUS decide *qué hacer*, y AURA_Actions lo ejecuta.
 */
 
-// ======================================================================
-// ACCIONES PRINCIPALES
-// ======================================================================
-
 export function ejecutarAccion(accion, payload = {}) {
-  console.log("⚙️ Ejecutando acción:", accion, payload);
+  LOG.accion("EjecutarAccion llamada", { accion, payload }); // 🔵 LOG
 
-  switch (accion) {
-    // --------------------------------------------------------------
-    // SISTEMA / LOGIN / LOGOUT
-    // --------------------------------------------------------------
-    case "logout":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "logout",
-      });
-      return;
+  try {
+    switch (accion) {
+      // ------------------------------------------------------------
+      // CERRAR SESIÓN
+      // ------------------------------------------------------------
+      case "logout":
+        LOG.accion("Cerrando sesión…");
+        localStorage.removeItem("aura-acceso");
+        window.location.reload();
+        break;
 
-    // --------------------------------------------------------------
-    // AGUARUTA — MÓDULO COMPLETO
-    // --------------------------------------------------------------
-    case "abrir-aguaruta":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "aguaruta",
-      });
-      return;
+      // ------------------------------------------------------------
+      // AGUARUTA → ABRIR PANEL DE RUTAS
+      // ------------------------------------------------------------
+      case "abrir-rutas":
+        LOG.accion("Abrir módulo AguaRuta → rutas-activas");
+        FAZO_OS_EventBridge.emit("AURA_SUBRUTA", {
+          modulo: "aguaruta",
+          ruta: "rutas-activas",
+        });
+        break;
 
-    // --------------------------------------------------------------
-    // TRASLADO MUNICIPAL — MÓDULO COMPLETO
-    // --------------------------------------------------------------
-    case "abrir-traslado":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "traslado",
-      });
-      return;
+      // ------------------------------------------------------------
+      // AGUARUTA → MAPA
+      // ------------------------------------------------------------
+      case "abrir-mapa":
+        LOG.accion("Abrir mapa de AguaRuta");
+        FAZO_OS_EventBridge.emit("AURA_SUBRUTA", {
+          modulo: "aguaruta",
+          ruta: "mapa",
+        });
+        break;
 
-    // --------------------------------------------------------------
-    // FLOTa MUNICIPAL
-    // --------------------------------------------------------------
-    case "abrir-flota":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "flota",
-      });
-      return;
+      // ------------------------------------------------------------
+      // AGUARUTA (SUBRUTA DIRECTA)
+      // ------------------------------------------------------------
+      case "aguaruta-open-tab":
+        LOG.accion("Abrir subruta AguaRuta", payload);
+        FAZO_OS_EventBridge.emit("AURA_SUBRUTA", {
+          modulo: "aguaruta",
+          ruta: payload.tab,
+        });
+        break;
 
-    // --------------------------------------------------------------
-    // INICIO
-    // --------------------------------------------------------------
-    case "abrir-inicio":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "inicio",
-      });
-      return;
+      // ------------------------------------------------------------
+      // ABRIR MÓDULOS COMPLETOS
+      // ------------------------------------------------------------
+      case "abrir-aguaruta":
+      case "abrir-traslado":
+      case "abrir-flota":
+      case "abrir-reportes":
+      case "abrir-ajustes":
+        const modulo = accion.replace("abrir-", "");
+        LOG.accion("Abrir módulo completo", { modulo });
+        FAZO_OS_EventBridge.emit("AURA_MODULO", {
+          modulo,
+        });
+        break;
 
-    // --------------------------------------------------------------
-    // REPORTES
-    // --------------------------------------------------------------
-    case "abrir-reportes":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "reportes",
-      });
-      return;
+      // ------------------------------------------------------------
+      // FILTRO DE CAMIÓN (COMANDO PARA AGUARUTA)
+      // ------------------------------------------------------------
+      case "filtro-camion":
+        LOG.accion("Aplicando filtro de camión", payload);
+        FAZO_OS_EventBridge.emit("AURA_ACCION", {
+          accion: "filtro-camion",
+          payload,
+        });
+        break;
 
-    // --------------------------------------------------------------
-    // AJUSTES
-    // --------------------------------------------------------------
-    case "abrir-ajustes":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "ajustes",
-      });
-      return;
-
-    // --------------------------------------------------------------
-    // AGUARUTA — SUBRUTAS
-    // --------------------------------------------------------------
-    case "aguaruta-open-tab":
-      emitirEvento({
-        tipo: "AURA_SUBRUTA",
-        ruta: payload.tab,
-      });
-      return;
-
-    // --------------------------------------------------------------
-    // FILTRO POR CAMIÓN
-    // --------------------------------------------------------------
-    case "filtro-camion":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "filtro-camion",
-        payload: {
-          valor: payload?.valor,
-        },
-      });
-      return;
-
-    // --------------------------------------------------------------
-    // ABRIR MAPA DIRECTO
-    // --------------------------------------------------------------
-    case "abrir-mapa":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "abrir-mapa",
-      });
-      return;
-
-    // --------------------------------------------------------------
-    // ENVIAR DATOS O COMANDOS PERSONALIZADOS
-    // --------------------------------------------------------------
-    case "custom":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "custom",
-        payload,
-      });
-      return;
-
-    // --------------------------------------------------------------
-    // AUTO LOG — DEBUG
-    // --------------------------------------------------------------
-    default:
-      console.warn("⚠️ Acción no definida en AURA_Actions:", accion, payload);
-      return;
+      // ------------------------------------------------------------
+      // ACCIÓN DESCONOCIDA
+      // ------------------------------------------------------------
+      default:
+        LOG.error("Acción NO reconocida", { accion, payload });
+        console.warn("⚠️ Acción no reconocida:", accion);
+        break;
+    }
+  } catch (err) {
+    LOG.error("Error ejecutando acción", { accion, error: err });
+    console.error("❌ Error ejecutando acción:", err);
   }
 }
