@@ -1,96 +1,93 @@
 // ======================================================================
-//  FAZO_OS_EventBridge.js — Puente Universal AURA → FAZO OS
-//  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Router central entre acciones y App.js
+//  FAZO_OS_EventBridge.js — Bus de Eventos Global FAZO OS 2025
+//  Conexión entre: AURAChat ↔ NEXUS ↔ Agent ↔ App.js ↔ Iframes
+//  Versión Oficial — Compatible con Autonomía y MultiModel
 // ======================================================================
 
-// Suscriptores registrados (App.js y otros módulos)
-const subscriptores = new Set();
+class EventBridge {
+  constructor() {
+    this.listeners = {};
+  }
 
-/* ============================================================
-   REGISTRAR SUBSISTEMA
-   App.js u otros módulos llaman a esto para escuchar comandos
-=============================================================== */
-export function registrarSubsistema(callback) {
-  if (typeof callback === "function") {
-    subscriptores.add(callback);
+  // ------------------------------------------------------------
+  // REGISTRAR SUSCRIPTORES
+  // ------------------------------------------------------------
+  on(evento, callback) {
+    if (!this.listeners[evento]) {
+      this.listeners[evento] = [];
+    }
+    this.listeners[evento].push(callback);
+  }
+
+  // ------------------------------------------------------------
+  // EMITIR EVENTO A TODO EL SISTEMA
+  // ------------------------------------------------------------
+  emit(evento, payload = {}) {
+    console.log("📡 Evento emitido:", evento, payload);
+
+    // Enviar a todos los listeners internos
+    if (this.listeners[evento]) {
+      this.listeners[evento].forEach((cb) => cb(payload));
+    }
+
+    // Propagar también al navegador → AURAChat lo escucha
+    window.dispatchEvent(
+      new CustomEvent(evento, {
+        detail: payload,
+      })
+    );
+  }
+
+  // ------------------------------------------------------------
+  // LIMPIAR LISTENERS
+  // ------------------------------------------------------------
+  clear(evento) {
+    if (this.listeners[evento]) {
+      this.listeners[evento] = [];
+    }
   }
 }
 
-/* ============================================================
-   ENVIAR EVENTO A TODOS LOS SUBSISTEMAS
-=============================================================== */
-export function emitirEvento(evento) {
-  subscriptores.forEach((cb) => {
-    try {
-      cb(evento);
-    } catch (err) {
-      console.error("❌ Error en subsistema FAZO OS:", err);
-    }
-  });
-}
+// Instancia única global
+export const FAZO_OS_EventBridge = new EventBridge();
 
-/* ============================================================
-   TIPOS DE EVENTOS ESTÁNDAR QUE AURA ENVÍA
-=============================================================== */
 
+// ======================================================================
+//  WRAPPERS PARA EVENTOS ESPECÍFICOS DE AURA
+// ======================================================================
+
+// AURA abre módulo completo (AguaRuta, Flota, Traslado…)
 export function eventoAbrirModulo(modulo) {
-  emitirEvento({
-    tipo: "AURA_MODULO",
-    modulo,
-  });
+  FAZO_OS_EventBridge.emit("AURA_MODULO", { modulo });
 }
 
+// AURA abre panel interno (subruta)
 export function eventoAbrirSubruta(modulo, ruta) {
-  emitirEvento({
-    tipo: "AURA_SUBRUTA",
-    modulo,
-    ruta,
-  });
+  FAZO_OS_EventBridge.emit("AURA_SUBRUTA", { modulo, ruta });
 }
 
+// Acción del sistema (logout, filtros, etc.)
 export function eventoAccionSistema(accion, payload = {}) {
-  emitirEvento({
-    tipo: "AURA_ACCION",
-    accion,
-    payload,
-  });
+  FAZO_OS_EventBridge.emit("AURA_ACCION", { accion, payload });
 }
 
-/* ============================================================
-   EVENTOS ESPECIALES PARA ANÁLISIS AUTOMÁTICOS
-=============================================================== */
+// Alertas del AURA Agent
 export function eventoAnalisisAutomatico(sugerencias) {
-  emitirEvento({
-    tipo: "AURA_ANALISIS_AUTOMATICO",
-    payload: { sugerencias },
-  });
+  FAZO_OS_EventBridge.emit("AURA_ANALISIS_AUTOMATICO", { sugerencias });
 }
 
-/* ============================================================
-   ENVOLTORIO GENERAL — EL NEXUS LLAMA ESTO
-=============================================================== */
-
+// Envío genérico desde NEXUS
 export function enviarEventoDesdeAURA(intent) {
-  // -------------------------------
-  // ACCIÓN SIMPLE
-  // -------------------------------
   if (intent.tipo === "accion") {
     eventoAccionSistema(intent.accion, intent.payload || {});
     return;
   }
 
-  // -------------------------------
-  // MÓDULO COMPLETO (AguaRuta, Flota, Traslado…)
-  // -------------------------------
   if (intent.tipo === "modulo") {
     eventoAbrirModulo(intent.modulo);
     return;
   }
 
-  // -------------------------------
-  // SUBRUTA (paneles internos AguaRuta)
-  // -------------------------------
   if (intent.tipo === "subruta") {
     eventoAbrirSubruta("aguaruta", intent.ruta);
     return;
