@@ -1,11 +1,10 @@
 /* ======================================================================
-   AURAChat.js — GOD MODE ULTRA PRO 2025 + NEXUS + EVENTBRIDGE
+   AURAChat.js — Versión ETAPA 5 FINAL
+   Integración total con AURA_NEXUS + EventBridge + MultiModel
    FAZO LOGÍSTICA — Gustavo Oliva
-   Mateo IA — IA Multimodel + Acciones del sistema + Agente autónomo
 ====================================================================== */
 
 import React, { useState, useEffect, useRef } from "react";
-
 import AuraRealistic from "./AuraRealistic";
 import FloatingMic from "./FloatingMic";
 import { detectarEmocion } from "./emotionUtils";
@@ -18,28 +17,16 @@ import {
   stopTalk,
   playClick,
   playError,
-  playSuccess,
   playAlert,
 } from "./AuraSounds";
 
+import { AURA_NEXUS } from "../core/AURA_NEXUS";
+import { limpiar as limpiarTexto } from "../core/AURA_NaturalLanguage";
 import config from "../config";
 
-// NEXUS + EVENTBRIDGE
-import { AURA_NEXUS } from "../core/AURA_NEXUS";
-import { enviarEventoDesdeAURA } from "../core/FAZO_OS_EventBridge";
-
-/* ============================================================
-   LIMPIEZA
-===============================================================*/
-const limpiar = (t) =>
-  t
-    ?.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g, "")
-    .replace(/\s+/g, " ")
-    .trim() || "";
-
-/* ============================================================
-   COMPONENTE AURA CHAT
-===============================================================*/
+/* ======================================================================
+   COMPONENTE PRINCIPAL
+====================================================================== */
 export default function AURAChat() {
   const [messages, setMessages] = useState([
     {
@@ -59,62 +46,60 @@ export default function AURAChat() {
 
   const recRef = useRef(null);
 
-  /* ============================================================
-     BOOT
-  ===============================================================*/
+  // ======================================================================
+  // BOOT: Sonido inicial
+  // ======================================================================
   useEffect(() => {
     try {
       playActivate();
     } catch {}
   }, []);
 
-  /* ============================================================
-     INTERNET — ONLINE/OFFLINE
-  ===============================================================*/
+  // ======================================================================
+  // Cambio Online / Offline
+  // ======================================================================
   useEffect(() => {
     const on = () => {
       setOnline(true);
-      playSuccess();
+      playClick();
       agregar("aura", "Conexión restablecida ✔️");
     };
-
     const off = () => {
       setOnline(false);
       playAlert();
-      agregar("aura", "Sin conexión. Activando modo local.");
+      agregar("aura", "Sin internet. Activando modo local.");
     };
 
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
-
     return () => {
       window.removeEventListener("online", on);
       window.removeEventListener("offline", off);
     };
   }, []);
 
-  /* ============================================================
-     AUDIO DEL AVATAR (mic reactivo)
-  ===============================================================*/
+  // ======================================================================
+  // Analizador de audio (avatar mic reactivo)
+  // ======================================================================
   useEffect(() => {
     let stream, audioCtx, analyser, dataArray;
-
     const init = async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioCtx.createAnalyser();
-
         const src = audioCtx.createMediaStreamSource(stream);
+
         analyser.fftSize = 256;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
-
         src.connect(analyser);
 
         const loop = () => {
           analyser.getByteFrequencyData(dataArray);
           const avg =
-            dataArray.reduce((a, b) => a + b, 0) / (255 * dataArray.length);
+            dataArray.reduce((a, b) => a + b, 0) /
+            (255 * dataArray.length);
+
           setMicVolume(avg);
           requestAnimationFrame(loop);
         };
@@ -128,15 +113,23 @@ export default function AURAChat() {
     return () => stream?.getTracks().forEach((t) => t.stop());
   }, []);
 
-  /* ============================================================
-     TTS — Voz
-  ===============================================================*/
+  // ======================================================================
+  // Agregar mensaje al chat
+  // ======================================================================
+  const agregar = (from, text) =>
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now() + Math.random(), from, text },
+    ]);
+
+  // ======================================================================
+  // TTS — Voz AURA
+  // ======================================================================
   const speak = (txt) => {
     if (!window.speechSynthesis) return;
-
     window.speechSynthesis.cancel();
 
-    const u = new SpeechSynthesisUtterance(limpiar(txt));
+    const u = new SpeechSynthesisUtterance(txt);
     u.rate = 0.96;
     u.pitch = 1.05;
 
@@ -145,7 +138,6 @@ export default function AURAChat() {
       setTalking(true);
       setEmotion("hablando");
     };
-
     u.onend = () => {
       stopTalk();
       setTalking(false);
@@ -155,12 +147,11 @@ export default function AURAChat() {
     window.speechSynthesis.speak(u);
   };
 
-  /* ============================================================
-     STT — Reconocimiento de voz
-  ===============================================================*/
+  // ======================================================================
+  // Speech Recognition
+  // ======================================================================
   useEffect(() => {
-    const SR =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
 
     const rec = new SR();
@@ -168,35 +159,25 @@ export default function AURAChat() {
     rec.interimResults = false;
 
     rec.onresult = (e) => {
-      const txt = e.results[0][0].transcript.trim();
-      sendMessage(txt);
+      sendMessage(e.results[0][0].transcript.trim());
     };
-
     rec.onerror = () => playError();
     rec.onend = () => setListening(false);
 
     recRef.current = rec;
   }, []);
 
-  /* ============================================================
-     AGREGAR MENSAJE
-  ===============================================================*/
-  const agregar = (from, text) =>
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now() + Math.random(), from, text },
-    ]);
-
-  /* ============================================================
-     MOTOR PRINCIPAL — NEXUS
-  ===============================================================*/
+  // ======================================================================
+  // MOTOR PRINCIPAL — Ahora usa AURA_NEXUS
+  // ======================================================================
   const sendMessage = async (txt) => {
-    const cleaned = limpiar(txt || input);
+    const cleaned = limpiarTexto(txt || input);
     if (!cleaned) return;
 
     agregar("user", cleaned);
     setInput("");
     setThinking(true);
+
     setEmotion(detectarEmocion(cleaned));
 
     const historial = messages.map((m) => ({
@@ -204,37 +185,38 @@ export default function AURAChat() {
       content: m.text,
     }));
 
-    // ============================
-    // NEXUS DECIDE QUÉ HACER
-    // ============================
+    // ----------------------------------------------------------------------
+    // 🔥 PASO CLAVE: aquí entra NEXUS (cerebro central)
+    // ----------------------------------------------------------------------
     const result = await AURA_NEXUS(cleaned, historial, online);
 
-    // Enviar acción a FAZO OS
-    if (["accion", "modulo", "subruta"].includes(result.tipo)) {
-      enviarEventoDesdeAURA(result);
+    // ----------------------------------------------------------------------
+    // Render de la respuesta
+    // ----------------------------------------------------------------------
+    let respuesta = result.respuesta;
+    if (result.tipo === "ia") {
+      respuesta = `🧠 (${result.proveedor.toUpperCase()}) → ${respuesta}`;
     }
 
-    agregar("aura", result.respuesta);
-    speak(result.respuesta);
+    agregar("aura", respuesta);
+    speak(respuesta);
 
-    setThinking(false);
     playClick();
+    setThinking(false);
   };
 
-  /* ============================================================
-     UI
-  ===============================================================*/
+  // ======================================================================
+  // UI
+  // ======================================================================
   return (
     <section className="bg-black/40 border border-cyan-500/40 rounded-2xl backdrop-blur-xl p-4">
-
       <div className="flex justify-between items-center border-b border-cyan-400/30 pb-2">
         <span className="text-cyan-300 text-sm">
-          {online ? "AURA Online — NEXUS Multimodel" : "AURA Offline"}
+          {online ? "AURA Online — NEXUS IA" : "AURA Offline"}
         </span>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mt-4">
-
         {/* AVATAR */}
         <div className="md:w-1/3 flex flex-col items-center">
           <div className="w-44 h-44 rounded-3xl bg-black/50 border border-cyan-300/30 flex items-center justify-center">
