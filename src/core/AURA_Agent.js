@@ -1,133 +1,82 @@
 // ======================================================================
-//  AURA_Agent.js — Autonomía Inteligente PRO 2025
+//  AURA_Agent.js — Agente Autónomo FAZO OS (Versión Profesional)
 //  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Supervisión automática de sistemas
+//  Mateo IA — Monitoreo automático + Diagnóstico del sistema
 // ======================================================================
 
-import { AURA_EventBridge } from "./AURA_EventBridge";
+import { FAZO_OS_EventBridge } from "./FAZO_OS_EventBridge";
 
-const WAIT = (ms) => new Promise((res) => setTimeout(res, ms));
+const INTERVALO = 8000; // cada 8 segundos
+let AGENTE_ACTIVO = false;
 
-let agentActivo = false;
-
-// ======================================================================
-//  CONFIGURACIONES DE MONITOREO
-// ======================================================================
-const CHECKS = {
-  internet: true,
-  iframeAguaRuta: true,
-  backendAguaRuta: true,
-  iaStatus: true,
-};
-
-const INTERVALOS = {
-  internet: 5000,        // 5 segundos
-  iframeAguaRuta: 8000,  // 8 segundos
-  backendAguaRuta: 10000,// 10 segundos
-  iaStatus: 15000,       // 15 segundos
-};
-
-// ======================================================================
-//  FUNCIONES DE REVISIÓN
-// ======================================================================
-
-// 1) Internet
-async function checkInternet() {
-  const online = navigator.onLine;
-
-  if (!online) {
-    AURA_EventBridge.emit("AURA_ALERT", {
-      tipo: "internet",
-      mensaje: "⚠️ Sin conexión a internet.",
-    });
-  }
-
-  return online;
-}
-
-// 2) AguaRuta iFrame
-async function checkIframe() {
-  const iframe = document.querySelector("iframe[title='AguaRuta']");
-
-  if (!iframe) {
-    AURA_EventBridge.emit("AURA_ALERT", {
-      tipo: "iframe",
-      mensaje: "⚠️ No se encontró el iframe de AguaRuta.",
-    });
-    return false;
-  }
-
-  // Si no carga en 5 segundos, error
-  if (iframe.dataset.loaded !== "true") {
-    AURA_EventBridge.emit("AURA_ALERT", {
-      tipo: "iframe",
-      mensaje: "⚠️ AguaRuta no está respondiendo.",
-    });
-  }
-
-  return true;
-}
-
-// 3) Backend AguaRuta
-async function checkBackend() {
-  try {
-    const res = await fetch("https://aguaruta-api.onrender.com/status");
-    if (!res.ok) throw new Error();
-
-    return true;
-  } catch (err) {
-    AURA_EventBridge.emit("AURA_ALERT", {
-      tipo: "backend",
-      mensaje: "🚨 El backend de AguaRuta está caído.",
-    });
-    return false;
-  }
-}
-
-// 4) IA Providers (OpenAI / Claude / Gemini)
-async function checkIA() {
-  // Aqui simulamos un check sin API real
-  AURA_EventBridge.emit("AURA_INFO", {
-    tipo: "ia-check",
-    mensaje: "⏳ Revisando estado de proveedores IA...",
-  });
-
-  return true;
-}
-
-// ======================================================================
-//  LOOP PRINCIPAL — Corre para siempre
-// ======================================================================
-async function AGENT_LOOP() {
-  if (agentActivo) return; // evitar duplicación
-  agentActivo = true;
-
-  AURA_EventBridge.emit("AURA_INFO", {
-    mensaje: "🤖 AURA_Agent PRO iniciado correctamente.",
-  });
-
-  while (true) {
-    if (CHECKS.internet) await checkInternet();
-    await WAIT(100);
-
-    if (CHECKS.iframeAguaRuta) await checkIframe();
-    await WAIT(100);
-
-    if (CHECKS.backendAguaRuta) await checkBackend();
-    await WAIT(100);
-
-    if (CHECKS.iaStatus) await checkIA();
-    await WAIT(100);
-
-    await WAIT(2000); // respiración
-  }
-}
-
-// ======================================================================
-//  API PÚBLICA
-// ======================================================================
 export const AURA_Agent = {
-  start() {
-    AGENT_LOOP();
+  iniciar() {
+    if (AGENTE_ACTIVO) return;
+    AGENTE_ACTIVO = true;
+
+    console.log("🤖 AURA Agent Autónomo iniciado…");
+
+    setInterval(() => this.revisionAutomatica(), INTERVALO);
+  },
+
+  // ============================================================
+  //  Monitoreo Operativo FAZO OS — AguaRuta / Traslado / Flota
+  // ============================================================
+  revisionAutomatica() {
+    const data = window.__FAZO_DATA__;
+    if (!data) return;
+
+    const alertas = [];
+
+    // A) Litros por camión (carga crítica)
+    if (data.camiones) {
+      data.camiones.forEach((c) => {
+        if (c.litros > 45000)
+          alertas.push(`Camión ${c.nombre}: carga excesiva (${c.litros} L).`);
+        if (c.litros < 30000)
+          alertas.push(`Camión ${c.nombre}: carga muy baja (${c.litros} L).`);
+      });
+    }
+
+    // B) Días con rutas insuficientes
+    if (data.dias) {
+      data.dias.forEach((d) => {
+        if (d.entregas < 2)
+          alertas.push(`El día ${d.nombre} tiene menos de 2 entregas asignadas.`);
+      });
+    }
+
+    // C) Puntos sin georreferencia
+    if (data.puntos) {
+      const sinGeo = data.puntos.filter(
+        (p) => !p.latitud || !p.longitud
+      ).length;
+
+      if (sinGeo > 0)
+        alertas.push(`${sinGeo} puntos no tienen coordenadas GPS.`);
+    }
+
+    // D) Duplicados por nombre
+    if (data.puntos) {
+      const count = {};
+      const duplicados = [];
+
+      data.puntos.forEach((p) => {
+        count[p.nombre] = (count[p.nombre] || 0) + 1;
+        if (count[p.nombre] === 2) duplicados.push(p.nombre);
+      });
+
+      if (duplicados.length)
+        alertas.push(
+          `Puntos duplicados detectados: ${duplicados.join(", ")}`
+        );
+    }
+
+    // Emitir alertas
+    if (alertas.length > 0) {
+      FAZO_OS_EventBridge.emit("AURA_ANALISIS_AUTOMATICO", {
+        sugerencias: alertas,
+      });
+    }
   },
 };
