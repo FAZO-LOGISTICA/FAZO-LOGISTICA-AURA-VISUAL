@@ -1,12 +1,11 @@
 // ======================================================================
-//  AURA_Agent.js — Agente Autónomo FAZO OS (Versión Profesional)
-//  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Monitoreo automático + Diagnóstico del sistema
+//  AURA_Agent.js — Autonomía + Aprendizaje + Memoria Total
 // ======================================================================
 
 import { FAZO_OS_EventBridge } from "./FAZO_OS_EventBridge";
+import { guardarEnMemoria, obtenerRecuerdos } from "./AURAMemory";
 
-const INTERVALO = 8000; // cada 8 segundos
+const INTERVALO = 8000;
 let AGENTE_ACTIVO = false;
 
 export const AURA_Agent = {
@@ -14,66 +13,61 @@ export const AURA_Agent = {
     if (AGENTE_ACTIVO) return;
     AGENTE_ACTIVO = true;
 
-    console.log("🤖 AURA Agent Autónomo iniciado…");
+    console.log("🤖 AURA Agent iniciado… (con memoria total)");
 
     setInterval(() => this.revisionAutomatica(), INTERVALO);
   },
 
   // ============================================================
-  //  Monitoreo Operativo FAZO OS — AguaRuta / Traslado / Flota
+  // ANÁLISIS AUTOMÁTICO
   // ============================================================
   revisionAutomatica() {
-    const data = window.__FAZO_DATA__;
-    if (!data) return;
+    if (!window.__FAZO_DATA__) return;
 
+    const d = window.__FAZO_DATA__;
     const alertas = [];
 
-    // A) Litros por camión (carga crítica)
-    if (data.camiones) {
-      data.camiones.forEach((c) => {
+    // -------- balance litros --------
+    if (d.camiones) {
+      for (let c of d.camiones) {
         if (c.litros > 45000)
-          alertas.push(`Camión ${c.nombre}: carga excesiva (${c.litros} L).`);
-        if (c.litros < 30000)
-          alertas.push(`Camión ${c.nombre}: carga muy baja (${c.litros} L).`);
-      });
+          alertas.push(`⚠️ El camión ${c.nombre} está sobrecargado (${c.litros} L).`);
+        if (c.litros < 25000)
+          alertas.push(`ℹ️ El camión ${c.nombre} tiene muy poca carga.`);
+      }
     }
 
-    // B) Días con rutas insuficientes
-    if (data.dias) {
-      data.dias.forEach((d) => {
-        if (d.entregas < 2)
-          alertas.push(`El día ${d.nombre} tiene menos de 2 entregas asignadas.`);
-      });
-    }
-
-    // C) Puntos sin georreferencia
-    if (data.puntos) {
-      const sinGeo = data.puntos.filter(
-        (p) => !p.latitud || !p.longitud
-      ).length;
-
+    // -------- puntos sin GPS --------
+    if (d.puntos) {
+      const sinGeo = d.puntos.filter((p) => !p.latitud || !p.longitud).length;
       if (sinGeo > 0)
-        alertas.push(`${sinGeo} puntos no tienen coordenadas GPS.`);
+        alertas.push(`📍 Hay ${sinGeo} puntos sin coordenadas GPS.`);
     }
 
-    // D) Duplicados por nombre
-    if (data.puntos) {
-      const count = {};
-      const duplicados = [];
-
-      data.puntos.forEach((p) => {
-        count[p.nombre] = (count[p.nombre] || 0) + 1;
-        if (count[p.nombre] === 2) duplicados.push(p.nombre);
-      });
-
-      if (duplicados.length)
-        alertas.push(
-          `Puntos duplicados detectados: ${duplicados.join(", ")}`
-        );
+    // -------- duplicados --------
+    if (d.puntos) {
+      const map = {};
+      const dup = [];
+      for (let p of d.puntos) {
+        map[p.nombre] = (map[p.nombre] || 0) + 1;
+        if (map[p.nombre] === 2) dup.push(p.nombre);
+      }
+      if (dup.length)
+        alertas.push(`🔁 Duplicados detectados: ${dup.join(", ")}`);
     }
 
-    // Emitir alertas
+    // -------- MEMORIA ACTIVA --------
+    const recuerdos = obtenerRecuerdos();
+    if (recuerdos.length > 0) {
+      alertas.push(`🧠 Tengo ${recuerdos.length} recuerdos recientes almacenados.`);
+    }
+
+    // -------- disparar --------
     if (alertas.length > 0) {
+      guardarEnMemoria(
+        `Agente detectó ${alertas.length} alertas automáticas.`
+      );
+
       FAZO_OS_EventBridge.emit("AURA_ANALISIS_AUTOMATICO", {
         sugerencias: alertas,
       });
