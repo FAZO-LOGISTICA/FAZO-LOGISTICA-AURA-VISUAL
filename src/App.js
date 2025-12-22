@@ -3,6 +3,12 @@
 //  Integración oficial AURA + NEXUS + Agent + EventBridge
 //  Gustavo Oliva — FAZO LOGÍSTICA 2025
 // ======================================================================
+import { AURA_Agent } from "./core/AURA_Agent";
+
+// Dentro de App()
+useEffect(() => {
+  AURA_Agent.iniciar();
+}, []);
 
 import React, { useState, useEffect, useRef } from "react";
 
