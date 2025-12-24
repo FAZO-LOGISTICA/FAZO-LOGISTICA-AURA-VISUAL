@@ -233,3 +233,20 @@ export default function App() {
     </div>
   );
 }
+// ======================================================
+//  Escuchar datos en vivo enviados desde AguaRuta (iFrame)
+// ======================================================
+useEffect(() => {
+  function recibirMensaje(e) {
+    if (!e.data) return;
+
+    // AguaRuta envía datos así:
+    // { type: "FAZO_DATA_UPDATE", payload: {...} }
+    if (e.data.type === "FAZO_DATA_UPDATE") {
+      actualizarFAZOData(e.data.payload);
+    }
+  }
+
+  window.addEventListener("message", recibirMensaje);
+  return () => window.removeEventListener("message", recibirMensaje);
+}, []);
