@@ -1,97 +1,124 @@
 // ======================================================================
-//  FAZO_OS_EventBridge.js — Bus de Eventos Global FAZO OS 2025
-//  Conexión entre: AURAChat ↔ NEXUS ↔ Agent ↔ App.js ↔ Iframes
-//  Versión Oficial — Compatible con Autonomía y MultiModel
+//  FAZO_OS_EventBridge.js — Puente Universal AURA ↔ FAZO OS
+//  VERSIÓN LOG — Paso 4 (Integración completa con FAZO_OS_Log)
+//  FAZO LOGÍSTICA — Gustavo Oliva
+//  Mateo IA — Router central entre acciones, módulos y subrutas
 // ======================================================================
 
-class EventBridge {
-  constructor() {
-    this.listeners = {};
-  }
+import { LOG } from "./FAZO_OS_Log"; // 🔵 Logger global
 
-  // ------------------------------------------------------------
-  // REGISTRAR SUSCRIPTORES
-  // ------------------------------------------------------------
-  on(evento, callback) {
-    if (!this.listeners[evento]) {
-      this.listeners[evento] = [];
-    }
-    this.listeners[evento].push(callback);
-  }
+// Lista de subscriptores (App.js + otros módulos)
+const subscriptores = new Set();
 
-  // ------------------------------------------------------------
-  // EMITIR EVENTO A TODO EL SISTEMA
-  // ------------------------------------------------------------
-  emit(evento, payload = {}) {
-    console.log("📡 Evento emitido:", evento, payload);
-
-    // Enviar a todos los listeners internos
-    if (this.listeners[evento]) {
-      this.listeners[evento].forEach((cb) => cb(payload));
-    }
-
-    // Propagar también al navegador → AURAChat lo escucha
-    window.dispatchEvent(
-      new CustomEvent(evento, {
-        detail: payload,
-      })
-    );
-  }
-
-  // ------------------------------------------------------------
-  // LIMPIAR LISTENERS
-  // ------------------------------------------------------------
-  clear(evento) {
-    if (this.listeners[evento]) {
-      this.listeners[evento] = [];
-    }
+/* ======================================================================
+   REGISTRAR SUBSISTEMA (App.js u otros módulos)
+====================================================================== */
+export function registrarSubsistema(callback) {
+  if (typeof callback === "function") {
+    subscriptores.add(callback);
+    LOG.evento("Subsistema registrado", { callback: callback.name || "anon" });
+  } else {
+    LOG.error("Intento de registrar subsistema inválido", { callback });
   }
 }
 
-// Instancia única global
-export const FAZO_OS_EventBridge = new EventBridge();
+/* ======================================================================
+   EMITIR EVENTO A TODOS LOS SUBSISTEMAS
+====================================================================== */
+export function emitirEvento(evento) {
+  LOG.evento("Emitiendo evento global FAZO OS", evento);
 
+  subscriptores.forEach((cb) => {
+    try {
+      cb(evento);
+    } catch (err) {
+      LOG.error("❌ Error ejecutando callback de subsistema", {
+        error: err.message || err,
+        evento,
+      });
+    }
+  });
+}
 
-// ======================================================================
-//  WRAPPERS PARA EVENTOS ESPECÍFICOS DE AURA
-// ======================================================================
+/* ======================================================================
+   EVENTOS DE ALTO NIVEL (AURA → FAZO OS)
+====================================================================== */
 
-// AURA abre módulo completo (AguaRuta, Flota, Traslado…)
+// ---------------------------
+// MÓDULO COMPLETO
+// ---------------------------
 export function eventoAbrirModulo(modulo) {
-  FAZO_OS_EventBridge.emit("AURA_MODULO", { modulo });
+  LOG.evento("AURA solicita abrir módulo", { modulo });
+
+  emitirEvento({
+    tipo: "AURA_MODULO",
+    modulo,
+  });
 }
 
-// AURA abre panel interno (subruta)
+// ---------------------------
+// SUBRUTA (panel interno)
+// ---------------------------
 export function eventoAbrirSubruta(modulo, ruta) {
-  FAZO_OS_EventBridge.emit("AURA_SUBRUTA", { modulo, ruta });
+  LOG.evento("AURA solicita abrir subruta", { modulo, ruta });
+
+  emitirEvento({
+    tipo: "AURA_SUBRUTA",
+    modulo,
+    ruta,
+  });
 }
 
-// Acción del sistema (logout, filtros, etc.)
+// ---------------------------
+// ACCIONES DEL SISTEMA
+// ---------------------------
 export function eventoAccionSistema(accion, payload = {}) {
-  FAZO_OS_EventBridge.emit("AURA_ACCION", { accion, payload });
+  LOG.evento("AURA ejecuta acción del sistema", { accion, payload });
+
+  emitirEvento({
+    tipo: "AURA_ACCION",
+    accion,
+    payload,
+  });
 }
 
-// Alertas del AURA Agent
+// ---------------------------
+// ANÁLISIS AUTOMÁTICO — AURA Agent
+// ---------------------------
 export function eventoAnalisisAutomatico(sugerencias) {
-  FAZO_OS_EventBridge.emit("AURA_ANALISIS_AUTOMATICO", { sugerencias });
+  LOG.evento("AURA Agent envía análisis automático", { sugerencias });
+
+  emitirEvento({
+    tipo: "AURA_ANALISIS_AUTOMATICO",
+    payload: { sugerencias },
+  });
 }
 
-// Envío genérico desde NEXUS
+/* ======================================================================
+   ENVOLTORIO CENTRAL — NEXUS → EVENTBRIDGE
+   (AURA_NEXUS llama este método)
+====================================================================== */
 export function enviarEventoDesdeAURA(intent) {
-  if (intent.tipo === "accion") {
-    eventoAccionSistema(intent.accion, intent.payload || {});
-    return;
-  }
+  LOG.evento("Intent recibido desde AURA_NEXUS", intent);
 
-  if (intent.tipo === "modulo") {
-    eventoAbrirModulo(intent.modulo);
-    return;
-  }
+  switch (intent.tipo) {
+    case "accion":
+      eventoAccionSistema(intent.accion, intent.payload || {});
+      break;
 
-  if (intent.tipo === "subruta") {
-    eventoAbrirSubruta("aguaruta", intent.ruta);
-    return;
-  }
+    case "modulo":
+      eventoAbrirModulo(intent.modulo);
+      break;
 
-  console.warn("⚠️ Intent desconocido recibido en EventBridge:", intent);
+    case "subruta":
+      eventoAbrirSubruta("aguaruta", intent.ruta);
+      break;
+
+    default:
+      LOG.error("Intent desconocido en EventBridge", intent);
+  }
 }
+
+// ======================================================================
+// FIN DEL ARCHIVO — VERSIÓN COMPLETA
+// ======================================================================
