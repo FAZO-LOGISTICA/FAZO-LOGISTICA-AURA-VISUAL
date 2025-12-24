@@ -1,6 +1,7 @@
 // ======================================================================
-//  FAZO OS — App.js 2025 (VERSIÓN DEFINITIVA NEXUS + EVENTBRIDGE)
-//  Compatible con AguaRuta (Netlify), Traslado Municipal, AURA OS
+//  FAZO OS — App.js (PASO 5 — Integración EventBridge)
+//  FAZO LOGÍSTICA — Gustavo Oliva
+//  Mateo IA — Integración total AURA ↔ OS
 // ======================================================================
 
 import React, { useState, useEffect, useRef } from "react";
@@ -12,9 +13,6 @@ import Login from "./components/Login";
 
 import {
   registrarSubsistema,
-  eventoAbrirModulo,
-  eventoAbrirSubruta,
-  eventoAccionSistema,
 } from "./core/FAZO_OS_EventBridge";
 
 import { AURA_Agent } from "./core/AURA_Agent";
@@ -22,97 +20,109 @@ import { AURA_Agent } from "./core/AURA_Agent";
 import "./index.css";
 
 export default function App() {
-  // =============================================================
-  // ESTADOS PRINCIPALES DEL SISTEMA
-  // =============================================================
+  // ======================================================
+  //  ESTADOS PRINCIPALES DEL OS
+  // ======================================================
   const [acceso, setAcceso] = useState(false);
   const [vista, setVista] = useState("aguaruta");
   const [subrutaAgua, setSubrutaAgua] = useState("");
   const [auraVisible, setAuraVisible] = useState(false);
 
-  // IFRAMES
+  // Referencias a iframes
   const aguarutaIframeRef = useRef(null);
   const trasladoIframeRef = useRef(null);
 
-  // =============================================================
-  // SPLASH / READY EVENT
-  // =============================================================
-  useEffect(() => {
-    setTimeout(() => window.dispatchEvent(new Event("FAZO_READY")), 300);
-  }, []);
-
-  // =============================================================
-  // LOGIN PERSISTENCIA
-  // =============================================================
+  // ======================================================
+  //  LOGIN PERSISTENTE
+  // ======================================================
   useEffect(() => {
     const saved = localStorage.getItem("aura-acceso");
     if (saved === "ok") setAcceso(true);
   }, []);
 
-  // =============================================================
-  // AURA AGENT — Supervisión Automática
-  // =============================================================
+  if (!acceso) return <Login onLogin={() => setAcceso(true)} />;
+
+  // ======================================================
+  //  AURA READY EVENT (SPLASH)
+  // ======================================================
+  useEffect(() => {
+    setTimeout(() => {
+      window.dispatchEvent(new Event("FAZO_READY"));
+    }, 200);
+  }, []);
+
+  // ======================================================
+  //  INICIAR AURA_AGENT (Análisis automático)
+  // ======================================================
   useEffect(() => {
     AURA_Agent.iniciar();
   }, []);
 
-  // =============================================================
-  // FAZO EVENTBRIDGE → Escuchar comandos de AURA
-  // =============================================================
+  // ======================================================
+  //  FAZO BRIDGE — Enviar comandos a iFrames
+  // ======================================================
+  const sendToIframe = (app, payload) => {
+    try {
+      const target =
+        app === "aguaruta"
+          ? aguarutaIframeRef.current
+          : app === "traslado"
+          ? trasladoIframeRef.current
+          : null;
+
+      if (target?.contentWindow) {
+        target.contentWindow.postMessage(payload, "*");
+      }
+    } catch (err) {
+      console.error("❌ Error enviando comando a iframe:", err);
+    }
+  };
+
+  // ======================================================
+  //  SUSCRIPCIÓN A EVENTOS DE AURA (EventBridge)
+  // ======================================================
   useEffect(() => {
     registrarSubsistema((evento) => {
-      if (!evento) return;
+      console.log("📡 App.js recibió evento AURA:", evento);
 
-      // -----------------------------
-      // 1) ABRIR MÓDULOS COMPLETOS
-      // -----------------------------
+      // ----------------------------------------------------
+      // 1) MÓDULO COMPLETO
+      // ----------------------------------------------------
       if (evento.tipo === "AURA_MODULO") {
         setVista(evento.modulo);
-
-        if (evento.modulo === "aguaruta") {
-          setSubrutaAgua("");
-        }
-        return;
+        if (evento.modulo === "aguaruta") setSubrutaAgua("");
       }
 
-      // -----------------------------
-      // 2) SUBRUTAS DE AGUARUTA
-      // -----------------------------
+      // ----------------------------------------------------
+      // 2) SUBRUTA AGUARUTA
+      // ----------------------------------------------------
       if (evento.tipo === "AURA_SUBRUTA") {
         setVista(evento.modulo);
+        setSubrutaAgua(evento.ruta);
 
-        const clean = evento.ruta.replace(/^\//, "");
-        setSubrutaAgua(clean);
-
-        // enviar comando al iframe
-        if (aguarutaIframeRef.current?.contentWindow) {
-          aguarutaIframeRef.current.contentWindow.postMessage(
-            {
-              type: "FAZO_CMD",
-              command: "open-tab",
-              tab: clean,
-            },
-            "*"
-          );
-        }
-        return;
+        sendToIframe("aguaruta", {
+          type: "FAZO_CMD",
+          command: "open-tab",
+          tab: evento.ruta,
+        });
       }
 
-      // -----------------------------
-      // 3) ACCIONES DEL SISTEMA
-      // -----------------------------
+      // ----------------------------------------------------
+      // 3) ACCIONES GENERALES
+      // ----------------------------------------------------
       if (evento.tipo === "AURA_ACCION") {
-        const { accion, payload } = evento;
-
-        switch (accion) {
+        switch (evento.accion) {
           case "logout":
             localStorage.removeItem("aura-acceso");
             window.location.reload();
             break;
 
-          case "abrir-mapa":
-            setVista("aguaruta");
-            setSubrutaAgua("mapa");
+          case "filtrar-camion":
+            sendToIframe("aguaruta", {
+              type: "FAZO_CMD",
+              command: "filtrar-camion",
+              camion: evento.payload?.valor,
+            });
             break;
 
           case "abrir-rutas":
@@ -120,34 +130,24 @@ export default function App() {
             setSubrutaAgua("rutas-activas");
             break;
 
-          case "filtrar-camion":
-            if (aguarutaIframeRef.current?.contentWindow) {
-              aguarutaIframeRef.current.contentWindow.postMessage(
-                {
-                  type: "FAZO_CMD",
-                  command: "filtrar-camion",
-                  camion: payload?.camion,
-                },
-                "*"
-              );
-            }
-            break;
-
           default:
-            console.warn("⚠️ Acción no reconocida:", accion);
+            console.warn("⚠️ Acción desconocida:", evento);
         }
+      }
+
+      // ----------------------------------------------------
+      // 4) AURA ANALYSIS AUTO — ALERTAS
+      // ----------------------------------------------------
+      if (evento.tipo === "AURA_ANALISIS_AUTOMATICO") {
+        console.log("🔍 AURA análisis automático:", evento.payload);
+        setAuraVisible(true); // abre el panel IA automáticamente
       }
     });
   }, []);
 
-  // =============================================================
-  // LOGIN SCREEN
-  // =============================================================
-  if (!acceso) return <Login onLogin={() => setAcceso(true)} />;
-
-  // =============================================================
-  // RENDER PRINCIPAL
-  // =============================================================
+  // ======================================================
+  //  RENDER FAZO OS COMPLETO
+  // ======================================================
   return (
     <div
       className="
@@ -156,9 +156,7 @@ export default function App() {
         overflow-hidden relative fade-in
       "
     >
-      {/* ============================ */}
-      {/* SIDEBAR */}
-      {/* ============================ */}
+      {/* MENÚ IZQUIERDO */}
       <SidebarFazo
         active={vista}
         onNavigate={(slug) => {
@@ -167,9 +165,7 @@ export default function App() {
         }}
       />
 
-      {/* ============================ */}
-      {/* PANEL VISUAL PRINCIPAL */}
-      {/* ============================ */}
+      {/* PANEL CENTRAL */}
       <div className="flex-1 flex flex-col p-6 overflow-y-auto ml-64">
         <main className="flex-1 holo-fade smooth">
 
@@ -184,7 +180,7 @@ export default function App() {
                 border border-cyan-400/40
                 bg-black/40 backdrop-blur-xl
                 shadow-[0_0_25px_rgba(0,255,255,0.25)]
-                transition-all duration-500 jarvis-frame
+                transition-all duration-500
               "
             />
           )}
@@ -200,58 +196,39 @@ export default function App() {
                 border border-emerald-400/40
                 bg-black/40 backdrop-blur-xl
                 shadow-[0_0_25px_rgba(0,255,255,0.25)]
-                transition-all duration-500 jarvis-frame
               "
             />
           )}
 
-          {/* Flota Municipal */}
+          {/* Flota */}
           {vista === "flota" && (
             <div className="card-fazo-strong p-10 text-center blur-in">
               <h2 className="text-3xl font-bold text-cyan-300 mb-2 glow-stark">
                 Flota Municipal
               </h2>
-              <p className="text-cyan-200/80">En construcción.</p>
+              <p className="text-cyan-200/80">Control y gestión vehicular.</p>
             </div>
           )}
 
           {/* Reportes */}
           {vista === "reportes" && (
             <div className="card-fazo-strong p-10 text-center blur-in">
-              <h2 className="text-3xl font-bold text-cyan-300 mb-2 glow-stark">
-                Reportes FAZO OS
-              </h2>
-              <p className="text-cyan-200/80">En construcción.</p>
-            </div>
-          )}
-
-          {/* Ajustes */}
-          {vista === "ajustes" && (
-            <div className="card-fazo p-10 blur-in">
-              <h2 className="text-2xl font-bold text-cyan-300 mb-4 glow-stark">
-                Ajustes del Sistema
-              </h2>
-              <button
-                onClick={() => {
-                  localStorage.removeItem("aura-acceso");
-                  window.location.reload();
-                }}
-                className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 shadow-lg"
-              >
-                Cerrar sesión
-              </button>
+              <h2 className="text-3xl font-bold text-cyan-300 mb-2">Reportes FAZO</h2>
+              <p className="text-cyan-200/80">Análisis avanzado.</p>
             </div>
           )}
         </main>
       </div>
 
-      {/* ORBE DE AURA */}
+      {/* ORBE IA */}
       <AuraOrb onClick={() => setAuraVisible(true)} />
 
-      {/* PANEL DE AURA */}
+      {/* PANEL AURA */}
       <AuraCyberPanel
         visible={auraVisible}
         onClose={() => setAuraVisible(false)}
+        onComando={() => {}} 
+        onSendToIframe={sendToIframe}
       />
     </div>
   );
