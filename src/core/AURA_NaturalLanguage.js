@@ -1,172 +1,178 @@
 /* ======================================================================
-   AURA_NaturalLanguage.js — INTENT ENGINE PRO+ 2025
-   FAZO LOGÍSTICA — Interpretación Natural de Órdenes para AURA OS
-   Procesa lenguaje humano y lo convierte en comandos estructurados.
+   AURA_NaturalLanguage.js — INTENT ENGINE PRO 2025 (PASO 10 COMPLETO)
+   Incluye:
+   - Acciones del sistema
+   - Módulos FAZO OS
+   - Subrutas
+   - Comandos AutoFix y Reparación
+   - Limpieza robusta
+   FAZO LOGÍSTICA — Gustavo Oliva
 ====================================================================== */
 
-/* ======================================================================
-   LIMPIEZA BASE (normaliza texto)
-====================================================================== */
+/* ------------------------------
+   Limpieza general de texto
+-------------------------------- */
 export const limpiar = (t) =>
   t
     ?.toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Quita tildes
-    .replace(/[^\w\sáéíóúñ]/gi, "") // Limpia símbolos raros
-    .replace(/\s+/g, " ")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9ñáéíóú\s]/gi, "")
     .trim() || "";
 
 /* ======================================================================
-   INTENTS — BIBLIOTECA DE COMANDOS
+   PATRONES DE INTENCIÓN
 ====================================================================== */
+
 const patrones = [
-  // ====================================================
-  // ACCIONES DEL SISTEMA
-  // ====================================================
+  /* =======================================================
+     ACCIONES GENERALES DEL SISTEMA
+  ======================================================= */
   {
     tipo: "accion",
-    keys: ["cerrar sesion", "logout", "salir del sistema", "salirme"],
+    keys: ["cerrar sesion", "logout", "salir del sistema"],
     accion: "logout",
-    frase: "Cerrando sesión del sistema FAZO OS.",
+    frase: "Cerrando sesión.",
   },
   {
     tipo: "accion",
-    keys: ["abrir rutas", "rutas", "mostrar rutas activas"],
+    keys: ["abrir rutas", "rutas activas"],
     accion: "abrir-rutas",
     frase: "Abriendo Rutas Activas.",
   },
   {
     tipo: "accion",
-    keys: ["filtrar camion a", "camion a1", "camion a2", "camion a3", "camion a4", "camion a5", "camion m1", "camion m2"],
-    accion: "filtro-camion",
-    frase: "Aplicando filtro por camión.",
-  },
-  {
-    tipo: "accion",
-    keys: ["mostrar mapa", "abrir mapa", "ver mapa", "mapa general"],
+    keys: ["abrir mapa", "ver mapa"],
     accion: "abrir-mapa",
-    frase: "Mostrando el mapa operativo.",
+    frase: "Mostrando mapa.",
   },
 
-  // ====================================================
-  // MÓDULOS COMPLETOS (NAVEGACIÓN GENERAL)
-  // ====================================================
+  /* =======================================================
+     MÓDULOS COMPLETOS (AGUARUTA / FLOTa / TRASLADO)
+  ======================================================= */
   {
     tipo: "modulo",
-    keys: ["aguaruta", "agua ruta", "agua", "entregas", "sistema de agua"],
+    keys: ["aguaruta", "agua ruta", "agua"],
     modulo: "aguaruta",
     frase: "Entrando al módulo AguaRuta.",
   },
   {
     tipo: "modulo",
-    keys: ["traslado", "movilizacion", "viajes", "pasajeros", "transportes"],
+    keys: ["traslado", "traslado municipal", "transporte"],
     modulo: "traslado",
     frase: "Abriendo Traslado Municipal.",
   },
   {
     tipo: "modulo",
-    keys: ["flota", "vehiculos", "camiones municipales", "maquinaria"],
+    keys: ["flota", "flota municipal", "vehiculos"],
     modulo: "flota",
-    frase: "Mostrando el panel de Flota Municipal.",
+    frase: "Mostrando Flota Municipal.",
   },
   {
     tipo: "modulo",
-    keys: ["inicio", "home", "pantalla principal", "volver al inicio"],
+    keys: ["inicio", "pantalla principal", "home"],
     modulo: "inicio",
-    frase: "Volviendo al inicio del sistema.",
-  },
-  {
-    tipo: "modulo",
-    keys: ["reportes", "panel de reportes", "graficos generales", "dashboard"],
-    modulo: "reportes",
-    frase: "Abriendo Panel de Reportes.",
+    frase: "Volviendo al inicio.",
   },
 
-  // ====================================================
-  // SUBRUTAS — AGUARUTA OS
-  // ====================================================
+  /* =======================================================
+     SUBRUTAS AGUARUTA
+  ======================================================= */
   {
     tipo: "subruta",
-    keys: ["rutas activas", "panel rutas", "ver rutas", "lista de rutas"],
+    keys: ["rutas activas", "panel rutas"],
     ruta: "rutas-activas",
-    modulo: "aguaruta",
     frase: "Abriendo Rutas Activas.",
   },
   {
     tipo: "subruta",
-    keys: ["no entregadas", "pendientes", "no realizadas", "no se entrego"],
+    keys: ["no entregadas", "pendientes"],
     ruta: "no-entregadas",
-    modulo: "aguaruta",
     frase: "Mostrando entregas no realizadas.",
   },
   {
     tipo: "subruta",
-    keys: ["estadisticas", "camion estadisticas", "rendimiento camiones", "kpi camion"],
+    keys: ["estadisticas", "camion estadisticas", "rendimiento"],
     ruta: "camion-estadisticas",
-    modulo: "aguaruta",
-    frase: "Mostrando estadísticas del camión.",
+    frase: "Mostrando estadísticas por camión.",
   },
   {
     tipo: "subruta",
-    keys: ["comparacion", "semanal", "graficos semana", "comparar semanas"],
+    keys: ["comparacion", "comparacion semanal", "semanal"],
     ruta: "comparacion-semanal",
-    modulo: "aguaruta",
     frase: "Mostrando comparación semanal.",
   },
   {
     tipo: "subruta",
-    keys: ["registrar entrega", "nueva entrega", "registrar agua"],
+    keys: ["registrar entrega", "nueva entrega"],
     ruta: "registrar-entrega",
-    modulo: "aguaruta",
-    frase: "Abriendo formulario de registro de entrega.",
+    frase: "Abriendo registro de entrega.",
   },
   {
     tipo: "subruta",
-    keys: ["nueva distribucion", "redistribucion nueva", "septiembre", "dibujar nueva ruta"],
+    keys: ["nueva distribucion", "redistribucion"],
     ruta: "nueva-distribucion",
-    modulo: "aguaruta",
-    frase: "Mostrando Nueva Distribución.",
+    frase: "Abriendo nueva redistribución.",
   },
   {
     tipo: "subruta",
-    keys: ["editar distribucion", "editor distribucion", "editar rutas", "modificar redistribucion"],
+    keys: ["editar distribucion", "editor distribucion"],
     ruta: "editar-redistribucion",
-    modulo: "aguaruta",
-    frase: "Abriendo Editor de Redistribución.",
+    frase: "Editor de redistribución abierto.",
   },
 
-  // ====================================================
-  // PREGUNTAS NATURALES (mejor comprensión)
-  // ====================================================
+  /* =======================================================
+     AUTOFIX — COMANDOS DE REPARACIÓN TOTAL
+  ======================================================= */
+
+  // Reparación general del sistema
   {
-    tipo: "modulo",
-    keys: ["quiero ver el agua", "como va el agua", "estado del agua"],
-    modulo: "aguaruta",
-    frase: "Abriendo módulo AguaRuta.",
+    tipo: "autofix",
+    keys: ["repara el sistema", "arregla el sistema", "fix system", "autofix"],
+    modo: "full",
+    frase: "Iniciando reparación completa del sistema.",
   },
+
+  // Reparación específica de AguaRuta
   {
-    tipo: "subruta",
-    keys: ["que rutas hay", "mostrar rutas", "dime rutas"],
-    ruta: "rutas-activas",
-    modulo: "aguaruta",
-    frase: "Estas son las rutas activas.",
+    tipo: "autofix",
+    keys: ["arregla aguaruta", "repara aguaruta", "fix aguaruta"],
+    modo: "aguaruta",
+    frase: "Reparando módulo AguaRuta.",
+  },
+
+  // Reparación del OS
+  {
+    tipo: "autofix",
+    keys: ["optimiza el sistema", "reparar os", "fix os"],
+    modo: "os",
+    frase: "Optimizando FAZO OS.",
+  },
+
+  // Reinicio o recarga del sistema
+  {
+    tipo: "autofix",
+    keys: ["reiniciar aura", "reinicia aura", "reset aura"],
+    modo: "reset",
+    frase: "Reiniciando componentes internos de AURA.",
   },
 ];
 
 /* ======================================================================
-   MOTOR DE INTENCIÓN — DEVUELVE UN OBJETO LIMPIO PARA AURA OS
+   MOTOR DE INTENCIÓN
 ====================================================================== */
 export function interpretar(texto) {
   const t = limpiar(texto);
 
-  for (let p of patrones) {
-    for (let key of p.keys) {
+  for (const p of patrones) {
+    for (const key of p.keys) {
       if (t.includes(key)) {
         return {
           tipo: p.tipo,
           ...(p.accion && { accion: p.accion }),
           ...(p.modulo && { modulo: p.modulo }),
           ...(p.ruta && { ruta: p.ruta }),
+          ...(p.modo && { modo: p.modo }), // para AutoFix
           frase: p.frase,
         };
       }
