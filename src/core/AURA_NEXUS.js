@@ -1,52 +1,42 @@
 // ======================================================================
-//  AURA_NEXUS.js — Núcleo de Decisión AURA (VERSIÓN AUTOFIX 2025)
-//  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Conexión directa entre comandos, IA y AutoFix
+//  AURA_NEXUS.js — Núcleo de decisión de AURA (PASO 11 COMPLETO)
+//  Integra:
+//  - NLP (intents)
+//  - Acciones del sistema
+//  - Subrutas
+//  - Módulos FAZO OS
+//  - AutoFix (nuevo)
+//  - IA Multimodel
+//  - Modo offline
 // ======================================================================
 
 import { interpretar } from "./AURA_NaturalLanguage";
 import { ejecutarAccion } from "./AURA_Actions";
+import { ejecutarAutoFix } from "./AURA_AutoFix";   // ⬅️ NUEVO
 import { AURA_MultiModel_Process } from "./AURA_MultiModel";
 import { analizarManual } from "./FAZO_OS_Router";
-import { AURA_AutoFix, AURA_AutoFix_AguaRuta } from "./AURA_AutoFix";
 
 // ======================================================================
-//  AURA NEXUS — Decide qué debe hacer AURA con cada mensaje
+//   FUNCIÓN PRINCIPAL
 // ======================================================================
-export async function AURA_NEXUS(texto, historial, online = true) {
+
+export async function AURA_NEXUS(texto, historial, online) {
   const intent = interpretar(texto);
 
   // ============================================================
-  // A) COMANDOS DE REPARACIÓN (AUTO FIX)
+  // 1) AUTOFIX — SISTEMA DE REPARACIÓN INTELIGENTE
   // ============================================================
-  const t = texto.toLowerCase();
+  if (intent.tipo === "autofix") {
+    const resultado = await ejecutarAutoFix(intent.modo);
 
-  // --- Auto Fix Total ---
-  if (t.includes("arregla todo") || t.includes("fix total") || t.includes("repara el sistema")) {
-    const r = await AURA_AutoFix(texto, historial, online);
     return {
       tipo: "autofix",
-      proveedor: r.proveedor,
-      respuesta: "🛠️ AutoFix Total ejecutado.\n\n" + r.respuesta,
-    };
-  }
-
-  // --- Auto Fix AguaRuta ---
-  if (
-    t.includes("arregla aguaruta") ||
-    t.includes("fix aguaruta") ||
-    t.includes("repara aguaruta")
-  ) {
-    const r = await AURA_AutoFix_AguaRuta(texto, historial, online);
-    return {
-      tipo: "autofix",
-      proveedor: r.proveedor,
-      respuesta: "🚚 AutoFix AguaRuta ejecutado.\n\n" + r.respuesta,
+      respuesta: intent.frase + "\n" + resultado.mensaje,
     };
   }
 
   // ============================================================
-  // B) INTENCIONES DEL SISTEMA (NLP)
+  // 2) ACCIONES DIRECTAS DEL SISTEMA (logout, abrir mapa, etc.)
   // ============================================================
   if (intent.tipo === "accion") {
     ejecutarAccion(intent.accion, intent.payload || {});
@@ -56,14 +46,21 @@ export async function AURA_NEXUS(texto, historial, online = true) {
     };
   }
 
+  // ============================================================
+  // 3) SUBRUTAS (pestañas internas de módulos)
+  // ============================================================
   if (intent.tipo === "subruta") {
     ejecutarAccion("aguaruta-open-tab", { tab: intent.ruta });
+
     return {
       tipo: "subruta",
       respuesta: intent.frase,
     };
   }
 
+  // ============================================================
+  // 4) MÓDULOS COMPLETOS (AGUARUTA, TRASLADO, FLOTa, INICIO)
+  // ============================================================
   if (intent.tipo === "modulo") {
     ejecutarAccion("abrir-" + intent.modulo);
     return {
@@ -73,21 +70,25 @@ export async function AURA_NEXUS(texto, historial, online = true) {
   }
 
   // ============================================================
-  // C) ANÁLISIS OPERATIVO MANUAL
+  // 5) ANÁLISIS OPERATIVO MANUAL
+  //    "revisa el sistema", "analiza rutas", etc.
   // ============================================================
-  if (t.includes("revisa") || t.includes("analiza")) {
-    const analisis = await analizarManual(() => window.__FAZO_DATA__ || {});
+  if (texto.includes("revisa") || texto.includes("analiza")) {
+    const analisis = await analizarManual(() => window.__FAZO_DATA__); 
+    const resumen = analisis.sugerencias.join("\n");
+
     return {
       tipo: "analisis",
-      respuesta: "🔎 Análisis completado:\n" + analisis.sugerencias.join("\n"),
+      respuesta: "Análisis completado:\n" + resumen,
     };
   }
 
   // ============================================================
-  // D) IA MULTIMODEL
+  // 6) IA MULTIMODEL — GPT / Claude / Gemini / Local
   // ============================================================
   if (online) {
-    const { proveedor, respuesta } = await AURA_MultiModel_Process(texto, historial);
+    const { proveedor, respuesta } =
+      await AURA_MultiModel_Process(texto, historial);
 
     return {
       tipo: "ia",
@@ -97,7 +98,7 @@ export async function AURA_NEXUS(texto, historial, online = true) {
   }
 
   // ============================================================
-  // E) OFFLINE
+  // 7) MODO OFFLINE
   // ============================================================
   return {
     tipo: "offline",
