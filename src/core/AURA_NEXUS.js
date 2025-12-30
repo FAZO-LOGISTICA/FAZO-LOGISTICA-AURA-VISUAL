@@ -1,143 +1,128 @@
 // ======================================================================
-//  AURA_NEXUS.js — Núcleo de Decisión Inteligente de AURA OS
+//  AURA_NEXUS.js — Núcleo de Decisión Inteligente de AURA
 //  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Arquitectura oficial FAZO-OS 2025
+//  Mateo IA — Router central entre: NLP → Acciones → OS → IA Multimodel
 // ======================================================================
 
 import { interpretar } from "./AURA_NaturalLanguage";
 import { ejecutarAccion } from "./AURA_Actions";
-import { analizarManual } from "./FAZO_OS_Router";
 import { AURA_MultiModel_Process } from "./AURA_MultiModel";
-import { guardarMemoria } from "./AURAMemory";
-import { responderAURA } from "./AURA_Responder";
 
-// AutoFix (opcional, pero integrado)
-import { AURA_AutoFix_Check } from "./AURA_AutoFix";
+import {
+  eventoAbrirModulo,
+  eventoAbrirSubruta,
+  eventoAccionSistema,
+  eventoAnalisisAutomatico,
+} from "./FAZO_OS_EventBridge";
 
-/*
-   ORDEN DE DECISIÓN DE AURA:
+import {
+  registrarAccion,
+  registrarAlertaPersistente,
+  guardarDuplicados,
+  guardarPuntosSinGeo,
+} from "./AURAMemory";
 
-   1) Intent Engine (accion / subruta / modulo)
-   2) AutoFix (detección de errores comunes)
-   3) Análisis manual solicitado por el usuario
-   4) IA Multimodel (OpenAI / Claude / Gemini / Local)
-   5) Modo Offline
-*/
-
+import { analizarManual } from "./FAZO_OS_Router";
 
 // ======================================================================
-//  FUNCIÓN PRINCIPAL — El cerebro de AURA
+//  FUNCIÓN PRINCIPAL — EL CEREBRO DE AURA
 // ======================================================================
-export async function AURA_NEXUS(texto, historial = [], online = true) {
+export async function AURA_NEXUS(texto, historial, online = true) {
+  const cleaned = texto?.trim() || "";
 
-  // Guardamos el mensaje en memoria
-  guardarMemoria(texto);
+  // Guardar acción del usuario
+  registrarAccion("mensaje", cleaned);
 
-  // 1) Detectar intención del usuario
-  const intent = interpretar(texto);
+  // Interpretar el texto en un intent
+  const intent = interpretar(cleaned);
 
-
-  // ============================================================
-  // 1) ACCIONES directas del sistema
-  // ============================================================
+  // ==================================================================
+  // 1) ACCIONES DIRECTAS DEL SISTEMA (logout, abrir rutas, etc.)
+  // ==================================================================
   if (intent.tipo === "accion") {
     ejecutarAccion(intent.accion, intent.payload || {});
-    responderAURA(intent.frase);
+    eventoAccionSistema(intent.accion, intent.payload);
+
     return {
       tipo: "accion",
-      mensaje: intent.frase,
+      proveedor: "nexus",
+      respuesta: intent.frase,
     };
   }
 
-
-  // ============================================================
-  // 2) SUBRUTAS (solo AguaRuta)
-  // ============================================================
+  // ==================================================================
+  // 2) SUBRUTAS de módulos (ej: rutas-activas, no-entregadas…)
+  // ==================================================================
   if (intent.tipo === "subruta") {
-    ejecutarAccion("aguaruta-open-tab", { tab: intent.ruta });
-    responderAURA(intent.frase);
+    eventoAbrirSubruta("aguaruta", intent.ruta);
+
     return {
       tipo: "subruta",
-      mensaje: intent.frase,
+      proveedor: "nexus",
+      respuesta: intent.frase,
     };
   }
 
-
-  // ============================================================
-  // 3) MÓDULO COMPLETO (AguaRuta, Flota, Traslado, etc.)
-  // ============================================================
+  // ==================================================================
+  // 3) MÓDULOS COMPLETOS (AguaRuta, Traslado, Flota)
+  // ==================================================================
   if (intent.tipo === "modulo") {
-    ejecutarAccion("abrir-" + intent.modulo);
-    responderAURA(intent.frase);
+    eventoAbrirModulo(intent.modulo);
+
     return {
       tipo: "modulo",
-      mensaje: intent.frase,
+      proveedor: "nexus",
+      respuesta: intent.frase,
     };
   }
 
-
-  // ============================================================
-  // 4) AutoFix — Detectar errores frecuentes automáticamente
-  // ============================================================
-  const autofix = AURA_AutoFix_Check(texto);
-  if (autofix) {
-    responderAURA(autofix);
-    return {
-      tipo: "autofix",
-      mensaje: autofix,
-    };
-  }
-
-
-  // ============================================================
-  // 5) Análisis Operacional Manual FAZO OS
-  // ============================================================
-  if (
-    texto.includes("revisa") ||
-    texto.includes("analiza") ||
-    texto.includes("analisis")
-  ) {
+  // ==================================================================
+  // 4) ANÁLISIS OPERACIONAL MANUAL — AguaRuta / Flota
+  // ==================================================================
+  if (cleaned.includes("revisa") || cleaned.includes("analiza")) {
     const analisis = await analizarManual(() => window.__FAZO_DATA__);
-    responderAURA("Revisión completa:\n" + analisis.sugerencias.join("\n"));
+
+    // Guardar en memoria partes importantes
+    if (analisis.duplicados) guardarDuplicados(analisis.duplicados);
+    if (analisis.puntosSinGeo) guardarPuntosSinGeo(analisis.puntosSinGeo);
+
+    // Enviar evento a FAZO OS
+    eventoAnalisisAutomatico(analisis.sugerencias);
+
     return {
       tipo: "analisis",
-      mensaje: analisis.sugerencias,
+      proveedor: "nexus",
+      respuesta:
+        "Análisis operativo completado:\n\n" +
+        analisis.sugerencias.join("\n"),
     };
   }
 
-
-  // ============================================================
-  // 6) IA MULTIMODEL — OpenAI / Claude / Gemini
-  // ============================================================
+  // ==================================================================
+  // 5) IA MULTIMODEL (OpenAI / Claude / Gemini / Local)
+  // ==================================================================
   if (online) {
-    try {
-      const { proveedor, respuesta } = await AURA_MultiModel_Process(
-        texto,
-        historial
-      );
+    const { proveedor, respuesta } = await AURA_MultiModel_Process(
+      cleaned,
+      historial
+    );
 
-      responderAURA(`🧠 (${proveedor.toUpperCase()}) → ${respuesta}`);
-
-      return {
-        tipo: "ia",
-        proveedor,
-        mensaje: respuesta,
-      };
-    } catch (err) {
-      responderAURA("⚠️ Error con los modelos IA. Intentando modo offline.");
-    }
+    return {
+      tipo: "ia",
+      proveedor,
+      respuesta,
+    };
   }
 
-
-  // ============================================================
-  // 7) MODO OFFLINE
-  // ============================================================
-  responderAURA(
-    "Estoy sin conexión, pero sigo operativa. Puedo realizar acciones internas y análisis locales."
-  );
+  // ==================================================================
+  // 6) MODO OFFLINE
+  // ==================================================================
+  registrarAlertaPersistente("AURA sin conexión — modo offline ACTIVADO");
 
   return {
     tipo: "offline",
-    mensaje: "Sin conexión",
+    proveedor: "local",
+    respuesta:
+      "Estoy sin conexión a internet. Activando modo offline para seguir operativa.",
   };
 }
