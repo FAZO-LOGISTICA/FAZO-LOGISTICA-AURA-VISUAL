@@ -1,97 +1,104 @@
 // ======================================================================
-//  AURA_Actions.js — Acciones del Sistema para AURA OS (FAZO LOGÍSTICA)
-//  Versión ULTIMATE 2025 — Conectado a Nexus, EventBridge y AutoFix
+//  AURA_Actions.js — Acciones reales del sistema FAZO OS
+//  FAZO LOGÍSTICA — Gustavo Oliva
+//  Mateo IA — Router oficial para comandos del OS
 // ======================================================================
 
-import {
-  eventoAbrirModulo,
-  eventoAbrirSubruta,
-  eventoAccionSistema,
-} from "./FAZO_OS_EventBridge";
-
-import { AURA_AutoFix } from "./AURA_AutoFix";
-import { actualizarFAZOData } from "./FAZO_DATA";
+import { emitirEvento } from "./FAZO_OS_EventBridge";
 
 // ============================================================
-// MAPA PRINCIPAL DE ACCIONES
+//  ACCIONES DEL SISTEMA (MODULARES, ESCALABLES, MULTIPROYECTO)
 // ============================================================
 
-const acciones = {
-  // ------------------------------
-  // SISTEMA
-  // ------------------------------
-  logout: () => {
-    eventoAccionSistema("logout");
-  },
+export function ejecutarAccion(accion, payload = {}) {
+  console.log("⚡ Ejecutando acción:", accion, payload);
 
-  reiniciar: () => {
-    eventoAccionSistema("reiniciar");
-  },
+  switch (accion) {
+    // ============================================================
+    // 🔐 Sesión
+    // ============================================================
+    case "logout":
+      emitirEvento({
+        tipo: "AURA_ACCION",
+        accion: "logout",
+      });
+      return;
 
-  // ------------------------------
-  // MÓDULOS COMPLETOS
-  // ------------------------------
-  "abrir-inicio": () => eventoAbrirModulo("inicio"),
-  "abrir-aguaruta": () => eventoAbrirModulo("aguaruta"),
-  "abrir-flota": () => eventoAbrirModulo("flota"),
-  "abrir-traslado": () => eventoAbrirModulo("traslado"),
-  "abrir-reportes": () => eventoAbrirModulo("reportes"),
-  "abrir-ajustes": () => eventoAbrirModulo("ajustes"),
+    // ============================================================
+    // 🗂 Navegación general FAZO OS
+    // ============================================================
+    case "abrir-aguaruta":
+      emitirEvento({
+        tipo: "AURA_MODULO",
+        modulo: "aguaruta",
+      });
+      return;
 
-  // ------------------------------
-  // SUBRUTAS DENTRO DE AGUARUTA
-  // ------------------------------
-  "aguaruta-open-tab": ({ tab }) => {
-    if (!tab) return;
-    eventoAbrirSubruta("aguaruta", tab);
-  },
+    case "abrir-traslado":
+      emitirEvento({
+        tipo: "AURA_MODULO",
+        modulo: "traslado",
+      });
+      return;
 
-  // ------------------------------
-  // FILTROS ESPECÍFICOS
-  // ------------------------------
-  "filtro-camion": ({ camion }) => {
-    eventoAccionSistema("filtro-camion", { camion });
-  },
+    case "abrir-flota":
+      emitirEvento({
+        tipo: "AURA_MODULO",
+        modulo: "flota",
+      });
+      return;
 
-  // ------------------------------
-  // AUTO-FIX DEL SISTEMA → IA
-  // ------------------------------
-  autofix: async () => {
-    const reporte = await AURA_AutoFix();
+    case "abrir-inicio":
+      emitirEvento({
+        tipo: "AURA_MODULO",
+        modulo: "inicio",
+      });
+      return;
 
-    return (
-      "🔧 AutoFix completado.\n" +
-      reporte.acciones.map((a) => `• ${a}`).join("\n")
-    );
-  },
+    // ============================================================
+    // 📍 Subrutas AguaRuta
+    // ============================================================
+    case "aguaruta-open-tab":
+      emitirEvento({
+        tipo: "AURA_SUBRUTA",
+        modulo: "aguaruta",
+        ruta: payload.tab,
+      });
+      return;
 
-  // ------------------------------
-  // ACTUALIZAR BASE FAZO
-  // ------------------------------
-  "actualizar-fazo": async () => {
-    await actualizarFAZOData();
-    return "Datos FAZO actualizados.";
-  },
-};
+    // ============================================================
+    // 🚚 Filtros en AguaRuta
+    // ============================================================
+    case "filtro-camion":
+      emitirEvento({
+        tipo: "AURA_ACCION",
+        accion: "filtro-camion",
+        camion: payload.camion,
+      });
+      return;
 
-// ============================================================
-// EJECUTOR CENTRAL DE ACCIONES
-// ============================================================
+    // ============================================================
+    // 🛠 Auto-Fix / Auto-Repair
+    // ============================================================
+    case "autofix-duplicados":
+      emitirEvento({
+        tipo: "AURA_ACCION",
+        accion: "autofix-duplicados",
+      });
+      return;
 
-export function ejecutarAccion(nombre, payload = {}) {
-  console.log("⚡ Ejecutando acción:", nombre, payload);
+    case "autofix-geodata":
+      emitirEvento({
+        tipo: "AURA_ACCION",
+        accion: "autofix-geodata",
+      });
+      return;
 
-  const fn = acciones[nombre];
-
-  if (!fn) {
-    console.warn("❌ Acción no definida:", nombre);
-    return `No reconozco la acción "${nombre}".`;
-  }
-
-  try {
-    return fn(payload);
-  } catch (err) {
-    console.error("❌ Error ejecutando acción:", err);
-    return "Hubo un error ejecutando la acción.";
+    // ============================================================
+    // 🔥 Acción desconocida
+    // ============================================================
+    default:
+      console.warn("⚠️ Acción no reconocida:", accion);
+      return;
   }
 }
