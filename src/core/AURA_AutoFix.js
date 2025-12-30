@@ -1,136 +1,129 @@
 // ======================================================================
-//  AURA_AutoFix.js — Motor Universal de Reparación Inteligente
+//  AURA_AutoFix.js — Sistema de Correcciones Inteligentes de AURA
 //  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Sistema de Autocorrección Total (Smart Universal + AguaRuta)
+//  Mateo IA — AutoFix Modular para AguaRuta / Flota / Traslado
 // ======================================================================
 
-import { FAZO_OS_EventBridge } from "./FAZO_OS_EventBridge";
-import { obtenerDatosFAZO } from "./FAZO_DATA";
-import { AURA_MultiModel_Process } from "./AURA_MultiModel";
+import { cargarMemoria, guardarPuntosSinGeo, guardarDuplicados } from "./AURAMemory";
+import { FAZO_DATA } from "./FAZO_DATA";
+import { emitirEvento } from "./FAZO_OS_EventBridge";
 
 // ======================================================================
-//  PERFIL INTELIGENTE (Smart Universal)
+// UTILIDAD: detectar duplicados por nombre
 // ======================================================================
-const PROFILE = {
-  nombre: "AURA AutoFix — Smart Universal v2025",
-  version: "1.0.0",
+function detectarDuplicados(lista) {
+  const map = {};
+  const repetidos = [];
 
-  // Reglas universales para cualquier proyecto FAZO
-  reglasGenerales: [
-    "Verificar sintaxis React y eliminar imports muertos",
-    "Reemplazar código duplicado por utilidades centralizadas",
-    "Corregir rutas de API incorrectas",
-    "Detectar funciones que nunca retornan",
-    "Detener loops infinitos",
-    "Reconstruir componentes incompletos",
-    "Arreglar problemas típicos de Netlify, Render y Expo",
-  ],
+  for (const p of lista) {
+    const nombre = (p.nombre || "").trim().toLowerCase();
 
-  // Perfil optimizado para AGUARUTA (automático)
-  reglasAguaRuta: [
-    "Detectar columnas faltantes en rutas-activas",
-    "Corregir normalización de nombre, día y camión",
-    "Recrear vistas faltantes (Mapa, No Entregadas, Estadísticas)",
-    "Validar litros entre 300 y 50000",
-    "Corregir puntos sin coordenadas",
-    "Detectar duplicados por nombre y teléfono",
-    "Verificar estructura del backend FastAPI",
-    "Reconstruir JSONs dañados o incompletos",
-  ],
-};
+    if (!map[nombre]) map[nombre] = 0;
+    map[nombre]++;
 
-// ======================================================================
-//  FUNCIÓN PRINCIPAL — Auto Fix Sugerido / Auto Fix Directo
-// ======================================================================
-export async function AURA_AutoFix(textoUsuario, historial, online = true) {
-  const datos = obtenerDatosFAZO();
-
-  // RESUMEN para la IA Multimodel (OPTIMIZADO)
-  const contexto = {
-    sistema: PROFILE,
-    proyecto: datos?.proyecto || "desconocido",
-    componentes: datos?.componentes || [],
-    erroresDetectados: datos?.errores || [],
-    rutasBackend: datos?.backend || [],
-    rutasFrontend: datos?.frontend || [],
-    puntos: datos?.puntos || [],
-    camiones: datos?.camiones || [],
-  };
-
-  // Construcción del mensaje
-  const mensaje = `
-Eres AURA AutoFix, motor universal del FAZO OS.
-
-Tu objetivo:
-- detectar fallas,
-- reconstruir archivos completos,
-- generar funciones listas para pegar,
-- corregir sintaxis,
-- crear vistas faltantes,
-- optimizar componentes,
-- reparar errores de FastAPI, React, Expo.
-
-Perfil cargado:
-${JSON.stringify(PROFILE, null, 2)}
-
-Contexto actual del sistema:
-${JSON.stringify(contexto, null, 2)}
-
-Solicitud del usuario:
-"${textoUsuario}"
-
-REGLAS:
-1. SIEMPRE responde con archivos completos.
-2. NO entregues parches, entregas el archivo entero corregido.
-3. Si hay múltiples archivos dañados, entrega uno por uno en orden.
-4. Usa nombres reales de archivos: AURAChat.js, App.js, RutasActivas.js, etc.
-5. No inventes rutas; usa las del sistema FAZO.
-6. SI EL PROYECTO ES AGUARUTA → prioriza perfil AguaRuta.
-7. SI EL USUARIO PIDE “AUTO FIX COMPLETO” → entrega solución total.
-`;
-
-  // Si está online → usamos IA Multimodel con proveedor dinámico
-  let respuestaIA = "Estoy sin conexión. No puedo generar correcciones.";
-  let proveedor = "offline";
-
-  if (online) {
-    try {
-      const resultado = await AURA_MultiModel_Process(mensaje, historial);
-      respuestaIA = resultado.respuesta;
-      proveedor = resultado.proveedor;
-    } catch (err) {
-      respuestaIA = "Error al procesar IA Multimodel.";
-    }
+    if (map[nombre] === 2) repetidos.push(p);
   }
 
-  // Enviar evento al sistema para mostrar origen
-  FAZO_OS_EventBridge.emitirEvento({
-    tipo: "AURA_AUTOFIX",
-    proveedor,
-    mensaje: "Corrección automática generada.",
-  });
-
-  return {
-    tipo: "autofix",
-    proveedor,
-    respuesta: respuestaIA,
-  };
+  return repetidos;
 }
 
 // ======================================================================
-//  MODO RÁPIDO: AutoFix directo sin mensaje del usuario
+// UTILIDAD: detectar puntos sin coordenadas
 // ======================================================================
-export async function AURA_AutoFix_Rapido() {
-  return AURA_AutoFix("Repara todo el proyecto automáticamente.", [], true);
-}
-
-// ======================================================================
-//  MODO AGUARUTA ESPECIAL — Optimizado
-// ======================================================================
-export async function AURA_AutoFix_AguaRuta() {
-  return AURA_AutoFix(
-    "Repara específicamente el módulo AguaRuta completo.",
-    [],
-    true
+function detectarPuntosSinGeo(lista) {
+  return lista.filter(
+    (p) => !p.latitud || !p.longitud || Number.isNaN(p.latitud) || Number.isNaN(p.longitud)
   );
 }
+
+// ======================================================================
+// AURA AUTOFIX (MÓDULO PARA AGUARUTA — EXTENSIBLE)
+// ======================================================================
+export const AURA_AutoFix = {
+  // ----------------------------------------------------------
+  // 1) Análisis completo del módulo AguaRuta
+  // ----------------------------------------------------------
+  analizarAguaRuta() {
+    const data = FAZO_DATA.get();
+
+    if (!data || !Array.isArray(data.puntos)) {
+      return { ok: false, mensaje: "No hay datos para analizar." };
+    }
+
+    const puntos = data.puntos;
+
+    const duplicados = detectarDuplicados(puntos);
+    const sinGeo = detectarPuntosSinGeo(puntos);
+
+    // Guardamos en memoria estructural
+    guardarDuplicados(duplicados.map((d) => d.nombre));
+    guardarPuntosSinGeo(sinGeo.map((d) => d.nombre));
+
+    return {
+      ok: true,
+      duplicados,
+      sinGeo,
+      mensaje: "Análisis completado.",
+    };
+  },
+
+  // ----------------------------------------------------------
+  // 2) Reparación automática (suave)
+  // ----------------------------------------------------------
+  autoFixAguaRuta() {
+    const analisis = this.analizarAguaRuta();
+
+    if (!analisis.ok) return analisis;
+
+    const fixes = [];
+
+    // A) Aviso de duplicados
+    if (analisis.duplicados.length > 0) {
+      fixes.push(
+        `Se detectaron ${analisis.duplicados.length} duplicados que deben revisarse manualmente.`
+      );
+    }
+
+    // B) Reparar puntos sin geolocalización asignando coordenadas temporales
+    if (analisis.sinGeo.length > 0) {
+      fixes.push(
+        `Asignadas coordenadas temporales a ${analisis.sinGeo.length} puntos sin GPS.`
+      );
+
+      for (const p of analisis.sinGeo) {
+        // Coordenadas provisionales (sector genérico Laguna Verde)
+        p.latitud = -33.05 + Math.random() * 0.02;
+        p.longitud = -71.63 + Math.random() * 0.02;
+      }
+    }
+
+    // Evento para informar a AURAChat / App.js
+    emitirEvento({
+      tipo: "AURA_AUTOFIX",
+      mensaje: fixes.join("\n"),
+      fixes,
+    });
+
+    return {
+      ok: true,
+      mensaje: "AutoFix aplicado.",
+      fixes,
+    };
+  },
+
+  // ----------------------------------------------------------
+  // 3) AutoFix general del sistema (modular)
+  // ----------------------------------------------------------
+  analizarTodo() {
+    const resultados = {};
+
+    // AguaRuta
+    resultados.aguaruta = this.analizarAguaRuta();
+
+    // En el futuro:
+    // resultados.flota = this.analizarFlota();
+    // resultados.traslado = this.analizarTraslado();
+
+    return resultados;
+  },
+};
