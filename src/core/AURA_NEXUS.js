@@ -1,130 +1,143 @@
 // ======================================================================
-//  AURA_NEXUS.js — Núcleo de Decisión con Memoria Dinámica
+//  AURA_NEXUS.js — Núcleo de Decisión Inteligente de AURA OS
 //  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Nexus + NLP + Multimodel + AutoFix + Memoria
+//  Mateo IA — Arquitectura oficial FAZO-OS 2025
 // ======================================================================
 
 import { interpretar } from "./AURA_NaturalLanguage";
 import { ejecutarAccion } from "./AURA_Actions";
-import { AURA_MultiModel_Process } from "./AURA_MultiModel";
 import { analizarManual } from "./FAZO_OS_Router";
-import { cargarRecuerdos, guardarRecuerdo } from "./AURAMemory";
-import { emitirEvento } from "./FAZO_OS_EventBridge";
+import { AURA_MultiModel_Process } from "./AURA_MultiModel";
+import { guardarMemoria } from "./AURAMemory";
+import { responderAURA } from "./AURA_Responder";
+
+// AutoFix (opcional, pero integrado)
+import { AURA_AutoFix_Check } from "./AURA_AutoFix";
 
 /*
-   ORDEN DE DECISIÓN DEL NEXUS:
+   ORDEN DE DECISIÓN DE AURA:
 
-   1) Memoria — ¿Esto se relaciona con un recuerdo previo?
-   2) NLP — ¿Es acción, módulo o subruta?
-   3) Acción del OS via EventBridge
-   4) Auto análisis operativo
-   5) IA Multimodel
-   6) Modo Offline
+   1) Intent Engine (accion / subruta / modulo)
+   2) AutoFix (detección de errores comunes)
+   3) Análisis manual solicitado por el usuario
+   4) IA Multimodel (OpenAI / Claude / Gemini / Local)
+   5) Modo Offline
 */
 
-// ============================================================
-//  AURA_NEXUS — PROCESADOR PRINCIPAL
-// ============================================================
-export async function AURA_NEXUS(texto, historial, online) {
-  
-  const recuerdosPrevios = cargarRecuerdos();
 
-  // ------------------------------------------------------------
-  // 1) DETECCIÓN DE PATRONES = MEMORIA DINÁMICA
-  // ------------------------------------------------------------
-  const lower = texto.toLowerCase();
+// ======================================================================
+//  FUNCIÓN PRINCIPAL — El cerebro de AURA
+// ======================================================================
+export async function AURA_NEXUS(texto, historial = [], online = true) {
 
-  if (lower.includes("recuerdame")) {
-    const contenido = texto.replace(/recuerdame/i, "").trim();
-    if (contenido.length > 0) {
-      guardarRecuerdo(contenido);
+  // Guardamos el mensaje en memoria
+  guardarMemoria(texto);
 
-      return {
-        tipo: "memoria",
-        respuesta: `Perfecto Gustavo, ya lo guardé en memoria: "${contenido}".`
-      };
-    }
-  }
-
-  if (lower.includes("que recuerdas") || lower.includes("mis recuerdos")) {
-    return {
-      tipo: "memoria-lista",
-      respuesta: formatearRecuerdos(recuerdosPrevios)
-    };
-  }
-
-  // Si el mensaje coincide con un recuerdo, lo reforzamos
-  for (let rec of recuerdosPrevios) {
-    if (lower.includes(rec.texto.toLowerCase())) {
-      return {
-        tipo: "memoria-match",
-        respuesta: `Sí Gustavo, recuerdo que mencionaste: "${rec.texto}".`
-      };
-    }
-  }
-
-  // ------------------------------------------------------------
-  // 2) INTENT ENGINE (NLP)
-  // ------------------------------------------------------------
+  // 1) Detectar intención del usuario
   const intent = interpretar(texto);
 
-  if (intent.tipo !== "desconocido") {
-    ejecutarAccion(intent);
+
+  // ============================================================
+  // 1) ACCIONES directas del sistema
+  // ============================================================
+  if (intent.tipo === "accion") {
+    ejecutarAccion(intent.accion, intent.payload || {});
+    responderAURA(intent.frase);
     return {
-      tipo: intent.tipo,
-      respuesta: intent.frase
+      tipo: "accion",
+      mensaje: intent.frase,
     };
   }
 
-  // ------------------------------------------------------------
-  // 3) ANÁLISIS OPERATIVO MANUAL (AguaRuta / Flota)
-  // ------------------------------------------------------------
-  if (texto.includes("revisa") || texto.includes("analiza")) {
+
+  // ============================================================
+  // 2) SUBRUTAS (solo AguaRuta)
+  // ============================================================
+  if (intent.tipo === "subruta") {
+    ejecutarAccion("aguaruta-open-tab", { tab: intent.ruta });
+    responderAURA(intent.frase);
+    return {
+      tipo: "subruta",
+      mensaje: intent.frase,
+    };
+  }
+
+
+  // ============================================================
+  // 3) MÓDULO COMPLETO (AguaRuta, Flota, Traslado, etc.)
+  // ============================================================
+  if (intent.tipo === "modulo") {
+    ejecutarAccion("abrir-" + intent.modulo);
+    responderAURA(intent.frase);
+    return {
+      tipo: "modulo",
+      mensaje: intent.frase,
+    };
+  }
+
+
+  // ============================================================
+  // 4) AutoFix — Detectar errores frecuentes automáticamente
+  // ============================================================
+  const autofix = AURA_AutoFix_Check(texto);
+  if (autofix) {
+    responderAURA(autofix);
+    return {
+      tipo: "autofix",
+      mensaje: autofix,
+    };
+  }
+
+
+  // ============================================================
+  // 5) Análisis Operacional Manual FAZO OS
+  // ============================================================
+  if (
+    texto.includes("revisa") ||
+    texto.includes("analiza") ||
+    texto.includes("analisis")
+  ) {
     const analisis = await analizarManual(() => window.__FAZO_DATA__);
-    
+    responderAURA("Revisión completa:\n" + analisis.sugerencias.join("\n"));
     return {
       tipo: "analisis",
-      respuesta: "Análisis operativo completado:\n" + analisis.sugerencias.join("\n")
+      mensaje: analisis.sugerencias,
     };
   }
 
-  // ------------------------------------------------------------
-  // 4) IA MULTIMODEL (OpenAI, Claude, Gemini, Llama…)
-  // ------------------------------------------------------------
+
+  // ============================================================
+  // 6) IA MULTIMODEL — OpenAI / Claude / Gemini
+  // ============================================================
   if (online) {
-    const { proveedor, respuesta } = await AURA_MultiModel_Process(texto, historial);
+    try {
+      const { proveedor, respuesta } = await AURA_MultiModel_Process(
+        texto,
+        historial
+      );
 
-    // Guardamos como aprendizaje
-    guardarRecuerdo(`AURA respondió: ${respuesta}`);
+      responderAURA(`🧠 (${proveedor.toUpperCase()}) → ${respuesta}`);
 
-    return {
-      tipo: "ia",
-      proveedor,
-      respuesta
-    };
+      return {
+        tipo: "ia",
+        proveedor,
+        mensaje: respuesta,
+      };
+    } catch (err) {
+      responderAURA("⚠️ Error con los modelos IA. Intentando modo offline.");
+    }
   }
 
-  // ------------------------------------------------------------
-  // 5) MODO OFFLINE
-  // ------------------------------------------------------------
+
+  // ============================================================
+  // 7) MODO OFFLINE
+  // ============================================================
+  responderAURA(
+    "Estoy sin conexión, pero sigo operativa. Puedo realizar acciones internas y análisis locales."
+  );
+
   return {
     tipo: "offline",
-    respuesta: "Estoy sin conexión, pero sigo operativa."
+    mensaje: "Sin conexión",
   };
-}
-
-
-// ======================================================================
-//  Función para formatear recuerdos bonitamente
-// ======================================================================
-function formatearRecuerdos(lista) {
-  if (!lista.length) return "No tengo recuerdos guardados todavía.";
-
-  return (
-    "Aquí están tus últimos recuerdos:\n\n" +
-    lista
-      .slice(-10)
-      .map((r, i) => `${i + 1}. ${r.texto} (${new Date(r.fecha).toLocaleString()})`)
-      .join("\n")
-  );
 }
