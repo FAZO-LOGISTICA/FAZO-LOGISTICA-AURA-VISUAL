@@ -1,184 +1,103 @@
-// ======================================================================
-//  AURA_CyberPanel.js — Consola Técnica / Debug / Monitor de AURA OS
-//  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Arquitectura FAZO-OS 2025
-// ======================================================================
+/* ======================================================================
+   AURA_CyberPanel.js — Panel Técnico de AURA OS (Versión Final PRO 2025)
+   FAZO LOGÍSTICA — Monitor del Sistema, Nexus y AutoFix
+====================================================================== */
 
-import { registrarSubsistema } from "./FAZO_OS_EventBridge";
-import { interpretar } from "./AURA_NaturalLanguage";
-import { ejecutarAccion } from "./AURA_Actions";
-import { AURA_NEXUS } from "./AURA_NEXUS";
+import React, { useEffect, useState } from "react";
+import { obtenerResumenMemoria } from "../core/AURAMemory";
 
-// Estado interno
-let logs = [];
-let listenersActivos = false;
+/* ======================================================================
+   PANEL TÉCNICO DE AURA
+====================================================================== */
 
-// ======================================================================
-//  AGREGAR LOG
-// ======================================================================
-export function cyberLog(origen, contenido) {
-  const entry = {
-    fecha: new Date().toLocaleTimeString(),
-    origen,
-    contenido,
-  };
-  logs.push(entry);
-
-  // Limitar tamaño (últimos 200)
-  if (logs.length > 200) logs.shift();
-
-  // Si existe panel en pantalla → actualizarlo
-  const panel = document.getElementById("AURA_CYBER_PANEL");
-  if (panel) {
-    const body = panel.querySelector(".panel-body");
-    if (body) {
-      const line = document.createElement("div");
-      line.className = "log-line";
-      line.textContent = `[${entry.fecha}] (${entry.origen}) → ${entry.contenido}`;
-      body.appendChild(line);
-      body.scrollTop = body.scrollHeight;
-    }
-  }
-}
-
-// ======================================================================
-//  MOSTRAR PANEL
-// ======================================================================
-export function abrirCyberPanel() {
-  // ¿Ya existe?
-  if (document.getElementById("AURA_CYBER_PANEL")) return;
-
-  const panel = document.createElement("div");
-  panel.id = "AURA_CYBER_PANEL";
-  panel.innerHTML = `
-    <style>
-      #AURA_CYBER_PANEL {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 420px;
-        height: 100vh;
-        background: rgba(5, 5, 15, 0.88);
-        border-left: 3px solid #0ff;
-        color: #0ff;
-        font-family: monospace;
-        z-index: 999999;
-        display: flex;
-        flex-direction: column;
-      }
-      #AURA_CYBER_PANEL .header {
-        padding: 10px;
-        background: rgba(0, 255, 255, 0.2);
-        border-bottom: 1px solid #0ff;
-        font-size: 18px;
-        font-weight: bold;
-      }
-      #AURA_CYBER_PANEL .panel-body {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px;
-        font-size: 13px;
-        line-height: 1.3em;
-      }
-      .log-line {
-        margin-bottom: 6px;
-        white-space: pre-line;
-      }
-      #AURA_CYBER_PANEL .input-area {
-        display: flex;
-        border-top: 1px solid #0ff;
-      }
-      #AURA_CYBER_PANEL input {
-        flex: 1;
-        background: black;
-        color: #0ff;
-        border: none;
-        padding: 8px;
-        outline: none;
-        font-family: monospace;
-      }
-      #AURA_CYBER_PANEL button {
-        background: #0ff;
-        color: black;
-        border: none;
-        padding: 8px 12px;
-        cursor: pointer;
-        font-weight: bold;
-      }
-    </style>
-
-    <div class="header">⚡ AURA CyberPanel — FAZO OS</div>
-    <div class="panel-body"></div>
-    <div class="input-area">
-      <input id="cyberInput" placeholder="Escribe comando…" />
-      <button id="cyberSend">▶</button>
-    </div>
-  `;
-
-  document.body.appendChild(panel);
-
-  cyberLog("CyberPanel", "Panel iniciado correctamente.");
-  inicializarEventosCyberPanel();
-}
-
-// ======================================================================
-//  CERRAR PANEL
-// ======================================================================
-export function cerrarCyberPanel() {
-  const panel = document.getElementById("AURA_CYBER_PANEL");
-  if (panel) panel.remove();
-}
-
-// ======================================================================
-//  LISTENER DEL PANEL
-// ======================================================================
-function inicializarEventosCyberPanel() {
-  const input = document.getElementById("cyberInput");
-  const sendBtn = document.getElementById("cyberSend");
-
-  sendBtn.onclick = () => procesarComando(input.value);
-  input.onkeydown = (e) => {
-    if (e.key === "Enter") procesarComando(input.value);
-  };
-}
-
-// ======================================================================
-//  PROCESAR COMANDOS DESDE LA CONSOLA
-// ======================================================================
-async function procesarComando(cmd) {
-  if (!cmd.trim()) return;
-
-  cyberLog("Usuario", cmd);
-
-  // ✔ Ejecutar a través del Intent Engine
-  const intent = interpretar(cmd);
-
-  if (intent.tipo !== "desconocido") {
-    cyberLog("IntentEngine", JSON.stringify(intent));
-    ejecutarAccion(intent.accion, intent.payload);
-    return;
-  }
-
-  // ✔ Pasarlo al cerebro (NEXUS)
-  const out = await AURA_NEXUS(cmd, [], navigator.onLine);
-
-  cyberLog("NEXUS", JSON.stringify(out));
-
-  // Limpiar input
-  const input = document.getElementById("cyberInput");
-  if (input) input.value = "";
-}
-
-// ======================================================================
-//  ACTIVAR ESCUCHADORES OS
-// ======================================================================
-export function activarCyberListeners() {
-  if (listenersActivos) return;
-  listenersActivos = true;
-
-  registrarSubsistema((evento) => {
-    cyberLog("OS_EVENT", JSON.stringify(evento));
+export default function AURA_CyberPanel() {
+  const [estado, setEstado] = useState({
+    online: navigator.onLine,
+    memoria: obtenerResumenMemoria(),
+    ultimaRevision: null,
   });
 
-  cyberLog("CyberPanel", "Listeners FAZO OS activados.");
+  /* ====== EVENTO ONLINE / OFFLINE ====== */
+  useEffect(() => {
+    const on = () => setEstado((e) => ({ ...e, online: true }));
+    const off = () => setEstado((e) => ({ ...e, online: false }));
+
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  /* ====== REFRESCO DE MEMORIA AURA ====== */
+  const refrescar = () => {
+    setEstado({
+      online: navigator.onLine,
+      memoria: obtenerResumenMemoria(),
+      ultimaRevision: new Date().toLocaleString(),
+    });
+  };
+
+  /* ======================================================================
+       UI
+  ======================================================================= */
+
+  const box = "bg-black/40 border border-cyan-400/30 p-4 rounded-xl mb-4";
+
+  return (
+    <section className="p-4 bg-black/30 rounded-xl border border-cyan-500/30 backdrop-blur-xl">
+      <h2 className="text-cyan-300 text-xl mb-3">🛰️ PANEL TÉCNICO AURA OS</h2>
+
+      {/* Estado de Red */}
+      <div className={box}>
+        <h3 className="text-cyan-200">Conectividad</h3>
+        <p className="text-cyan-100/80 mt-1">
+          Estado:{" "}
+          {estado.online ? (
+            <span className="text-emerald-400">ONLINE ✔️</span>
+          ) : (
+            <span className="text-red-400">OFFLINE ❌</span>
+          )}
+        </p>
+      </div>
+
+      {/* Memoria AURA */}
+      <div className={box}>
+        <h3 className="text-cyan-200">Memoria Interna de AURA</h3>
+
+        <pre className="text-xs text-cyan-100/80 mt-2 whitespace-pre-wrap bg-black/40 p-3 rounded-lg max-h-72 overflow-auto">
+{JSON.stringify(estado.memoria, null, 2)}
+        </pre>
+
+        <button
+          onClick={refrescar}
+          className="mt-3 px-4 py-2 bg-cyan-700 text-white rounded-lg hover:bg-cyan-600"
+        >
+          🔄 Actualizar
+        </button>
+
+        {estado.ultimaRevision && (
+          <p className="text-cyan-200 text-xs mt-2">
+            Última actualización: {estado.ultimaRevision}
+          </p>
+        )}
+      </div>
+
+      {/* Información del Sistema */}
+      <div className={box}>
+        <h3 className="text-cyan-200">Información del Sistema</h3>
+        <p className="text-cyan-100/80 text-sm">
+          Versión AURA OS: <b>3.0.0 Nexus Ultra</b>
+        </p>
+        <p className="text-cyan-100/80 text-sm">
+          Multimodel AI: <b>Activado</b>
+        </p>
+        <p className="text-cyan-100/80 text-sm">
+          AutoFix Operacional: <b>Activo</b>
+        </p>
+      </div>
+    </section>
+  );
 }
