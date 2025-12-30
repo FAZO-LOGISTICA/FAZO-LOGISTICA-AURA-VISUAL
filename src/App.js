@@ -1,104 +1,97 @@
-// ======================================================================
-//  AURA_Actions.js — Acciones reales del sistema FAZO OS
-//  FAZO LOGÍSTICA — Gustavo Oliva
-//  Mateo IA — Router oficial para comandos del OS
-// ======================================================================
+/* ======================================================================
+   App.js — FAZO OS + AURA OS (Versión Final 2025)
+   Sistema Operativo FAZO — Integración con AURA, Nexus y EventBridge
+====================================================================== */
 
-import { emitirEvento } from "./FAZO_OS_EventBridge";
+import React, { useEffect, useState } from "react";
 
-// ============================================================
-//  ACCIONES DEL SISTEMA (MODULARES, ESCALABLES, MULTIPROYECTO)
-// ============================================================
+import AURAChat from "./components/AURAChat";
+import AURA_CyberPanel from "./components/AURA_CyberPanel";
 
-export function ejecutarAccion(accion, payload = {}) {
-  console.log("⚡ Ejecutando acción:", accion, payload);
+import {
+  registrarSubsistema,
+} from "./core/FAZO_OS_EventBridge";
 
-  switch (accion) {
-    // ============================================================
-    // 🔐 Sesión
-    // ============================================================
-    case "logout":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "logout",
-      });
-      return;
+/* ======================================================================
+   COMPONENTES / MÓDULOS FAZO
+   (AguaRuta, Traslado, Flota se integrarán aquí)
+====================================================================== */
 
-    // ============================================================
-    // 🗂 Navegación general FAZO OS
-    // ============================================================
-    case "abrir-aguaruta":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "aguaruta",
-      });
-      return;
+function PantallaInicio() {
+  return (
+    <div className="text-cyan-200 text-center p-4">
+      <h1 className="text-2xl">FAZO LOGÍSTICA OS</h1>
+      <p className="text-cyan-300/80 mt-2">
+        Sistema Operativo Logístico — Integrado con AURA OS
+      </p>
+    </div>
+  );
+}
 
-    case "abrir-traslado":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "traslado",
-      });
-      return;
+/* ======================================================================
+   APP PRINCIPAL
+====================================================================== */
 
-    case "abrir-flota":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "flota",
-      });
-      return;
+export default function App() {
+  const [pantalla, setPantalla] = useState("inicio");
+  const [subruta, setSubruta] = useState("");
 
-    case "abrir-inicio":
-      emitirEvento({
-        tipo: "AURA_MODULO",
-        modulo: "inicio",
-      });
-      return;
+  /* ============================================================
+      SUSCRIPCIÓN A EVENTOS DE AURA (EventBridge)
+  ============================================================ */
 
-    // ============================================================
-    // 📍 Subrutas AguaRuta
-    // ============================================================
-    case "aguaruta-open-tab":
-      emitirEvento({
-        tipo: "AURA_SUBRUTA",
-        modulo: "aguaruta",
-        ruta: payload.tab,
-      });
-      return;
+  useEffect(() => {
+    registrarSubsistema((evento) => {
+      console.log("📡 Evento recibido desde AURA:", evento);
 
-    // ============================================================
-    // 🚚 Filtros en AguaRuta
-    // ============================================================
-    case "filtro-camion":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "filtro-camion",
-        camion: payload.camion,
-      });
-      return;
+      // Abrir módulo completo
+      if (evento.tipo === "AURA_MODULO") {
+        setPantalla(evento.modulo);
+      }
 
-    // ============================================================
-    // 🛠 Auto-Fix / Auto-Repair
-    // ============================================================
-    case "autofix-duplicados":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "autofix-duplicados",
-      });
-      return;
+      // Abrir subruta
+      if (evento.tipo === "AURA_SUBRUTA") {
+        setPantalla(evento.modulo);
+        setSubruta(evento.ruta);
+      }
 
-    case "autofix-geodata":
-      emitirEvento({
-        tipo: "AURA_ACCION",
-        accion: "autofix-geodata",
-      });
-      return;
+      // Acciones del sistema
+      if (evento.tipo === "AURA_ACCION") {
+        if (evento.accion === "logout") {
+          setPantalla("inicio");
+        }
+      }
+    });
+  }, []);
 
-    // ============================================================
-    // 🔥 Acción desconocida
-    // ============================================================
-    default:
-      console.warn("⚠️ Acción no reconocida:", accion);
-      return;
-  }
+  /* ======================================================================
+      UI PRINCIPAL
+  ======================================================================= */
+
+  return (
+    <div className="min-h-screen bg-black text-white p-4">
+      {/* PANEL SUPERIOR AURA */}
+      <AURAChat />
+
+      <div className="mt-6">
+        {/* RENDER SEGÚN MÓDULO */}
+        {pantalla === "inicio" && <PantallaInicio />}
+        {pantalla === "panel" && <AURA_CyberPanel />}
+
+        {/* AQUÍ IRÁ AGUARUTA, TRASLADO, FLOTAS, ETC */}
+        {pantalla === "aguaruta" && (
+          <div className="p-4 bg-black/40 rounded-xl border border-cyan-500/30">
+            <h2 className="text-cyan-300">Módulo AguaRuta</h2>
+            <p className="text-cyan-100/70">
+              AURA puede mejorar y corregir este módulo automáticamente.
+            </p>
+
+            {subruta && (
+              <p className="text-cyan-400 mt-2">Subruta activa: {subruta}</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
