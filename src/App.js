@@ -1,97 +1,93 @@
-/* ======================================================================
-   App.js — FAZO OS + AURA OS (Versión Final 2025)
-   Sistema Operativo FAZO — Integración con AURA, Nexus y EventBridge
-====================================================================== */
+// ======================================================================
+//  App.js — FINAL PRO
+//  FAZO-OS 2025 · Núcleo Operativo Central
+//  Gustavo Oliva · Mateo IA
+// ======================================================================
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
-import AURAChat from "./components/AURAChat";
-import AURA_CyberPanel from "./components/AURA_CyberPanel";
+// =======================
+// AURA CORE
+// =======================
+import useAURAChat from "./aura/AURAChat";
 
-import {
-  registrarSubsistema,
-} from "./core/FAZO_OS_EventBridge";
+// =======================
+// SISTEMA FAZO-OS
+// =======================
+import { iniciarEventBridge } from "./aura/FAZO_OS_EventBridge";
 
-/* ======================================================================
-   COMPONENTES / MÓDULOS FAZO
-   (AguaRuta, Traslado, Flota se integrarán aquí)
-====================================================================== */
+// =======================
+// UI BASE (puedes cambiar después)
+// =======================
+import FloatingMic from "./components/FloatingMic";
+import AuraPanel from "./components/AuraPanel";
 
-function PantallaInicio() {
-  return (
-    <div className="text-cyan-200 text-center p-4">
-      <h1 className="text-2xl">FAZO LOGÍSTICA OS</h1>
-      <p className="text-cyan-300/80 mt-2">
-        Sistema Operativo Logístico — Integrado con AURA OS
-      </p>
-    </div>
-  );
-}
+// ======================================================================
+// APP
+// ======================================================================
 
-/* ======================================================================
-   APP PRINCIPAL
-====================================================================== */
+function App() {
+  // =======================
+  // AURA HOOK
+  // =======================
+  const {
+    activo,
+    escuchando,
+    ultimoMensaje,
+    respuesta,
+    iniciarEscucha,
+    detenerEscucha,
+    enviarTexto,
+    apagarAura,
+  } = useAURAChat();
 
-export default function App() {
-  const [pantalla, setPantalla] = useState("inicio");
-  const [subruta, setSubruta] = useState("");
-
-  /* ============================================================
-      SUSCRIPCIÓN A EVENTOS DE AURA (EventBridge)
-  ============================================================ */
-
+  // =======================
+  // INICIAR FAZO-OS
+  // =======================
   useEffect(() => {
-    registrarSubsistema((evento) => {
-      console.log("📡 Evento recibido desde AURA:", evento);
-
-      // Abrir módulo completo
-      if (evento.tipo === "AURA_MODULO") {
-        setPantalla(evento.modulo);
-      }
-
-      // Abrir subruta
-      if (evento.tipo === "AURA_SUBRUTA") {
-        setPantalla(evento.modulo);
-        setSubruta(evento.ruta);
-      }
-
-      // Acciones del sistema
-      if (evento.tipo === "AURA_ACCION") {
-        if (evento.accion === "logout") {
-          setPantalla("inicio");
-        }
-      }
-    });
+    iniciarEventBridge();
+    console.log("🟢 FAZO-OS iniciado");
   }, []);
 
-  /* ======================================================================
-      UI PRINCIPAL
-  ======================================================================= */
-
+  // =======================
+  // RENDER
+  // =======================
   return (
-    <div className="min-h-screen bg-black text-white p-4">
-      {/* PANEL SUPERIOR AURA */}
-      <AURAChat />
+    <div style={styles.app}>
+      {/* ===================== AURA PANEL ===================== */}
+      <AuraPanel
+        activo={activo}
+        ultimoMensaje={ultimoMensaje}
+        respuesta={respuesta}
+        onEnviarTexto={enviarTexto}
+        onApagar={apagarAura}
+      />
 
-      <div className="mt-6">
-        {/* RENDER SEGÚN MÓDULO */}
-        {pantalla === "inicio" && <PantallaInicio />}
-        {pantalla === "panel" && <AURA_CyberPanel />}
-
-        {/* AQUÍ IRÁ AGUARUTA, TRASLADO, FLOTAS, ETC */}
-        {pantalla === "aguaruta" && (
-          <div className="p-4 bg-black/40 rounded-xl border border-cyan-500/30">
-            <h2 className="text-cyan-300">Módulo AguaRuta</h2>
-            <p className="text-cyan-100/70">
-              AURA puede mejorar y corregir este módulo automáticamente.
-            </p>
-
-            {subruta && (
-              <p className="text-cyan-400 mt-2">Subruta activa: {subruta}</p>
-            )}
-          </div>
-        )}
-      </div>
+      {/* ===================== MICRÓFONO FLOTANTE ===================== */}
+      <FloatingMic
+        activo={activo}
+        escuchando={escuchando}
+        onStart={iniciarEscucha}
+        onStop={detenerEscucha}
+      />
     </div>
   );
 }
+
+export default App;
+
+// ======================================================================
+// ESTILOS BASE (mínimos, funcionales)
+// ======================================================================
+
+const styles = {
+  app: {
+    width: "100vw",
+    height: "100vh",
+    backgroundColor: "#0e1116",
+    color: "#ffffff",
+    overflow: "hidden",
+    position: "relative",
+    fontFamily: "system-ui, sans-serif",
+  },
+};
