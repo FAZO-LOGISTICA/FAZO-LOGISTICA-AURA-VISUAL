@@ -1,64 +1,79 @@
 // ===================================================
-// App.js — FAZO OS / AURA FINAL CORE
-// Gustavo Oliva — 2025
+// App.js — FAZO OS / AURA FINAL SUPER PRO
+// Autor: Gustavo Oliva — 2025
+// Arquitectura: CORE ORQUESTADOR (NO CEREBRO)
 // ===================================================
 
 import React, { useCallback } from "react";
-import AURAChat from "./aura/AURAChat";
 
-import { detectarComando } from "./aura/AURACommandDetector";
-import { ejecutarComando } from "./aura/AURACommandRouter";
+/* ================= COMPONENTES ================= */
+
+import AURAChat from "./components/AURAChat";
+import { procesarMensajeAURA } from "./components/AURA_NEXUS";
+
+/* ================= MEMORIA ================= */
 
 import {
   registrarAccion,
 } from "./aura/AURAMemory";
 
+/* ================= EVENTOS SISTEMA ================= */
+
 import {
   enviarEventoDesdeAURA,
 } from "./aura/FAZO_OS_EventBridge";
 
-// ===================================================
-// APP PRINCIPAL
-// ===================================================
+/* ===================================================
+   APP PRINCIPAL
+=================================================== */
 
 function App() {
 
-  // =================================================
-  // AURA → SISTEMA
-  // =================================================
+  /* ===============================================
+     AURA → SISTEMA (PUNTO ÚNICO DE ENTRADA)
+  =============================================== */
   const onAuraMessage = useCallback(async (texto) => {
-    if (!texto) return;
+    if (!texto || typeof texto !== "string") return;
 
-    // Registrar todo lo que AURA procesa
-    registrarAccion("AURA_INPUT", texto);
+    try {
+      /* ---------- REGISTRO INPUT ---------- */
+      registrarAccion("AURA_INPUT", texto);
 
-    // 1️⃣ Detectar si es comando
-    const comando = detectarComando(texto);
+      /* ---------- PROCESAR EN NEXUS ---------- */
+      const resultado = await procesarMensajeAURA(texto);
 
-    // 2️⃣ Si NO es comando, no hacemos nada más
-    if (!comando) return;
+      if (!resultado) return;
 
-    // 3️⃣ Ejecutar comando
-    const resultado = await ejecutarComando(comando);
+      /* ---------- REGISTRO OUTPUT ---------- */
+      registrarAccion("AURA_OUTPUT", resultado.tipo || "RESPUESTA");
 
-    // 4️⃣ Registrar resultado
-    registrarAccion("AURA_COMMAND", comando.tipo);
+      /* ---------- EVENTOS UI / SISTEMA ---------- */
+      if (resultado.evento) {
+        enviarEventoDesdeAURA({
+          tipo: resultado.evento.tipo || "accion",
+          accion: resultado.evento.accion,
+          payload: resultado.evento.payload || {},
+        });
+      }
 
-    // 5️⃣ Si hay acción de UI o sistema, enviarla
-    if (resultado?.accionUI) {
-      enviarEventoDesdeAURA({
-        tipo: "accion",
-        accion: resultado.accionUI,
-        payload: resultado,
-      });
+    } catch (error) {
+      /* ---------- ERROR SILENCIOSO ---------- */
+      registrarAccion("AURA_ERROR", error?.message || "error desconocido");
     }
   }, []);
 
-  // =================================================
-  // RENDER
-  // =================================================
+  /* ===============================================
+     RENDER
+  =============================================== */
   return (
-    <div style={{ height: "100vh", width: "100vw" }}>
+    <div
+      style={{
+        height: "100vh",
+        width: "100vw",
+        overflow: "hidden",
+        backgroundColor: "#020617",
+      }}
+    >
       <AURAChat
         onUserMessage={onAuraMessage}
       />
