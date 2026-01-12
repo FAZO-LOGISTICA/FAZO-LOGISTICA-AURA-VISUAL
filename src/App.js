@@ -1,82 +1,77 @@
 // ===================================================
-// App.js — FAZO OS / AURA FINAL SUPER PRO
-// Autor: Gustavo Oliva — 2025
-// Arquitectura: CORE ORQUESTADOR (NO CEREBRO)
+// App.js — FAZO OS / AURA FINAL CORE
+// Autor: Gustavo Oliva
+// Año: 2025
+// Estado: PRODUCCIÓN
 // ===================================================
 
 import React, { useCallback } from "react";
+import AURAChat from "./aura/AURAChat";
 
-/* ================= COMPONENTES ================= */
+import { detectarComando } from "./aura/AURACommandDetector";
+import { ejecutarComando } from "./aura/AURACommandRouter";
 
-import AURAChat from "./components/AURAChat";
-import { procesarMensajeAURA } from "./components/AURA_NEXUS";
+import { registrarAccion } from "./aura/AURAMemory";
+import { enviarEventoDesdeAURA } from "./aura/FAZO_OS_EventBridge";
 
-/* ================= MEMORIA ================= */
-
-import {
-  registrarAccion,
-} from "./aura/AURAMemory";
-
-/* ================= EVENTOS SISTEMA ================= */
-
-import {
-  enviarEventoDesdeAURA,
-} from "./aura/FAZO_OS_EventBridge";
-
-/* ===================================================
-   APP PRINCIPAL
-=================================================== */
+// ===================================================
+// APP PRINCIPAL
+// ===================================================
 
 function App() {
 
-  /* ===============================================
-     AURA → SISTEMA (PUNTO ÚNICO DE ENTRADA)
-  =============================================== */
+  // =================================================
+  // ENTRADA CENTRAL DE AURA
+  // =================================================
   const onAuraMessage = useCallback(async (texto) => {
-    if (!texto || typeof texto !== "string") return;
-
     try {
-      /* ---------- REGISTRO INPUT ---------- */
+      if (!texto || typeof texto !== "string") return;
+
+      // 1️⃣ Registrar input crudo
       registrarAccion("AURA_INPUT", texto);
 
-      /* ---------- PROCESAR EN NEXUS ---------- */
-      const resultado = await procesarMensajeAURA(texto);
+      // 2️⃣ Detectar comando
+      const comando = detectarComando(texto);
 
-      if (!resultado) return;
+      // 3️⃣ Si no hay comando → salida limpia
+      if (!comando) {
+        registrarAccion("AURA_NO_COMMAND", texto);
+        return;
+      }
 
-      /* ---------- REGISTRO OUTPUT ---------- */
-      registrarAccion("AURA_OUTPUT", resultado.tipo || "RESPUESTA");
+      // 4️⃣ Ejecutar comando
+      const resultado = await ejecutarComando(comando);
 
-      /* ---------- EVENTOS UI / SISTEMA ---------- */
-      if (resultado.evento) {
+      // 5️⃣ Registrar ejecución
+      registrarAccion("AURA_COMMAND", {
+        tipo: comando.tipo,
+        payload: comando.payload || null,
+      });
+
+      // 6️⃣ Enviar evento al sistema si corresponde
+      if (resultado?.accionUI || resultado?.eventoSistema) {
         enviarEventoDesdeAURA({
-          tipo: resultado.evento.tipo || "accion",
-          accion: resultado.evento.accion,
-          payload: resultado.evento.payload || {},
+          tipo: "AURA_EVENT",
+          accion: resultado.accionUI || null,
+          evento: resultado.eventoSistema || null,
+          payload: resultado,
         });
       }
 
     } catch (error) {
-      /* ---------- ERROR SILENCIOSO ---------- */
-      registrarAccion("AURA_ERROR", error?.message || "error desconocido");
+      // ❌ Error silencioso — AURA nunca debe botar la app
+      registrarAccion("AURA_ERROR", {
+        mensaje: error?.message || "Error desconocido",
+      });
     }
   }, []);
 
-  /* ===============================================
-     RENDER
-  =============================================== */
+  // =================================================
+  // RENDER
+  // =================================================
   return (
-    <div
-      style={{
-        height: "100vh",
-        width: "100vw",
-        overflow: "hidden",
-        backgroundColor: "#020617",
-      }}
-    >
-      <AURAChat
-        onUserMessage={onAuraMessage}
-      />
+    <div style={{ height: "100vh", width: "100vw" }}>
+      <AURAChat onUserMessage={onAuraMessage} />
     </div>
   );
 }
