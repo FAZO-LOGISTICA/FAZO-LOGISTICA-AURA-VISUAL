@@ -1,105 +1,57 @@
-// ======================================================================
-//  AURA_NEXUS.js — Núcleo de decisión seguro
-//  FAZO-OS 2025
-//  NUNCA rompe la UI
-// ======================================================================
+// =====================================================
+// AURA_NEXUS.js — Cerebro Central de AURA
+// FAZO-OS 2025
+// =====================================================
 
-import { interpretar } from "./AURA_NaturalLanguage";
-import { ejecutarAccion } from "./AURA_Actions";
-import { auraThink } from "./AURA_AI_Provider";
-import { AURA_Agent } from "./AURA_Agent";
+import { cargarMemoria, registrarAccion } from "./AURAMemory";
 
-// ============================================================
-// NEXUS PRINCIPAL
-// ============================================================
-export async function AURA_NEXUS({
-  texto,
-  historial = [],
-  online = true,
-}) {
-  let intent = null;
+// -----------------------------------------------------
+// Analiza el mensaje y decide qué hacer
+// -----------------------------------------------------
+export async function procesarMensajeAURA({ messages }) {
+  const ultimo = messages[messages.length - 1];
+  const texto = ultimo?.content?.toLowerCase() || "";
 
-  // ------------------------------------------------------------
-  // 1) NLP — interpretar intención (nunca falla)
-  // ------------------------------------------------------------
-  try {
-    intent = interpretar(texto);
-  } catch (err) {
-    console.error("❌ Error NLP:", err);
-    intent = { tipo: "desconocido" };
-  }
+  registrarAccion("mensaje_usuario", texto);
 
-  // ------------------------------------------------------------
-  // 2) ACCIONES DIRECTAS DEL SISTEMA
-  // ------------------------------------------------------------
-  if (intent.tipo === "accion") {
-    try {
-      ejecutarAccion(intent.accion, intent.payload || {});
-    } catch (err) {
-      console.error("❌ Error ejecutando acción:", err);
-    }
-
-    return {
-      tipo: "accion",
-      respuesta: intent.frase || "Acción ejecutada.",
-    };
-  }
-
-  // ------------------------------------------------------------
-  // 3) SUBRUTAS / MÓDULOS
-  // ------------------------------------------------------------
-  if (intent.tipo === "subruta" || intent.tipo === "modulo") {
-    try {
-      ejecutarAccion(intent.tipo, intent);
-    } catch (err) {
-      console.error("❌ Error navegación:", err);
-    }
-
-    return {
-      tipo: intent.tipo,
-      respuesta: intent.frase || "Navegación realizada.",
-    };
-  }
-
-  // ------------------------------------------------------------
-  // 4) AGENTE AUTÓNOMO (no bloqueante)
-  // ------------------------------------------------------------
-  try {
-    AURA_Agent.iniciar();
-  } catch (err) {
-    console.warn("⚠️ Agent no disponible:", err.message);
-  }
-
-  // ------------------------------------------------------------
-  // 5) IA MULTIMODELO (AISLADA TOTAL)
-  // ------------------------------------------------------------
-  if (online) {
-    try {
-      const respuesta = await auraThink(texto);
-
+  // =============================
+  // DETECCIÓN DE COMANDOS BÁSICOS
+  // =============================
+  if (texto.includes("abrir")) {
+    if (texto.includes("rutas")) {
       return {
-        tipo: "ia",
-        proveedor: "auto",
-        respuesta,
+        reply: "Abriendo módulo de Rutas Activas.",
+        command: {
+          tipo: "modulo",
+          modulo: "rutas-activas",
+        },
       };
-    } catch (err) {
-      console.error("❌ Error IA (aislado):", err);
+    }
 
+    if (texto.includes("mapa")) {
       return {
-        tipo: "ia",
-        proveedor: "fallback",
-        respuesta:
-          "Estoy operativa. Hubo un problema externo, pero puedo seguir ayudándote.",
+        reply: "Mostrando el mapa de entregas.",
+        command: {
+          tipo: "modulo",
+          modulo: "mapa",
+        },
       };
     }
   }
 
-  // ------------------------------------------------------------
-  // 6) OFFLINE ABSOLUTO
-  // ------------------------------------------------------------
+  if (texto.includes("estado") || texto.includes("resumen")) {
+    const mem = cargarMemoria();
+    return {
+      reply: `Sistema operativo. Acciones recientes registradas: ${mem.historialAcciones.length}.`,
+    };
+  }
+
+  // =============================
+  // RESPUESTA CONVERSACIONAL BASE
+  // (luego se conecta a OpenAI / Claude)
+  // =============================
   return {
-    tipo: "offline",
-    respuesta:
-      "Estoy funcionando en modo local. Las funciones del sistema siguen activas.",
+    reply:
+      "Estoy operativo. Puedes pedirme abrir módulos, revisar estado o continuar configurando el sistema.",
   };
 }
