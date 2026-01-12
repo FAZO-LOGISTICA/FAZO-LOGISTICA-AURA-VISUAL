@@ -1,57 +1,67 @@
-// =====================================================
-// AURA_NEXUS.js — Cerebro Central de AURA
+// ===================================================
+// AURA_NEXUS.js — ORQUESTADOR DE IAs
 // FAZO-OS 2025
-// =====================================================
+// ===================================================
 
-import { cargarMemoria, registrarAccion } from "./AURAMemory";
+const TIMEOUT = 12000;
 
-// -----------------------------------------------------
-// Analiza el mensaje y decide qué hacer
-// -----------------------------------------------------
-export async function procesarMensajeAURA({ messages }) {
-  const ultimo = messages[messages.length - 1];
-  const texto = ultimo?.content?.toLowerCase() || "";
+// ================= UTIL =================
 
-  registrarAccion("mensaje_usuario", texto);
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout IA")), ms)
+    ),
+  ]);
 
-  // =============================
-  // DETECCIÓN DE COMANDOS BÁSICOS
-  // =============================
-  if (texto.includes("abrir")) {
-    if (texto.includes("rutas")) {
-      return {
-        reply: "Abriendo módulo de Rutas Activas.",
-        command: {
-          tipo: "modulo",
-          modulo: "rutas-activas",
-        },
-      };
-    }
+// ================= IA PROVIDERS =================
 
-    if (texto.includes("mapa")) {
-      return {
-        reply: "Mostrando el mapa de entregas.",
-        command: {
-          tipo: "modulo",
-          modulo: "mapa",
-        },
-      };
-    }
-  }
+// 1️⃣ OpenAI — PRINCIPAL
+async function usarOpenAI(messages) {
+  const res = await fetch("/api/ia/openai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
 
-  if (texto.includes("estado") || texto.includes("resumen")) {
-    const mem = cargarMemoria();
-    return {
-      reply: `Sistema operativo. Acciones recientes registradas: ${mem.historialAcciones.length}.`,
-    };
-  }
+  if (!res.ok) throw new Error("OpenAI falló");
+  return res.json();
+}
 
-  // =============================
-  // RESPUESTA CONVERSACIONAL BASE
-  // (luego se conecta a OpenAI / Claude)
-  // =============================
+// 2️⃣ Claude — RESPALDO
+async function usarClaude(messages) {
+  const res = await fetch("/api/ia/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
+
+  if (!res.ok) throw new Error("Claude falló");
+  return res.json();
+}
+
+// 3️⃣ Fallback local — ÚLTIMO RECURSO
+function usarFallbackLocal() {
   return {
     reply:
-      "Estoy operativo. Puedes pedirme abrir módulos, revisar estado o continuar configurando el sistema.",
+      "Estoy operativo en modo seguro. No tengo acceso completo a IA externa, pero puedo seguir ayudándote.",
   };
+}
+
+// ================= NEXUS =================
+
+export async function procesarConAURANexus(messages) {
+  try {
+    // 🥇 OpenAI
+    return await withTimeout(usarOpenAI(messages), TIMEOUT);
+  } catch (_) {
+    try {
+      // 🥈 Claude
+      return await withTimeout(usarClaude(messages), TIMEOUT);
+    } catch (_) {
+      // 🥉 Local
+      return usarFallbackLocal();
+    }
+  }
 }
