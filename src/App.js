@@ -6,9 +6,11 @@
 // ===================================================
 
 import React, { useCallback } from "react";
-import AURAChat from "./aura/AURAChat";
 
-// 🔗 IMPORTS ALINEADOS CON TU ESTRUCTURA REAL
+// ✅ AURAChat está en src/components/AuraChat.js
+import AURAChat from "./components/AuraChat";
+
+// 🔗 Imports alineados con tu estructura REAL en src/aura/
 import { detectarComando } from "./aura/intentDetector";
 import { ejecutarComando } from "./aura/AURACommandRouter";
 import { registrarAccion } from "./aura/AURA_Actions";
@@ -29,7 +31,7 @@ function App() {
       // 1️⃣ Registrar input crudo
       registrarAccion("AURA_INPUT", texto);
 
-      // 2️⃣ Detectar comando / intención
+      // 2️⃣ Detectar intención / comando
       const comando = detectarComando(texto);
 
       // 3️⃣ Si no hay comando → salida limpia
