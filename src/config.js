@@ -1,30 +1,37 @@
 // =======================================================
-//   FAZO-CONFIG v6.0 — Arquitectura Definitiva AURA 2025
+//   FAZO-CONFIG v6.1 — Arquitectura Definitiva AURA 2025
 //   Multi-IA real | Backend Render | Netlify | Ultra PRO
 //   Gustavo Oliva — FAZO LOGÍSTICA
 // =======================================================
 
-import React from "react"; // ← 🔥 IMPORTANTE: evita el error “React no definido”
+import React from "react"; // Evita error “React no definido”
 
 // =======================================================
 // 🔧 Utilidades robustas
 // =======================================================
 
-// Limpia valores para evitar null/undefined en React
+// Limpia valores para evitar null / undefined
 const clean = (v) => (typeof v === "string" ? v.trim() : "");
 
-// Detecta backend dinámico: producción (Netlify → Render) o local
+// =======================================================
+// 🌐 Backend dinámico (PRODUCCIÓN / LOCAL)
+// =======================================================
+// Prioridad:
+// 1️⃣ Variable de entorno (Netlify / local)
+// 2️⃣ Backend Render por defecto (producción real)
+
 const getBackendURL = () => {
   const envURL = clean(process.env.REACT_APP_AURA_BACKEND_URL);
   if (envURL) return envURL;
 
-  // Modo local para desarrollo
-  return "http://127.0.0.1:8000/api/aura";
+  // ✅ Backend Render oficial (producción)
+  return "https://aura-g5nw.onrender.com/aura";
 };
 
 // =======================================================
-// 🧠 Modelos IA (2025) — compatibles con backend FAZO
+// 🧠 Modelos IA soportados (2025)
 // =======================================================
+
 const MODELOS = {
   claude: "claude-3-7-sonnet",
   openai: "gpt-4.1",
@@ -36,8 +43,9 @@ const MODELOS = {
 };
 
 // =======================================================
-// 🌐 Endpoints IA oficiales
+// 🌐 Endpoints oficiales IA (SOLO REFERENCIA)
 // =======================================================
+
 const URLS = {
   claude: "https://api.anthropic.com/v1/messages",
   openai: "https://api.openai.com/v1/chat/completions",
@@ -50,8 +58,9 @@ const URLS = {
 };
 
 // =======================================================
-// 🔐 Claves IA del frontend (opcionales — JAMÁS reales)
+// 🔐 Claves IA frontend (NUNCA reales en producción)
 // =======================================================
+
 const KEYS = {
   claude: clean(process.env.REACT_APP_CLAUDE_KEY),
   openai: clean(process.env.REACT_APP_OPENAI_KEY),
@@ -63,18 +72,20 @@ const KEYS = {
 };
 
 // =======================================================
-// 🤖 IA primaria según Netlify
+// 🤖 IA primaria por defecto
 // =======================================================
+
 const AURA_PRIMARY =
-  clean(process.env.REACT_APP_AURA_PRIMARY) || "claude";
+  clean(process.env.REACT_APP_AURA_PRIMARY) || "openai";
 
 // =======================================================
 // 🎨 Branding FAZO oficial
 // =======================================================
+
 const BRAND = {
   sistema: "FAZO-LOGÍSTICA",
   modulo: "AURA",
-  version: "6.0 ULTRA MASTER",
+  version: "6.1 ULTRA MASTER",
   autor: "Gustavo Alejandro Oliva Miranda",
   pais: "Chile",
   ciudad: "Valparaíso",
@@ -82,8 +93,9 @@ const BRAND = {
 };
 
 // =======================================================
-// 🛠️ DEBUG automático — diagnóstico perfecto
+// 🛠️ DEBUG automático (clave para diagnóstico)
 // =======================================================
+
 const DEBUG = {
   entorno: process.env.NODE_ENV || "development",
   react_version: React?.version || "N/A",
@@ -93,18 +105,22 @@ const DEBUG = {
 };
 
 // =======================================================
-// 🚀 Exportación final — El corazón del sistema AURA
+// 🚀 EXPORT FINAL — CORAZÓN DE AURA
 // =======================================================
+
 const config = {
+  // Backend
+  AURA_BACKEND_URL: getBackendURL(),
+
+  // IA
   AURA_PRIMARY,
   MODELOS,
   URLS,
   KEYS,
+
+  // Sistema
   BRAND,
   DEBUG,
-
-  // Backend Render real
-  AURA_BACKEND_URL: getBackendURL(),
 };
 
 export default config;
