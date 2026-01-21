@@ -17,6 +17,42 @@
 
 console.log("AURA_Actions cargado correctamente ✔");
 
+// =======================================================
+// 🧠 REGISTRO DE ACCIONES (REQUERIDO POR App.js)
+// =======================================================
+
+// Memoria simple en runtime (no persistente)
+const AURA_ACTION_LOG = [];
+
+/**
+ * Registra cualquier acción ejecutada por AURA
+ * @param {string} tipo
+ * @param {any} payload
+ */
+export function registrarAccion(tipo, payload = null) {
+  const entry = {
+    tipo,
+    payload,
+    timestamp: new Date().toISOString(),
+  };
+
+  AURA_ACTION_LOG.push(entry);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.debug("[AURA_ACTION]", entry);
+  }
+}
+
+/**
+ * Utilidades opcionales (debug / futuro)
+ */
+export function obtenerAcciones() {
+  return [...AURA_ACTION_LOG];
+}
+
+export function limpiarAcciones() {
+  AURA_ACTION_LOG.length = 0;
+}
 
 // =======================================================
 // 🔥 1) ABRIR MÓDULOS PRINCIPALES FAZO OS
@@ -53,8 +89,6 @@ export function ejecutarModulo(tipo, callback) {
   }
 }
 
-
-
 // =======================================================
 // 🔥 2) SUBRUTAS INTERNAS (AguaRuta, Traslado…)
 // =======================================================
@@ -65,7 +99,6 @@ export function ejecutarSubruta(ruta, callback) {
     tab: ruta,
   });
 
-  // AURA ANNOUNCE
   const frases = {
     "rutas-activas": "Abriendo Rutas Activas.",
     "no-entregadas": "Mostrando No Entregadas.",
@@ -79,11 +112,8 @@ export function ejecutarSubruta(ruta, callback) {
   return frases[ruta] || "Abriendo sección interna.";
 }
 
-
-
 // =======================================================
 // 🔥 3) ACCIONES DIRECTAS DEL SISTEMA
-//    (Cerrar sesión, abrir mapa, abrir rutas, etc.)
 // =======================================================
 
 export function ejecutarAccion(accion, callback) {
@@ -105,14 +135,10 @@ export function ejecutarAccion(accion, callback) {
   }
 }
 
-
-
 // =======================================================
 // 🔥 4) ACCIONES AVANZADAS (FAZO FUTURE ENGINE)
-//    — Aquí se conectan funciones inteligentes reales
 // =======================================================
 
-// ⚙ Ejecutar Redistribución Automática
 export function ejecutarRedistribucion(payload, callback) {
   callback({
     type: "EXEC_REDISPATCH",
@@ -122,8 +148,6 @@ export function ejecutarRedistribucion(payload, callback) {
   return "Ejecutando redistribución automática de rutas.";
 }
 
-
-// ⚙ Crear reporte PDF
 export function generarReporte(tipo, callback) {
   callback({
     type: "GENERATE_REPORT",
@@ -133,8 +157,6 @@ export function generarReporte(tipo, callback) {
   return "Generando informe profesional.";
 }
 
-
-// ⚙ Enviar correo automático
 export function enviarCorreo(datos, callback) {
   callback({
     type: "SEND_EMAIL",
@@ -144,8 +166,6 @@ export function enviarCorreo(datos, callback) {
   return "Enviando correo electrónico.";
 }
 
-
-// ⚙ Registrar un nuevo punto en AguaRuta u otros módulos
 export function registrarNuevoPunto(datos, callback) {
   callback({
     type: "REGISTER_POINT",
@@ -155,15 +175,10 @@ export function registrarNuevoPunto(datos, callback) {
   return "Registrando nuevo punto en la base de datos.";
 }
 
-
-
 // =======================================================
-// 🔥 5) ACCIONES ESPECIALIZADAS PARA FUTUROS PROYECTOS
-//    — FAZO ES EXPANDIBLE: e-commerce, flota, educación,
-//      migrantes, Municipalidad, external clients.
+// 🔥 5) ACCIONES ESPECIALIZADAS FUTURAS
 // =======================================================
 
-// Ejemplo: Reservar vehículo de Traslado Municipal
 export function reservarVehiculo(info, callback) {
   callback({
     type: "BOOK_VEHICLE",
@@ -173,8 +188,6 @@ export function reservarVehiculo(info, callback) {
   return "Reservando vehículo municipal.";
 }
 
-
-// Ejemplo: Registrar mantención de flota
 export function registrarMantencion(info, callback) {
   callback({
     type: "REGISTER_MAINTENANCE",
@@ -184,11 +197,8 @@ export function registrarMantencion(info, callback) {
   return "Registrando mantención de vehículo.";
 }
 
-
-
 // =======================================================
-// 🔥 6) FUNCIÓN UNIVERSAL — PUENTE
-//    AURA_Agent usa esta para cualquier acción general
+// 🔥 6) FUNCIÓN UNIVERSAL — PUENTE GENERAL
 // =======================================================
 
 export function ejecutarAccionGeneral(data, callback) {
@@ -200,9 +210,6 @@ export function ejecutarAccionGeneral(data, callback) {
   return "Ejecutando instrucción general.";
 }
 
-
-
 // =======================================================
 //  FIN DEL ARCHIVO
 // =======================================================
-
