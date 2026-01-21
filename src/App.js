@@ -8,18 +8,17 @@
 import React, { useCallback } from "react";
 import AURAChat from "./aura/AURAChat";
 
-import { detectarComando } from "./aura/AURACommandDetector";
+// 🔗 IMPORTS ALINEADOS CON TU ESTRUCTURA REAL
+import { detectarComando } from "./aura/intentDetector";
 import { ejecutarComando } from "./aura/AURACommandRouter";
-
-import { registrarAccion } from "./aura/AURAMemory";
-import { enviarEventoDesdeAURA } from "./aura/FAZO_OS_EventBridge";
+import { registrarAccion } from "./aura/AURA_Actions";
+import { enviarEventoDesdeAURA } from "./aura/moduleRouter";
 
 // ===================================================
 // APP PRINCIPAL
 // ===================================================
 
 function App() {
-
   // =================================================
   // ENTRADA CENTRAL DE AURA
   // =================================================
@@ -30,7 +29,7 @@ function App() {
       // 1️⃣ Registrar input crudo
       registrarAccion("AURA_INPUT", texto);
 
-      // 2️⃣ Detectar comando
+      // 2️⃣ Detectar comando / intención
       const comando = detectarComando(texto);
 
       // 3️⃣ Si no hay comando → salida limpia
@@ -44,7 +43,7 @@ function App() {
 
       // 5️⃣ Registrar ejecución
       registrarAccion("AURA_COMMAND", {
-        tipo: comando.tipo,
+        tipo: comando.tipo || "desconocido",
         payload: comando.payload || null,
       });
 
@@ -57,7 +56,6 @@ function App() {
           payload: resultado,
         });
       }
-
     } catch (error) {
       // ❌ Error silencioso — AURA nunca debe botar la app
       registrarAccion("AURA_ERROR", {
