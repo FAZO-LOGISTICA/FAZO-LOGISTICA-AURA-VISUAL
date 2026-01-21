@@ -1,9 +1,12 @@
-// moduleRouter.js (versión PRO AURA)
-// ---------------------------------------------
-// Enruta automáticamente todas las intenciones
-// de FAZO y asegura que cada módulo responda
-// sin romper la app.
-// ---------------------------------------------
+// =======================================================
+// moduleRouter.js — Router central FAZO / AURA (BUILD SAFE)
+// =======================================================
+//
+// ✔ Enruta intenciones a módulos
+// ✔ Mantiene IA general como fallback
+// ✔ Expone enviarEventoDesdeAURA (requerido por App.js)
+//
+// =======================================================
 
 import { detectarIntent } from "./intentDetector";
 
@@ -15,8 +18,32 @@ import * as Reportes from "./modules/reportes";
 import * as Documentos from "./modules/documentos";
 import * as Analisis from "./modules/analisis";
 
-// 🔮 Módulo interno (preguntas sobre AURA)
+// 🔮 Módulo identidad AURA
 import * as AuraInfo from "./modules/aura_personal";
+
+console.log("moduleRouter cargado correctamente ✔");
+
+// =======================================================
+// 🧠 PUENTE DE EVENTOS AURA → UI (REQUERIDO POR App.js)
+// =======================================================
+
+export function enviarEventoDesdeAURA(evento) {
+  if (!evento || typeof evento !== "object") return;
+
+  window.dispatchEvent(
+    new CustomEvent("AURA_EVENT", {
+      detail: evento,
+    })
+  );
+
+  if (process.env.NODE_ENV !== "production") {
+    console.debug("[AURA_EVENT]", evento);
+  }
+}
+
+// =======================================================
+// 🔁 PROCESADOR PRINCIPAL FAZO
+// =======================================================
 
 export async function procesarFAZO(texto) {
   try {
@@ -50,7 +77,7 @@ export async function procesarFAZO(texto) {
         return await ejecutarModulo(AuraInfo, texto, "Identidad de AURA");
 
       default:
-        // IA general se encargará de responder
+        // IA general responde
         return null;
     }
   } catch (error) {
@@ -62,10 +89,10 @@ export async function procesarFAZO(texto) {
   }
 }
 
-// ---------------------------------------
-// 🧩 Función que ejecuta cualquier módulo
-// con seguridad anti-crash
-// ---------------------------------------
+// =======================================================
+// 🧩 EJECUTOR UNIVERSAL DE MÓDULOS (ANTI-CRASH)
+// =======================================================
+
 async function ejecutarModulo(modulo, texto, nombre) {
   try {
     if (!modulo.resolver) {
@@ -88,3 +115,7 @@ async function ejecutarModulo(modulo, texto, nombre) {
     );
   }
 }
+
+// =======================================================
+// FIN DEL ARCHIVO
+// =======================================================
