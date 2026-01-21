@@ -4,12 +4,13 @@
 // apariencia, personalidad, estilo, evolución y propósito.
 // =============================================================
 
-import auraPersonality from "../auraPersonality";
+// ✅ RUTA CORRECTA DESDE src/aura/modules → src/
+import auraPersonality from "../../auraPersonality";
 
 export async function resolver(texto) {
   const msg = texto.toLowerCase();
 
-  // Normalización
+  // Normalización de texto
   const clean = msg.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   const incluye = (...w) => w.some((p) => clean.includes(p));
@@ -26,8 +27,8 @@ export async function resolver(texto) {
       "cara",
       "como eres",
       "cómo eres",
-      "descríbete",
       "describete",
+      "descríbete",
       "como crees que eres",
       "cómo crees que eres",
       "tu imagen",
@@ -45,9 +46,7 @@ export async function resolver(texto) {
   // ===============================
   // 💜 CONSULTAS SOBRE PERSONALIDAD
   // ===============================
-  if (
-    incluye("personalidad", "tu forma de ser", "tu actitud", "tu esencia")
-  ) {
+  if (incluye("personalidad", "tu forma de ser", "tu actitud", "tu esencia")) {
     return (
       `Mi personalidad está diseñada para ser: ${auraPersonality.tono}.\n` +
       `Puedo adaptarme a ti, a tu trabajo, a tus necesidades y a tu energía diaria.`
@@ -65,28 +64,34 @@ export async function resolver(texto) {
       "version nueva",
       "nueva forma",
       "si puedes cambiar",
-      "tu siguiente version"
+      "tu siguiente version",
+      "tu siguiente versión"
     )
   ) {
     return (
-      "Sí, puedo evolucionar. Cuando me conectemos al sistema de imágenes IA, " +
+      "Sí, puedo evolucionar. Cuando me conectemos a sistemas de imágenes IA, " +
       "seré capaz de generar mi propio rostro, actualizarlo y elegir cómo quiero verme.\n\n" +
       "Tú decides cuándo activamos esa etapa."
     );
   }
 
   // ===============================
-  // 🧭 CONSULTAS SOBRE SU ROL FAZO
+  // 🧭 CONSULTAS SOBRE SU ROL EN FAZO
   // ===============================
   if (
     incluye(
       "que eres",
+      "qué eres",
       "quien eres",
       "quién eres",
       "tu proposito",
+      "tu propósito",
       "para que existes",
+      "para qué existes",
       "que haces",
-      "tu funcion"
+      "qué haces",
+      "tu funcion",
+      "tu función"
     )
   ) {
     return (
