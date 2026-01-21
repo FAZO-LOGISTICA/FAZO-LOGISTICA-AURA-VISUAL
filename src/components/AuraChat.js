@@ -1,18 +1,23 @@
 /* =====================================================
-   AURAChat.js — FINAL PRO BLINDADO
+   AURAChat.js — FINAL PRO BLINDADO (FIX BACKEND)
    FAZO-OS 2025
-   Autor: Mateo (IA)
-   Objetivo: Chat robusto, sin bloqueos, sin pantallazos
 ===================================================== */
 
 import React, { useEffect, useRef, useState } from "react";
 
 /* ================= CONFIGURACIÓN ================= */
 
-const MAX_HISTORY = 15;              // memoria corta controlada
-const RESPONSE_TIMEOUT = 12000;      // 12 segundos máx de espera
+const MAX_HISTORY = 15;
+const RESPONSE_TIMEOUT = 12000;
 const SAFE_FALLBACK =
   "Estoy operativo. Hubo una demora, pero sigo contigo. Reformula o continuamos.";
+
+/* ================= BACKEND ================= */
+
+const BACKEND_URL =
+  process.env.REACT_APP_AURA_BACKEND_URL || "http://127.0.0.1:8000";
+
+const API_ENDPOINT = `${BACKEND_URL}/aura`;
 
 /* ================= UTILIDADES ================= */
 
@@ -25,10 +30,7 @@ const safeTrimHistory = (history) => {
 
 /* ================= COMPONENTE ================= */
 
-export default function AURAChat({
-  onCommandDetected = () => {},
-  apiEndpoint = "/api/aura/chat",
-}) {
+export default function AURAChat({ onCommandDetected = () => {} }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,12 +42,8 @@ export default function AURAChat({
 
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      abortControllerRef.current?.abort();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -66,19 +64,17 @@ export default function AURAChat({
 
     abortControllerRef.current = new AbortController();
 
-    /* ---------- TIMEOUT DURO ---------- */
     timeoutRef.current = setTimeout(() => {
-      try {
-        abortControllerRef.current?.abort();
-      } catch (_) {}
+      abortControllerRef.current?.abort();
     }, RESPONSE_TIMEOUT);
 
     try {
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
+          provider: "auto",
           messages: safeTrimHistory([...messages, userMessage]),
         }),
       });
@@ -89,13 +85,10 @@ export default function AURAChat({
 
       const data = await response.json();
 
-      /* ---------- COMANDO DETECTADO ---------- */
       if (data?.command) {
         try {
           onCommandDetected(data.command);
-        } catch (_) {
-          // comando falló, no bloquea chat
-        }
+        } catch (_) {}
       }
 
       const assistantMessage = {
@@ -108,7 +101,6 @@ export default function AURAChat({
         safeTrimHistory([...prev, assistantMessage])
       );
     } catch (error) {
-      /* ---------- ERROR SILENCIOSO ---------- */
       const fallbackMessage = {
         role: "assistant",
         content: SAFE_FALLBACK,
@@ -182,12 +174,7 @@ export default function AURAChat({
 /* ================= ESTILOS ================= */
 
 const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    height: "100%",
-    width: "100%",
-  },
+  container: { display: "flex", flexDirection: "column", height: "100%" },
   chatBox: {
     flex: 1,
     overflowY: "auto",
@@ -200,14 +187,9 @@ const styles = {
     padding: "10px 14px",
     borderRadius: "12px",
     fontSize: "14px",
-    lineHeight: "1.4",
     wordBreak: "break-word",
   },
-  user: {
-    alignSelf: "flex-end",
-    backgroundColor: "#2563eb",
-    color: "#fff",
-  },
+  user: { alignSelf: "flex-end", backgroundColor: "#2563eb", color: "#fff" },
   assistant: {
     alignSelf: "flex-start",
     backgroundColor: "#1e293b",
