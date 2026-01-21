@@ -1,6 +1,7 @@
 /* =====================================================
-   AURAChat.js — FINAL PRO BLINDADO (FIX BACKEND)
+   AURAChat.js — FINAL PRO BLINDADO (BACKEND COMPATIBLE)
    FAZO-OS 2025
+   Autor: Mateo IA + Gustavo Oliva
 ===================================================== */
 
 import React, { useEffect, useRef, useState } from "react";
@@ -14,8 +15,10 @@ const SAFE_FALLBACK =
 
 /* ================= BACKEND ================= */
 
+// Usa Render en producción, localhost en desarrollo
 const BACKEND_URL =
-  process.env.REACT_APP_AURA_BACKEND_URL || "http://127.0.0.1:8000";
+  process.env.REACT_APP_AURA_BACKEND_URL ||
+  "http://127.0.0.1:8000";
 
 const API_ENDPOINT = `${BACKEND_URL}/aura`;
 
@@ -71,20 +74,24 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
     try {
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           provider: "auto",
+          audio: false, // 🔴 CLAVE: requerido por FastAPI
           messages: safeTrimHistory([...messages, userMessage]),
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Respuesta no OK");
+        throw new Error(`Backend respondió ${response.status}`);
       }
 
       const data = await response.json();
 
+      // Comandos futuros FAZO
       if (data?.command) {
         try {
           onCommandDetected(data.command);
@@ -174,7 +181,12 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
 /* ================= ESTILOS ================= */
 
 const styles = {
-  container: { display: "flex", flexDirection: "column", height: "100%" },
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    width: "100%",
+  },
   chatBox: {
     flex: 1,
     overflowY: "auto",
@@ -189,7 +201,11 @@ const styles = {
     fontSize: "14px",
     wordBreak: "break-word",
   },
-  user: { alignSelf: "flex-end", backgroundColor: "#2563eb", color: "#fff" },
+  user: {
+    alignSelf: "flex-end",
+    backgroundColor: "#2563eb",
+    color: "#fff",
+  },
   assistant: {
     alignSelf: "flex-start",
     backgroundColor: "#1e293b",
