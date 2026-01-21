@@ -5,13 +5,54 @@
 // ✔ Sistema de coincidencias inteligentes
 // ✔ Palabras clasificadas por categoría (módulo FAZO)
 // ✔ Umbral flexible (2 palabras activan el módulo)
-// ✔ Si no reconoce → envía a IA general
-// ✔ Fácil de expandir (solo agregas más palabras al diccionario)
+// ✔ Compatible con App.js (exporta detectarComando)
+// ✔ Fácil de expandir
 //
 // ===========================================================
 
+/**
+ * FUNCIÓN PRINCIPAL ESPERADA POR App.js
+ * Devuelve un objeto de comando estructurado o null
+ *
+ * @param {string} texto
+ * @returns {{ tipo: string, payload: any } | null}
+ */
+export function detectarComando(texto) {
+  if (!texto || typeof texto !== "string") return null;
+
+  const intent = detectarIntent(texto);
+
+  if (!intent || intent === "general") return null;
+
+  // Mapeo de intención → tipo de acción
+  switch (intent) {
+    case "aguaruta":
+    case "traslado":
+    case "flota":
+    case "reportes":
+    case "documentos":
+    case "planillas":
+    case "analisis":
+      return {
+        tipo: "MODULO",
+        payload: intent,
+      };
+
+    default:
+      return null;
+  }
+}
+
+/**
+ * DETECTOR AVANZADO DE INTENCIONES (TU LÓGICA ORIGINAL)
+ * @param {string} texto
+ * @returns {string} intent
+ */
 export function detectarIntent(texto) {
-  const msg = texto.toLowerCase();
+  const msg = texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
   // === DICCIONARIO AVANZADO DE INTENCIONES ===
   const intents = {
@@ -22,23 +63,24 @@ export function detectarIntent(texto) {
 
     traslado: [
       "traslado", "vehiculo", "vehículo", "reserva", "chofer",
-      "viaje", "movilización", "solicitud", "ranger", "camioneta",
-      "minibus", "pasajero"
+      "viaje", "movilizacion", "movilización", "solicitud",
+      "ranger", "camioneta", "minibus", "pasajero"
     ],
 
     flota: [
-      "flota", "mantenimiento", "combustible", "rendimiento", "kilometraje",
-      "neumáticos", "mantención", "taller", "falla"
+      "flota", "mantenimiento", "combustible", "rendimiento",
+      "kilometraje", "neumaticos", "neumáticos", "mantencion",
+      "mantención", "taller", "falla"
     ],
 
     reportes: [
-      "reporte", "informe", "estadistica", "estadística", "dashboard",
-      "pdf", "excel", "consolidado", "semanal", "mensual"
+      "reporte", "informe", "estadistica", "estadística",
+      "dashboard", "pdf", "excel", "consolidado", "semanal", "mensual"
     ],
 
     documentos: [
-      "oficio", "memorando", "carta", "correo", "escribir", "redactar",
-      "firma", "solicito", "adjunto"
+      "oficio", "memorando", "carta", "correo", "escribir",
+      "redactar", "firma", "solicito", "adjunto"
     ],
 
     planillas: [
@@ -47,8 +89,9 @@ export function detectarIntent(texto) {
     ],
 
     analisis: [
-      "kpi", "indicador", "proyección", "rotacion",
-      "rotación", "demanda", "análisis", "tendencia"
+      "kpi", "indicador", "proyeccion", "proyección",
+      "rotacion", "rotación", "demanda", "analisis",
+      "análisis", "tendencia"
     ],
   };
 
@@ -56,20 +99,17 @@ export function detectarIntent(texto) {
   let bestMatch = "general";
   let bestScore = 0;
 
-  // Recorre todos los módulos
   for (const intent in intents) {
     const palabras = intents[intent];
+    const score = palabras.filter((p) => msg.includes(p)).length;
 
-    // Cuenta coincidencias
-    let score = palabras.filter(p => msg.includes(p)).length;
-
-    // Requiere al menos 2 coincidencias para activar módulo
+    // Activación fuerte
     if (score >= 2 && score > bestScore) {
       bestScore = score;
       bestMatch = intent;
     }
 
-    // Si es una coincidencia muy precisa → activa con 1 palabra
+    // Activación suave si no hay nada mejor
     if (score === 1 && bestMatch === "general") {
       bestMatch = intent;
     }
