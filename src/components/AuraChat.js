@@ -1,7 +1,8 @@
 /* =====================================================
-   AURAChat.js — FINAL PRO BLINDADO (BACKEND COMPATIBLE)
+   AURAChat.js — FINAL DEFINITIVO PRODUCCIÓN
    FAZO-OS 2025
-   Autor: Mateo IA + Gustavo Oliva
+   Backend: FastAPI Render
+   Autor: Gustavo Oliva + Mateo IA
 ===================================================== */
 
 import React, { useEffect, useRef, useState } from "react";
@@ -10,21 +11,16 @@ import React, { useEffect, useRef, useState } from "react";
 
 const MAX_HISTORY = 15;
 const RESPONSE_TIMEOUT = 12000;
+
 const SAFE_FALLBACK =
   "Estoy operativo. Hubo una demora, pero sigo contigo. Reformula o continuamos.";
 
-/* ================= BACKEND ================= */
+/* ================= BACKEND (FIJO PRODUCCIÓN) ================= */
 
-// Usa Render en producción, localhost en desarrollo
-const BACKEND_URL =
-  process.env.REACT_APP_AURA_BACKEND_URL ||
-  "http://127.0.0.1:8000";
-
+const BACKEND_URL = "https://aura-g5nw.onrender.com";
 const API_ENDPOINT = `${BACKEND_URL}/aura`;
 
 /* ================= UTILIDADES ================= */
-
-const now = () => new Date().toISOString();
 
 const safeTrimHistory = (history) => {
   if (!Array.isArray(history)) return [];
@@ -41,7 +37,7 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
   const abortControllerRef = useRef(null);
   const timeoutRef = useRef(null);
 
-  /* ========== LIMPIEZA SEGURA ========== */
+  /* ========== LIMPIEZA GLOBAL ========== */
 
   useEffect(() => {
     return () => {
@@ -58,11 +54,12 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
     const userMessage = {
       role: "user",
       content: input.trim(),
-      ts: now(),
     };
 
+    const newHistory = safeTrimHistory([...messages, userMessage]);
+
     setInput("");
-    setMessages((prev) => safeTrimHistory([...prev, userMessage]));
+    setMessages(newHistory);
     setLoading(true);
 
     abortControllerRef.current = new AbortController();
@@ -80,19 +77,23 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           provider: "auto",
-          audio: false, // 🔴 CLAVE: requerido por FastAPI
-          messages: safeTrimHistory([...messages, userMessage]),
+          audio: false,
+          messages: newHistory,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Backend respondió ${response.status}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
 
-      // Comandos futuros FAZO
-      if (data?.command) {
+      if (!data?.reply) {
+        throw new Error("Respuesta inválida del backend");
+      }
+
+      // Hook futuro FAZO
+      if (data.command) {
         try {
           onCommandDetected(data.command);
         } catch (_) {}
@@ -100,18 +101,16 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
 
       const assistantMessage = {
         role: "assistant",
-        content: data?.reply || SAFE_FALLBACK,
-        ts: now(),
+        content: data.reply,
       };
 
       setMessages((prev) =>
         safeTrimHistory([...prev, assistantMessage])
       );
-    } catch (error) {
+    } catch (err) {
       const fallbackMessage = {
         role: "assistant",
         content: SAFE_FALLBACK,
-        ts: now(),
       };
 
       setMessages((prev) =>
@@ -123,7 +122,7 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
     }
   };
 
-  /* ========== ENTER PARA ENVIAR ========== */
+  /* ========== ENTER ========== */
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -199,6 +198,7 @@ const styles = {
     padding: "10px 14px",
     borderRadius: "12px",
     fontSize: "14px",
+    lineHeight: "1.4",
     wordBreak: "break-word",
   },
   user: {
