@@ -1,27 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
   <head>
+    <!-- =====================================================
+         FAZO OS — Sistema Operativo Municipal
+         Núcleo AURA — Producción Netlify
+    ====================================================== -->
+
     <meta charset="utf-8" />
+    <title>FAZO OS — AURA System</title>
 
     <!-- =====================================================
-          IDENTIDAD FAZO OS — Sistema Operativo Municipal
+         METADATA BASE
     ====================================================== -->
-    <title>FAZO OS — AURA System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0ea5e9" />
     <meta
       name="description"
-      content="FAZO OS — Sistema Operativo Municipal con núcleo AURA, AguaRuta, Traslado Municipal, flota y panel holográfico IA."
+      content="FAZO OS — Sistema Operativo Municipal con núcleo AURA, AguaRuta y gestión logística."
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- =====================================================
-          ICONOS
-    ====================================================== -->
-    <link rel="icon" href="/aura/aura1.png" />
-    <link rel="apple-touch-icon" href="/aura/aura1.png" />
-
-    <!-- =====================================================
-          FUENTES
+         FUENTE OFICIAL
     ====================================================== -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -31,259 +30,68 @@
     />
 
     <!-- =====================================================
-          PRELOADS
+         ICONOS (DEBEN EXISTIR EN /public/aura/)
     ====================================================== -->
-    <link rel="preload" href="/index.css" as="style" />
-    <link rel="preload" href="/sfx/click.mp3" as="audio" />
-    <link rel="preload" href="/sfx/hover.wav" as="audio" />
-    <link rel="preload" href="/sfx/error.wav" as="audio" />
-    <link rel="preload" href="/sfx/success.wav" as="audio" />
+    <link rel="icon" href="/aura/aura1.png" />
+    <link rel="apple-touch-icon" href="/aura/aura1.png" />
 
     <!-- =====================================================
-          ESTILOS: CURSOR + SPLASH
+         ESTILO BASE MÍNIMO (NO DUPLICA index.css)
+         ⚠️ Todo el estilo PRO vive en React / index.css
     ====================================================== -->
     <style>
+      html,
       body {
         margin: 0;
-        font-family: "Inter", sans-serif;
-        cursor: none !important;
+        padding: 0;
+        height: 100%;
+        width: 100%;
         background: #020617;
+        color: #ffffff;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
         overflow: hidden;
       }
 
-      /* =====================================================
-            CURSOR HOLOGRÁFICO
-      ====================================================== */
-      #cursor-holo {
-        position: fixed;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: rgba(0, 255, 255, 0.9);
-        pointer-events: none;
-        z-index: 9999;
-        transform: translate(-50%, -50%) scale(1);
-        transition: transform 0.045s linear;
-        box-shadow: 0 0 12px rgba(0, 255, 255, 0.8);
-        animation: cursorPulse 3s ease-in-out infinite;
+      /* Root siempre ocupa pantalla completa */
+      #root {
+        height: 100%;
+        width: 100%;
       }
 
-      @keyframes cursorPulse {
-        0% {
-          box-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
-        }
-        50% {
-          box-shadow: 0 0 28px rgba(0, 255, 255, 1);
-        }
-        100% {
-          box-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
-        }
-      }
-
-      /* Cursor cuando AURA habla */
-      .cursor-speaking {
-        background: rgba(255, 20, 147, 0.95) !important;
-        box-shadow: 0 0 22px rgba(255, 20, 147, 1) !important;
-      }
-
-      /* Cursor cuando AURA escucha */
-      .cursor-listening {
-        background: rgba(0, 255, 127, 0.95) !important;
-        box-shadow: 0 0 22px rgba(0, 255, 127, 1) !important;
-      }
-
-      /* Cursor alerta */
-      .cursor-alert {
-        background: rgba(255, 120, 20, 0.95) !important;
-        box-shadow: 0 0 22px rgba(255, 120, 20, 1) !important;
-      }
-
-      /* =====================================================
-            SPLASH OS — Arranque tipo sistema operativo
-      ====================================================== */
-      #splash-fazo {
-        position: fixed;
-        inset: 0;
-        background: radial-gradient(circle at center, #0a0f1f, #000814 75%);
+      /* Pantalla de respaldo si React no carga */
+      .fazo-fallback {
+        height: 100vh;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
         align-items: center;
-        z-index: 9998;
+        justify-content: center;
+        background: #020617;
+        color: #e5e7eb;
         text-align: center;
-        overflow: hidden;
-        opacity: 1;
-        animation: splashFade 1s ease forwards;
-        animation-delay: 3.3s;
-      }
-
-      /* Parallax de fondo */
-      #splash-fazo::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: url("/aura/grid.png");
-        opacity: 0.07;
-        transform: scale(1.2);
-        animation: parallax 16s linear infinite;
-      }
-
-      @keyframes parallax {
-        0% {
-          transform: scale(1.1) translateY(0px);
-        }
-        50% {
-          transform: scale(1.2) translateY(-18px);
-        }
-        100% {
-          transform: scale(1.1) translateY(0px);
-        }
-      }
-
-      #splash-fazo img {
-        width: 170px;
-        filter: drop-shadow(0 0 35px #3b82f6);
-        animation: logoGlow 2.6s ease-in-out infinite;
-      }
-
-      @keyframes logoGlow {
-        0% {
-          filter: drop-shadow(0 0 12px #1e3a8a);
-        }
-        50% {
-          filter: drop-shadow(0 0 52px #60a5fa);
-        }
-        100% {
-          filter: drop-shadow(0 0 12px #1e3a8a);
-        }
-      }
-
-      #splash-text {
-        margin-top: 22px;
-        color: #93c5fd;
-        font-size: 18px;
-        letter-spacing: 2px;
-        opacity: 0;
-        animation: textAppear 1.2s ease forwards;
-        animation-delay: 0.6s;
-      }
-
-      @keyframes textAppear {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .spinner-fazo {
-        margin-top: 30px;
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        border: 6px solid #1e3a8a60;
-        border-top-color: #3b82f6;
-        animation: spin 1s linear infinite, glow 2s ease-in-out infinite;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      @keyframes glow {
-        0% {
-          box-shadow: 0 0 16px #3b82f660;
-        }
-        50% {
-          box-shadow: 0 0 40px #60a5fa;
-        }
-        100% {
-          box-shadow: 0 0 16px #3b82f660;
-        }
-      }
-
-      @keyframes splashFade {
-        to {
-          opacity: 0;
-          visibility: hidden;
-        }
       }
     </style>
   </head>
 
   <body>
     <!-- =====================================================
-          CURSOR HOLOGRÁFICO
+         FALLBACK HTML (solo si React falla críticamente)
     ====================================================== -->
-    <div id="cursor-holo"></div>
-
-    <script>
-      const cursor = document.getElementById("cursor-holo");
-
-      document.addEventListener("mousemove", (e) => {
-        cursor.style.left = e.clientX + "px";
-        cursor.style.top = e.clientY + "px";
-      });
-
-      // Sonidos con bloqueo anti-lag
-      const hoverSound = new Audio("/sfx/hover.wav");
-      hoverSound.volume = 0.25;
-
-      const clickSound = new Audio("/sfx/click.mp3");
-      clickSound.volume = 0.35;
-
-      let allowHover = true;
-      document.addEventListener("mouseover", () => {
-        if (!allowHover) return;
-        allowHover = false;
-        hoverSound.currentTime = 0;
-        hoverSound.play().catch(() => {});
-        setTimeout(() => (allowHover = true), 100);
-      });
-
-      document.addEventListener("mousedown", () => {
-        clickSound.currentTime = 0;
-        clickSound.play().catch(() => {});
-      });
-
-      // Eventos AURA → Cursor
-      window.addEventListener("AURA_TALKING", () => {
-        cursor.classList.add("cursor-speaking");
-      });
-      window.addEventListener("AURA_LISTENING", () => {
-        cursor.classList.add("cursor-listening");
-      });
-      window.addEventListener("AURA_ALERT", () => {
-        cursor.classList.add("cursor-alert");
-      });
-      window.addEventListener("AURA_IDLE", () => {
-        cursor.classList.remove("cursor-speaking", "cursor-listening", "cursor-alert");
-      });
-    </script>
+    <noscript>
+      <div class="fazo-fallback">
+        <div>
+          <h1 style="font-size: 26px; margin-bottom: 12px;">
+            JavaScript deshabilitado
+          </h1>
+          <p>FAZO OS requiere JavaScript para funcionar.</p>
+        </div>
+      </div>
+    </noscript>
 
     <!-- =====================================================
-          SPLASH DE ARRANQUE
-    ====================================================== -->
-    <div id="splash-fazo">
-      <img src="/aura/aura1.png" alt="FAZO Logo" />
-      <div id="splash-text">Inicializando módulos FAZO OS...</div>
-      <div class="spinner-fazo"></div>
-    </div>
-
-    <!-- Evento desde React para ocultar splash -->
-    <script>
-      window.addEventListener("FAZO_READY", () => {
-        const splash = document.getElementById("splash-fazo");
-        splash.style.opacity = "0";
-        setTimeout(() => splash.remove(), 700);
-      });
-    </script>
-
-    <!-- =====================================================
-          ROOT REACT
+         ROOT REACT
+         ⚠️ React inyecta automáticamente JS y CSS compilados
+         ⚠️ NO se carga /src/index.js manualmente
     ====================================================== -->
     <div id="root"></div>
-    <script type="module" src="/src/index.js"></script>
   </body>
 </html>
