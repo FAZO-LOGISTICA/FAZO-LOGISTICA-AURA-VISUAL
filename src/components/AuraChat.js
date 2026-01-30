@@ -1,13 +1,12 @@
 /* =====================================================
-   AURAChat.js — FINAL DEFINITIVO PRODUCCIÓN
-   FAZO-OS 2025
-   Backend: FastAPI Render
+   AURAChat.js — PRODUCCIÓN REAL
+   FAZO OS 2025
    Autor: Gustavo Oliva + Mateo IA
 ===================================================== */
 
 import React, { useEffect, useRef, useState } from "react";
 
-/* ================= CONFIGURACIÓN ================= */
+/* ================= CONFIG ================= */
 
 const MAX_HISTORY = 15;
 const RESPONSE_TIMEOUT = 12000;
@@ -15,21 +14,19 @@ const RESPONSE_TIMEOUT = 12000;
 const SAFE_FALLBACK =
   "Estoy operativo. Hubo una demora, pero sigo contigo. Reformula o continuamos.";
 
-/* ================= BACKEND (FIJO PRODUCCIÓN) ================= */
+/* ================= BACKEND ================= */
 
 const BACKEND_URL = "https://aura-g5nw.onrender.com";
 const API_ENDPOINT = `${BACKEND_URL}/aura`;
 
-/* ================= UTILIDADES ================= */
+/* ================= UTILS ================= */
 
-const safeTrimHistory = (history) => {
-  if (!Array.isArray(history)) return [];
-  return history.slice(-MAX_HISTORY);
-};
+const safeTrimHistory = (history) =>
+  Array.isArray(history) ? history.slice(-MAX_HISTORY) : [];
 
-/* ================= COMPONENTE ================= */
+/* ================= COMPONENT ================= */
 
-export default function AURAChat({ onCommandDetected = () => {} }) {
+export default function AURAChat({ onUserMessage = () => {} }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,203 +34,106 @@ export default function AURAChat({ onCommandDetected = () => {} }) {
   const abortControllerRef = useRef(null);
   const timeoutRef = useRef(null);
 
-  /* ========== LIMPIEZA GLOBAL ========== */
-
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      clearTimeout(timeoutRef.current);
     };
   }, []);
 
-  /* ========== ENVÍO DE MENSAJE ========== */
+  /* ================= SEND ================= */
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
-    const userMessage = {
-      role: "user",
-      content: input.trim(),
-    };
+    const textoUsuario = input.trim();
 
-    const newHistory = safeTrimHistory([...messages, userMessage]);
+    // 🔥 AVISA AL CORE FAZO OS
+    try {
+      onUserMessage(textoUsuario);
+    } catch (_) {}
 
+    const userMessage = { role: "user", content: textoUsuario };
+    const history = safeTrimHistory([...messages, userMessage]);
+
+    setMessages(history);
     setInput("");
-    setMessages(newHistory);
     setLoading(true);
 
     abortControllerRef.current = new AbortController();
-
-    timeoutRef.current = setTimeout(() => {
-      abortControllerRef.current?.abort();
-    }, RESPONSE_TIMEOUT);
+    timeoutRef.current = setTimeout(
+      () => abortControllerRef.current?.abort(),
+      RESPONSE_TIMEOUT
+    );
 
     try {
-      const response = await fetch(API_ENDPOINT, {
+      const res = await fetch(API_ENDPOINT, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           provider: "auto",
-          audio: false,
-          messages: newHistory,
+          messages: history,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      if (!res.ok) throw new Error("Backend error");
 
-      const data = await response.json();
-
-      if (!data?.reply) {
-        throw new Error("Respuesta inválida del backend");
-      }
-
-      // Hook futuro FAZO
-      if (data.command) {
-        try {
-          onCommandDetected(data.command);
-        } catch (_) {}
-      }
-
-      const assistantMessage = {
-        role: "assistant",
-        content: data.reply,
-      };
+      const data = await res.json();
 
       setMessages((prev) =>
-        safeTrimHistory([...prev, assistantMessage])
+        safeTrimHistory([
+          ...prev,
+          { role: "assistant", content: data.reply || SAFE_FALLBACK },
+        ])
       );
-    } catch (err) {
-      const fallbackMessage = {
-        role: "assistant",
-        content: SAFE_FALLBACK,
-      };
-
+    } catch {
       setMessages((prev) =>
-        safeTrimHistory([...prev, fallbackMessage])
+        safeTrimHistory([
+          ...prev,
+          { role: "assistant", content: SAFE_FALLBACK },
+        ])
       );
     } finally {
-      clearTimeout(timeoutRef.current);
       setLoading(false);
-    }
-  };
-
-  /* ========== ENTER ========== */
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+      clearTimeout(timeoutRef.current);
     }
   };
 
   /* ================= UI ================= */
 
   return (
-    <div style={styles.container}>
-      <div style={styles.chatBox}>
-        {messages.map((msg, idx) => (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, padding: 12, overflowY: "auto" }}>
+        {messages.map((m, i) => (
           <div
-            key={idx}
+            key={i}
             style={{
-              ...styles.message,
-              ...(msg.role === "user"
-                ? styles.user
-                : styles.assistant),
+              maxWidth: "80%",
+              marginBottom: 8,
+              alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+              background: m.role === "user" ? "#2563eb" : "#1e293b",
+              color: "#fff",
+              padding: 10,
+              borderRadius: 10,
             }}
           >
-            {msg.content}
+            {m.content}
           </div>
         ))}
-
-        {loading && (
-          <div style={{ ...styles.message, ...styles.assistant }}>
-            Pensando…
-          </div>
-        )}
+        {loading && <div>Pensando…</div>}
       </div>
 
-      <div style={styles.inputBox}>
+      <div style={{ display: "flex", padding: 10 }}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
           placeholder="Habla con AURA…"
-          style={styles.textarea}
+          style={{ flex: 1 }}
         />
-        <button
-          onClick={sendMessage}
-          disabled={loading}
-          style={styles.button}
-        >
-          Enviar
-        </button>
+        <button onClick={sendMessage}>Enviar</button>
       </div>
     </div>
   );
 }
-
-/* ================= ESTILOS ================= */
-
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    height: "100%",
-    width: "100%",
-  },
-  chatBox: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "12px",
-    backgroundColor: "#0f172a",
-  },
-  message: {
-    maxWidth: "80%",
-    marginBottom: "10px",
-    padding: "10px 14px",
-    borderRadius: "12px",
-    fontSize: "14px",
-    lineHeight: "1.4",
-    wordBreak: "break-word",
-  },
-  user: {
-    alignSelf: "flex-end",
-    backgroundColor: "#2563eb",
-    color: "#fff",
-  },
-  assistant: {
-    alignSelf: "flex-start",
-    backgroundColor: "#1e293b",
-    color: "#e5e7eb",
-  },
-  inputBox: {
-    display: "flex",
-    gap: "8px",
-    padding: "10px",
-    borderTop: "1px solid #334155",
-    backgroundColor: "#020617",
-  },
-  textarea: {
-    flex: 1,
-    resize: "none",
-    padding: "10px",
-    borderRadius: "8px",
-    border: "1px solid #334155",
-    backgroundColor: "#020617",
-    color: "#e5e7eb",
-  },
-  button: {
-    padding: "0 18px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#22c55e",
-    color: "#022c22",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-};
