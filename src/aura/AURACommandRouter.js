@@ -1,6 +1,6 @@
 // ===================================================
 // AURACommandRouter.js
-// FAZO-OS 2025 — Ejecutor central de comandos
+// FAZO-OS 2025 — Ejecutor central REAL
 // ===================================================
 
 export async function ejecutarComando(comando, contexto = {}) {
@@ -13,6 +13,21 @@ export async function ejecutarComando(comando, contexto = {}) {
 
   try {
     switch (comando.tipo) {
+
+      // ===============================
+      // 🔹 APERTURA DE MÓDULOS FAZO
+      // ===============================
+      case "MODULO":
+        return {
+          ok: true,
+          mensaje: `Abriendo módulo ${comando.payload}`,
+          accionUI: "OPEN_MODULE",
+          modulo: comando.payload, // aguaruta, flota, etc.
+        };
+
+      // ===============================
+      // 🔹 COMANDOS ESPECÍFICOS
+      // ===============================
       case "VER_RUTAS":
         return {
           ok: true,
