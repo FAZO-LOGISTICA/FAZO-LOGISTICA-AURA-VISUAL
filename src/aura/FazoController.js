@@ -1,29 +1,31 @@
 // ===================================================
-// FazoController.js
-// Núcleo de control FAZO OS
-// Escucha eventos AURA y controla la UI
+// FazoController.js — PUENTE REAL AURA → FAZO UI
 // ===================================================
 
 export function initFazoController(setModuloActivo) {
-  if (typeof setModuloActivo !== "function") {
-    console.error("❌ setModuloActivo no es una función");
+  if (!setModuloActivo) {
+    console.error("❌ setModuloActivo no recibido");
     return;
   }
 
   console.log("🧠 FazoController inicializado");
 
-  window.addEventListener("AURA_EVENT", (event) => {
-    const data = event.detail;
-
+  window.addEventListener("AURA_EVENT", (e) => {
+    const data = e.detail;
     if (!data) return;
 
-    console.log("⚡ Evento FAZO recibido:", data);
+    console.log("⚡ EVENTO FAZO RECIBIDO:", data);
 
-    // ===============================
-    // APERTURA DE MÓDULOS
-    // ===============================
-    if (data.tipo === "OPEN_MODULE" && data.modulo) {
-      setModuloActivo(data.modulo.toLowerCase());
+    // ==============================
+    // 🔓 ABRIR MÓDULOS
+    // ==============================
+    if (data.tipo === "OPEN_MODULE") {
+      const modulo = data.modulo?.toLowerCase();
+
+      if (modulo) {
+        console.log("➡️ Cambiando módulo a:", modulo);
+        setModuloActivo(modulo);
+      }
     }
   });
 }
