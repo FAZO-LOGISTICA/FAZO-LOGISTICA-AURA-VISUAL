@@ -1,74 +1,55 @@
 /* =====================================================
-   AURAChat.js — PRODUCCIÓN CONECTADA A FAZO OS
-   FAZO OS 2025
+   AURAChat.js — FAZO OS PRODUCCIÓN REAL
    Autor: Gustavo Oliva + Mateo IA
-   Estado: PASO 1 COMPLETO
 ===================================================== */
 
 import React, { useEffect, useRef, useState } from "react";
-
-/* ================= CONFIGURACIÓN ================= */
 
 const MAX_HISTORY = 15;
 const RESPONSE_TIMEOUT = 12000;
 
 const SAFE_FALLBACK =
-  "Estoy operativo. Hubo una demora, pero sigo contigo. Reformula o continuamos.";
-
-/* ================= BACKEND ================= */
+  "Estoy operativo. Hubo una demora, pero sigo contigo.";
 
 const BACKEND_URL = "https://aura-g5nw.onrender.com";
 const API_ENDPOINT = `${BACKEND_URL}/aura`;
 
-/* ================= UTILIDADES ================= */
+const safeTrimHistory = (h) =>
+  Array.isArray(h) ? h.slice(-MAX_HISTORY) : [];
 
-const safeTrimHistory = (history) =>
-  Array.isArray(history) ? history.slice(-MAX_HISTORY) : [];
-
-/* ================= COMPONENTE ================= */
-
-export default function AURAChat({
-  onUserMessage = () => {},
-  onAuraCommand = () => {}, // 🔥 NUEVO: puente FAZO
-}) {
+export default function AURAChat({ onUserMessage = () => {} }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const abortControllerRef = useRef(null);
+  const abortRef = useRef(null);
   const timeoutRef = useRef(null);
-
-  /* ================= CLEANUP ================= */
 
   useEffect(() => {
     return () => {
-      abortControllerRef.current?.abort();
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      abortRef.current?.abort();
+      clearTimeout(timeoutRef.current);
     };
   }, []);
-
-  /* ================= ENVÍO ================= */
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
-    const textoUsuario = input.trim();
+    const texto = input.trim();
+    onUserMessage(texto);
 
-    // 1️⃣ Aviso inmediato al CORE FAZO
-    try {
-      onUserMessage(textoUsuario);
-    } catch (_) {}
-
-    const userMessage = { role: "user", content: textoUsuario };
-    const history = safeTrimHistory([...messages, userMessage]);
+    const history = safeTrimHistory([
+      ...messages,
+      { role: "user", content: texto },
+    ]);
 
     setMessages(history);
     setInput("");
     setLoading(true);
 
-    abortControllerRef.current = new AbortController();
+    abortRef.current = new AbortController();
     timeoutRef.current = setTimeout(
-      () => abortControllerRef.current?.abort(),
+      () => abortRef.current?.abort(),
       RESPONSE_TIMEOUT
     );
 
@@ -76,7 +57,7 @@ export default function AURAChat({
       const res = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        signal: abortControllerRef.current.signal,
+        signal: abortRef.current.signal,
         body: JSON.stringify({
           provider: "auto",
           messages: history,
@@ -87,25 +68,15 @@ export default function AURAChat({
 
       const data = await res.json();
 
-      // 2️⃣ RESPUESTA DE TEXTO
       setMessages((prev) =>
         safeTrimHistory([
           ...prev,
           {
             role: "assistant",
-            content: data?.reply || SAFE_FALLBACK,
+            content: data.reply || SAFE_FALLBACK,
           },
         ])
       );
-
-      // 3️⃣ 🔥 COMANDO FAZO (CLAVE)
-      if (data?.command) {
-        try {
-          onAuraCommand(data.command);
-        } catch (err) {
-          console.error("Error enviando comando FAZO:", err);
-        }
-      }
     } catch {
       setMessages((prev) =>
         safeTrimHistory([
@@ -119,46 +90,28 @@ export default function AURAChat({
     }
   };
 
-  /* ================= UI ================= */
-
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* CHAT */}
-      <div
-        style={{
-          flex: 1,
-          padding: 12,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div style={{ flex: 1, padding: 12, overflowY: "auto" }}>
         {messages.map((m, i) => (
           <div
             key={i}
             style={{
-              maxWidth: "80%",
-              marginBottom: 8,
               alignSelf: m.role === "user" ? "flex-end" : "flex-start",
               background: m.role === "user" ? "#2563eb" : "#1e293b",
               color: "#fff",
               padding: 10,
               borderRadius: 10,
-              wordBreak: "break-word",
+              marginBottom: 8,
+              maxWidth: "80%",
             }}
           >
             {m.content}
           </div>
         ))}
-
-        {loading && (
-          <div style={{ color: "#94a3b8", fontSize: 13 }}>
-            Pensando…
-          </div>
-        )}
+        {loading && <div>Pensando…</div>}
       </div>
 
-      {/* INPUT */}
       <div style={{ display: "flex", padding: 10, gap: 8 }}>
         <textarea
           value={input}
@@ -170,21 +123,9 @@ export default function AURAChat({
             }
           }}
           placeholder="Habla con AURA…"
-          style={{
-            flex: 1,
-            resize: "none",
-            padding: 10,
-            borderRadius: 8,
-            color: "#000", // 🔴 FIX letras invisibles
-          }}
+          style={{ flex: 1, padding: 10 }}
         />
-        <button
-          onClick={sendMessage}
-          disabled={loading}
-          style={{ padding: "0 16px" }}
-        >
-          Enviar
-        </button>
+        <button onClick={sendMessage}>Enviar</button>
       </div>
     </div>
   );
