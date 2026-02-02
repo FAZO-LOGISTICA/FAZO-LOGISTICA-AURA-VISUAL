@@ -1,11 +1,11 @@
 // ===================================================
-// App.js — FAZO OS / AURA FINAL CORE
+// App.js — FAZO OS / AURA CORE OPERATIVO
 // Autor: Gustavo Oliva
 // Año: 2025
-// Estado: PRODUCCIÓN
+// Estado: CONTROL REAL DEL SISTEMA
 // ===================================================
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 
 // UI Chat
 import AURAChat from "./components/AuraChat";
@@ -22,16 +22,14 @@ import { enviarEventoDesdeAURA } from "./aura/moduleRouter";
 
 function App() {
   // =================================================
-  // ENTRADA CENTRAL DE AURA (FAZO OS BRAIN)
+  // 🧠 ENTRADA DE TEXTO AURA → FAZO
   // =================================================
   const onAuraMessage = useCallback(async (texto) => {
     try {
       if (!texto || typeof texto !== "string") return;
 
-      // 1️⃣ Auditoría
       registrarAccion("AURA_INPUT", texto);
 
-      // 2️⃣ Detección de comando FAZO
       const comando = detectarComando(texto);
 
       if (!comando) {
@@ -39,16 +37,13 @@ function App() {
         return;
       }
 
-      // 3️⃣ Ejecución de comando
       const resultado = await ejecutarComando(comando);
 
-      // 4️⃣ Registro
       registrarAccion("AURA_COMMAND", {
         tipo: comando.tipo,
         payload: comando.payload || null,
       });
 
-      // 5️⃣ Evento hacia la UI
       if (resultado?.accionUI || resultado?.eventoSistema) {
         enviarEventoDesdeAURA({
           tipo: "AURA_EVENT",
@@ -65,12 +60,63 @@ function App() {
   }, []);
 
   // =================================================
+  // 🔥 COMANDOS DIRECTOS DESDE BACKEND (AURA API)
+  // =================================================
+  const onAuraCommand = useCallback((command) => {
+    if (!command || !command.type) return;
+
+    console.log("⚡ AURA COMMAND:", command);
+
+    switch (command.type) {
+      case "OPEN_MODULE":
+        enviarEventoDesdeAURA({
+          tipo: "OPEN_MODULE",
+          modulo: command.module,
+        });
+        break;
+
+      case "QUERY_DATA":
+        enviarEventoDesdeAURA({
+          tipo: "QUERY_DATA",
+          modulo: command.module,
+          accion: command.action,
+        });
+        break;
+
+      default:
+        console.warn("Comando AURA no manejado:", command);
+    }
+  }, []);
+
+  // =================================================
+  // 🔁 ESCUCHA GLOBAL DE EVENTOS AURA
+  // (esto conecta con el resto del sistema FAZO)
+  // =================================================
+  useEffect(() => {
+    const handler = (e) => {
+      console.log("📡 EVENTO FAZO:", e.detail);
+
+      // Aquí luego conectas:
+      // - navegación
+      // - mapas
+      // - AguaRuta
+      // - Flota
+      // - etc.
+    };
+
+    window.addEventListener("AURA_EVENT", handler);
+    return () => window.removeEventListener("AURA_EVENT", handler);
+  }, []);
+
+  // =================================================
   // RENDER
   // =================================================
   return (
     <div style={{ height: "100vh", width: "100vw" }}>
-      {/* 🔴 CLAVE: el prop correcto */}
-      <AURAChat onUserMessage={onAuraMessage} />
+      <AURAChat
+        onUserMessage={onAuraMessage}
+        onAuraCommand={onAuraCommand} // 🔥 CLAVE
+      />
     </div>
   );
 }
