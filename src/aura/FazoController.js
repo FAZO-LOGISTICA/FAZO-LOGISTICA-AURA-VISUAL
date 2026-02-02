@@ -1,34 +1,29 @@
 // ===================================================
 // FazoController.js
-// Control central de FAZO OS desde AURA
+// Núcleo de control FAZO OS
+// Escucha eventos AURA y controla la UI
 // ===================================================
 
-let estadoActual = {
-  modulo: "inicio",
-};
-
 export function initFazoController(setModuloActivo) {
-  window.addEventListener("AURA_EVENT", (e) => {
-    const data = e.detail;
+  if (typeof setModuloActivo !== "function") {
+    console.error("❌ setModuloActivo no es una función");
+    return;
+  }
+
+  console.log("🧠 FazoController inicializado");
+
+  window.addEventListener("AURA_EVENT", (event) => {
+    const data = event.detail;
+
     if (!data) return;
 
-    console.log("🎛 FAZO CONTROLLER:", data);
+    console.log("⚡ Evento FAZO recibido:", data);
 
-    switch (data.tipo) {
-      case "OPEN_MODULE":
-        if (data.modulo) {
-          estadoActual.modulo = data.modulo.toLowerCase();
-          setModuloActivo(estadoActual.modulo);
-        }
-        break;
-
-      case "QUERY_DATA":
-        // aquí luego conectamos AguaRuta real
-        console.log("Consulta de datos:", data);
-        break;
-
-      default:
-        console.warn("Evento FAZO no manejado:", data);
+    // ===============================
+    // APERTURA DE MÓDULOS
+    // ===============================
+    if (data.tipo === "OPEN_MODULE" && data.modulo) {
+      setModuloActivo(data.modulo.toLowerCase());
     }
   });
 }
