@@ -1,8 +1,8 @@
 /* =====================================================
-   AURAChat.js — PRODUCCIÓN ESTABLE
+   AURAChat.js — PRODUCCIÓN CONECTADA A FAZO OS
    FAZO OS 2025
    Autor: Gustavo Oliva + Mateo IA
-   Estado: LISTO PARA PRUEBAS REALES
+   Estado: PASO 1 COMPLETO
 ===================================================== */
 
 import React, { useEffect, useRef, useState } from "react";
@@ -17,7 +17,6 @@ const SAFE_FALLBACK =
 
 /* ================= BACKEND ================= */
 
-// Backend multi-IA en Render
 const BACKEND_URL = "https://aura-g5nw.onrender.com";
 const API_ENDPOINT = `${BACKEND_URL}/aura`;
 
@@ -28,7 +27,10 @@ const safeTrimHistory = (history) =>
 
 /* ================= COMPONENTE ================= */
 
-export default function AURAChat({ onUserMessage = () => {} }) {
+export default function AURAChat({
+  onUserMessage = () => {},
+  onAuraCommand = () => {}, // 🔥 NUEVO: puente FAZO
+}) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,7 +54,7 @@ export default function AURAChat({ onUserMessage = () => {} }) {
 
     const textoUsuario = input.trim();
 
-    // 🔹 Notifica al CORE FAZO (App.js)
+    // 1️⃣ Aviso inmediato al CORE FAZO
     try {
       onUserMessage(textoUsuario);
     } catch (_) {}
@@ -76,7 +78,7 @@ export default function AURAChat({ onUserMessage = () => {} }) {
         headers: { "Content-Type": "application/json" },
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
-          provider: "auto", // 🔥 MULTI-IA
+          provider: "auto",
           messages: history,
         }),
       });
@@ -85,6 +87,7 @@ export default function AURAChat({ onUserMessage = () => {} }) {
 
       const data = await res.json();
 
+      // 2️⃣ RESPUESTA DE TEXTO
       setMessages((prev) =>
         safeTrimHistory([
           ...prev,
@@ -94,7 +97,16 @@ export default function AURAChat({ onUserMessage = () => {} }) {
           },
         ])
       );
-    } catch (error) {
+
+      // 3️⃣ 🔥 COMANDO FAZO (CLAVE)
+      if (data?.command) {
+        try {
+          onAuraCommand(data.command);
+        } catch (err) {
+          console.error("Error enviando comando FAZO:", err);
+        }
+      }
+    } catch {
       setMessages((prev) =>
         safeTrimHistory([
           ...prev,
@@ -111,7 +123,7 @@ export default function AURAChat({ onUserMessage = () => {} }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* ================= CHAT ================= */}
+      {/* CHAT */}
       <div
         style={{
           flex: 1,
@@ -146,7 +158,7 @@ export default function AURAChat({ onUserMessage = () => {} }) {
         )}
       </div>
 
-      {/* ================= INPUT ================= */}
+      {/* INPUT */}
       <div style={{ display: "flex", padding: 10, gap: 8 }}>
         <textarea
           value={input}
@@ -163,6 +175,7 @@ export default function AURAChat({ onUserMessage = () => {} }) {
             resize: "none",
             padding: 10,
             borderRadius: 8,
+            color: "#000", // 🔴 FIX letras invisibles
           }}
         />
         <button
