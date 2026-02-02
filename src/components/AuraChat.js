@@ -1,132 +1,57 @@
-/* =====================================================
-   AURAChat.js — FAZO OS PRODUCCIÓN REAL
-   Autor: Gustavo Oliva + Mateo IA
-===================================================== */
+import React, { useState } from "react";
 
-import React, { useEffect, useRef, useState } from "react";
+const API = "https://aura-g5nw.onrender.com/aura";
 
-const MAX_HISTORY = 15;
-const RESPONSE_TIMEOUT = 12000;
-
-const SAFE_FALLBACK =
-  "Estoy operativo. Hubo una demora, pero sigo contigo.";
-
-const BACKEND_URL = "https://aura-g5nw.onrender.com";
-const API_ENDPOINT = `${BACKEND_URL}/aura`;
-
-const safeTrimHistory = (h) =>
-  Array.isArray(h) ? h.slice(-MAX_HISTORY) : [];
-
-export default function AURAChat({ onUserMessage = () => {} }) {
+export default function AURAChat({ onUserMessage }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const abortRef = useRef(null);
-  const timeoutRef = useRef(null);
+  const enviar = async () => {
+    if (!input.trim()) return;
 
-  useEffect(() => {
-    return () => {
-      abortRef.current?.abort();
-      clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-
-    const texto = input.trim();
-    onUserMessage(texto);
-
-    const history = safeTrimHistory([
-      ...messages,
-      { role: "user", content: texto },
-    ]);
-
+    const history = [...messages, { role: "user", content: input }];
     setMessages(history);
     setInput("");
-    setLoading(true);
 
-    abortRef.current = new AbortController();
-    timeoutRef.current = setTimeout(
-      () => abortRef.current?.abort(),
-      RESPONSE_TIMEOUT
-    );
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: history }),
+    });
 
-    try {
-      const res = await fetch(API_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: abortRef.current.signal,
-        body: JSON.stringify({
-          provider: "auto",
-          messages: history,
-        }),
-      });
+    const data = await res.json();
 
-      if (!res.ok) throw new Error("Backend error");
-
-      const data = await res.json();
-
-      setMessages((prev) =>
-        safeTrimHistory([
-          ...prev,
-          {
-            role: "assistant",
-            content: data.reply || SAFE_FALLBACK,
-          },
-        ])
-      );
-    } catch {
-      setMessages((prev) =>
-        safeTrimHistory([
-          ...prev,
-          { role: "assistant", content: SAFE_FALLBACK },
-        ])
-      );
-    } finally {
-      setLoading(false);
-      clearTimeout(timeoutRef.current);
+    // 🔥 SI VIENE COMANDO → NO TEXTO IA
+    if (data.command) {
+      onUserMessage(data.command); // FAZO manda
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply },
+      ]);
+      return;
     }
+
+    // Respuesta normal IA
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: data.reply },
+    ]);
   };
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, padding: 12, overflowY: "auto" }}>
+    <div>
+      <div>
         {messages.map((m, i) => (
-          <div
-            key={i}
-            style={{
-              alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-              background: m.role === "user" ? "#2563eb" : "#1e293b",
-              color: "#fff",
-              padding: 10,
-              borderRadius: 10,
-              marginBottom: 8,
-              maxWidth: "80%",
-            }}
-          >
-            {m.content}
-          </div>
+          <div key={i}>{m.content}</div>
         ))}
-        {loading && <div>Pensando…</div>}
       </div>
 
-      <div style={{ display: "flex", padding: 10, gap: 8 }}>
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
-          }}
-          placeholder="Habla con AURA…"
-          style={{ flex: 1, padding: 10 }}
-        />
-        <button onClick={sendMessage}>Enviar</button>
-      </div>
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && enviar()}
+      />
+      <button onClick={enviar}>Enviar</button>
     </div>
   );
 }
