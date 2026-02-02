@@ -1,12 +1,13 @@
 /* =====================================================
-   AURAChat.js — PRODUCCIÓN REAL
+   AURAChat.js — PRODUCCIÓN ESTABLE
    FAZO OS 2025
    Autor: Gustavo Oliva + Mateo IA
+   Estado: LISTO PARA PRUEBAS REALES
 ===================================================== */
 
 import React, { useEffect, useRef, useState } from "react";
 
-/* ================= CONFIG ================= */
+/* ================= CONFIGURACIÓN ================= */
 
 const MAX_HISTORY = 15;
 const RESPONSE_TIMEOUT = 12000;
@@ -16,15 +17,16 @@ const SAFE_FALLBACK =
 
 /* ================= BACKEND ================= */
 
+// Backend multi-IA en Render
 const BACKEND_URL = "https://aura-g5nw.onrender.com";
 const API_ENDPOINT = `${BACKEND_URL}/aura`;
 
-/* ================= UTILS ================= */
+/* ================= UTILIDADES ================= */
 
 const safeTrimHistory = (history) =>
   Array.isArray(history) ? history.slice(-MAX_HISTORY) : [];
 
-/* ================= COMPONENT ================= */
+/* ================= COMPONENTE ================= */
 
 export default function AURAChat({ onUserMessage = () => {} }) {
   const [messages, setMessages] = useState([]);
@@ -34,21 +36,23 @@ export default function AURAChat({ onUserMessage = () => {} }) {
   const abortControllerRef = useRef(null);
   const timeoutRef = useRef(null);
 
+  /* ================= CLEANUP ================= */
+
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
-      clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
-  /* ================= SEND ================= */
+  /* ================= ENVÍO ================= */
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
     const textoUsuario = input.trim();
 
-    // 🔥 AVISA AL CORE FAZO OS
+    // 🔹 Notifica al CORE FAZO (App.js)
     try {
       onUserMessage(textoUsuario);
     } catch (_) {}
@@ -72,7 +76,7 @@ export default function AURAChat({ onUserMessage = () => {} }) {
         headers: { "Content-Type": "application/json" },
         signal: abortControllerRef.current.signal,
         body: JSON.stringify({
-          provider: "auto",
+          provider: "auto", // 🔥 MULTI-IA
           messages: history,
         }),
       });
@@ -84,10 +88,13 @@ export default function AURAChat({ onUserMessage = () => {} }) {
       setMessages((prev) =>
         safeTrimHistory([
           ...prev,
-          { role: "assistant", content: data.reply || SAFE_FALLBACK },
+          {
+            role: "assistant",
+            content: data?.reply || SAFE_FALLBACK,
+          },
         ])
       );
-    } catch {
+    } catch (error) {
       setMessages((prev) =>
         safeTrimHistory([
           ...prev,
@@ -104,7 +111,16 @@ export default function AURAChat({ onUserMessage = () => {} }) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, padding: 12, overflowY: "auto" }}>
+      {/* ================= CHAT ================= */}
+      <div
+        style={{
+          flex: 1,
+          padding: 12,
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {messages.map((m, i) => (
           <div
             key={i}
@@ -116,23 +132,46 @@ export default function AURAChat({ onUserMessage = () => {} }) {
               color: "#fff",
               padding: 10,
               borderRadius: 10,
+              wordBreak: "break-word",
             }}
           >
             {m.content}
           </div>
         ))}
-        {loading && <div>Pensando…</div>}
+
+        {loading && (
+          <div style={{ color: "#94a3b8", fontSize: 13 }}>
+            Pensando…
+          </div>
+        )}
       </div>
 
-      <div style={{ display: "flex", padding: 10 }}>
+      {/* ================= INPUT ================= */}
+      <div style={{ display: "flex", padding: 10, gap: 8 }}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
           placeholder="Habla con AURA…"
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            resize: "none",
+            padding: 10,
+            borderRadius: 8,
+          }}
         />
-        <button onClick={sendMessage}>Enviar</button>
+        <button
+          onClick={sendMessage}
+          disabled={loading}
+          style={{ padding: "0 16px" }}
+        >
+          Enviar
+        </button>
       </div>
     </div>
   );
