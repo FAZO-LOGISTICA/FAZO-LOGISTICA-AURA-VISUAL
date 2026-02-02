@@ -1,5 +1,6 @@
 // ===================================================
-// FazoController.js — PUENTE REAL AURA → FAZO UI
+// FazoController.js — PUENTE AURA → UI
+// FAZO OS 2025
 // ===================================================
 
 export function initFazoController(setModuloActivo) {
@@ -8,29 +9,25 @@ export function initFazoController(setModuloActivo) {
     return;
   }
 
-  console.log("🧠 FazoController activo");
+  console.log("🧠 FAZO Controller iniciado");
 
-  const handler = (event) => {
-    const data = event.detail;
-    if (!data) return;
+  window.addEventListener("AURA_EVENT", (e) => {
+    const evento = e.detail;
 
-    console.log("⚡ AURA_EVENT recibido:", data);
+    console.log("📡 FAZO EVENT RECIBIDO:", evento);
 
-    // 🔑 ESTA ES LA CLAVE
-    if (data.tipo === "OPEN_MODULE") {
-      const modulo = data.modulo?.toLowerCase();
+    if (!evento || !evento.tipo) return;
 
-      if (modulo) {
-        console.log("➡️ Cambiando módulo a:", modulo);
-        setModuloActivo(modulo);
-      }
+    switch (evento.tipo) {
+      case "OPEN_MODULE":
+        if (evento.modulo) {
+          console.log("🚀 Cambiando módulo a:", evento.modulo);
+          setModuloActivo(evento.modulo.toLowerCase());
+        }
+        break;
+
+      default:
+        console.warn("⚠ Evento FAZO no manejado:", evento.tipo);
     }
-  };
-
-  window.addEventListener("AURA_EVENT", handler);
-
-  // Limpieza correcta
-  return () => {
-    window.removeEventListener("AURA_EVENT", handler);
-  };
+  });
 }
