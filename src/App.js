@@ -20,11 +20,13 @@ function Reportes() {
 export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
 
-  // 🔥 CONTROL CENTRAL REAL
+  // 🔥 ÚNICO PUNTO DE CONTROL REAL
   const onAuraCommand = (command) => {
     console.log("🧠 COMANDO AURA RECIBIDO:", command);
 
-    if (command.type === "OPEN_MODULE") {
+    if (!command || !command.type) return;
+
+    if (command.type === "OPEN_MODULE" && command.module) {
       setModuloActivo(command.module.toLowerCase());
     }
   };
@@ -44,10 +46,12 @@ export default function App() {
 
   return (
     <div style={{ height: "100vh", display: "flex" }}>
+      {/* SISTEMA FAZO */}
       <div style={{ flex: 1, padding: 20 }}>
         {renderModulo()}
       </div>
 
+      {/* AURA */}
       <div style={{ width: 420, borderLeft: "1px solid #334155" }}>
         <AURAChat onCommand={onAuraCommand} />
       </div>
