@@ -4,11 +4,11 @@
 
 export function initFazoController(setModuloActivo) {
   if (typeof setModuloActivo !== "function") {
-    console.error("❌ setModuloActivo inválido en FazoController");
+    console.error("❌ setModuloActivo no es función");
     return;
   }
 
-  console.log("🧠 FazoController inicializado");
+  console.log("🧠 FazoController activo");
 
   const handler = (event) => {
     const data = event.detail;
@@ -16,7 +16,7 @@ export function initFazoController(setModuloActivo) {
 
     console.log("⚡ AURA_EVENT recibido:", data);
 
-    // 🔑 CLAVE: tipo EXACTO
+    // 🔑 ESTA ES LA CLAVE
     if (data.tipo === "OPEN_MODULE") {
       const modulo = data.modulo?.toLowerCase();
 
@@ -29,7 +29,7 @@ export function initFazoController(setModuloActivo) {
 
   window.addEventListener("AURA_EVENT", handler);
 
-  // Limpieza segura
+  // Limpieza correcta
   return () => {
     window.removeEventListener("AURA_EVENT", handler);
   };
