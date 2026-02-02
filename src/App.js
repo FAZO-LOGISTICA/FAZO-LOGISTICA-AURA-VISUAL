@@ -1,122 +1,87 @@
 // ===================================================
-// App.js — FAZO OS / AURA CORE OPERATIVO
-// Autor: Gustavo Oliva
-// Año: 2025
-// Estado: CONTROL REAL DEL SISTEMA
+// App.js — FAZO OS OPERATIVO
 // ===================================================
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
-// UI Chat
 import AURAChat from "./components/AuraChat";
-
-// Núcleo AURA
 import { detectarComando } from "./aura/intentDetector";
 import { ejecutarComando } from "./aura/AURACommandRouter";
 import { registrarAccion } from "./aura/AURA_Actions";
 import { enviarEventoDesdeAURA } from "./aura/moduleRouter";
+import { initFazoController } from "./aura/FazoController";
 
-// ===================================================
-// APP PRINCIPAL
+// ===== MÓDULOS FAZO (placeholders reales) =====
+function Inicio() {
+  return <h2>Panel Principal FAZO OS</h2>;
+}
+
+function AguaRuta() {
+  return <h2>🚚 AguaRuta — Gestión de Agua Potable</h2>;
+}
+
+function Flota() {
+  return <h2>🚛 Flota Municipal</h2>;
+}
+
+function Reportes() {
+  return <h2>📊 Reportes FAZO</h2>;
+}
+
 // ===================================================
 
 function App() {
-  // =================================================
-  // 🧠 ENTRADA DE TEXTO AURA → FAZO
-  // =================================================
+  const [moduloActivo, setModuloActivo] = useState("inicio");
+
+  // Inicializa control FAZO
+  useEffect(() => {
+    initFazoController(setModuloActivo);
+  }, []);
+
   const onAuraMessage = useCallback(async (texto) => {
     try {
-      if (!texto || typeof texto !== "string") return;
-
       registrarAccion("AURA_INPUT", texto);
 
       const comando = detectarComando(texto);
-
-      if (!comando) {
-        registrarAccion("AURA_NO_COMMAND", texto);
-        return;
-      }
+      if (!comando) return;
 
       const resultado = await ejecutarComando(comando);
 
-      registrarAccion("AURA_COMMAND", {
-        tipo: comando.tipo,
-        payload: comando.payload || null,
-      });
-
-      if (resultado?.accionUI || resultado?.eventoSistema) {
+      if (resultado?.accionUI) {
         enviarEventoDesdeAURA({
-          tipo: "AURA_EVENT",
-          accion: resultado.accionUI || null,
-          evento: resultado.eventoSistema || null,
-          payload: resultado,
+          tipo: resultado.accionUI,
+          modulo: resultado.modulo,
         });
       }
-    } catch (error) {
-      registrarAccion("AURA_ERROR", {
-        mensaje: error?.message || "Error desconocido",
-      });
+    } catch (e) {
+      registrarAccion("AURA_ERROR", e.message);
     }
   }, []);
 
-  // =================================================
-  // 🔥 COMANDOS DIRECTOS DESDE BACKEND (AURA API)
-  // =================================================
-  const onAuraCommand = useCallback((command) => {
-    if (!command || !command.type) return;
-
-    console.log("⚡ AURA COMMAND:", command);
-
-    switch (command.type) {
-      case "OPEN_MODULE":
-        enviarEventoDesdeAURA({
-          tipo: "OPEN_MODULE",
-          modulo: command.module,
-        });
-        break;
-
-      case "QUERY_DATA":
-        enviarEventoDesdeAURA({
-          tipo: "QUERY_DATA",
-          modulo: command.module,
-          accion: command.action,
-        });
-        break;
-
+  const renderModulo = () => {
+    switch (moduloActivo) {
+      case "aguaruta":
+        return <AguaRuta />;
+      case "flota":
+        return <Flota />;
+      case "reportes":
+        return <Reportes />;
       default:
-        console.warn("Comando AURA no manejado:", command);
+        return <Inicio />;
     }
-  }, []);
+  };
 
-  // =================================================
-  // 🔁 ESCUCHA GLOBAL DE EVENTOS AURA
-  // (esto conecta con el resto del sistema FAZO)
-  // =================================================
-  useEffect(() => {
-    const handler = (e) => {
-      console.log("📡 EVENTO FAZO:", e.detail);
-
-      // Aquí luego conectas:
-      // - navegación
-      // - mapas
-      // - AguaRuta
-      // - Flota
-      // - etc.
-    };
-
-    window.addEventListener("AURA_EVENT", handler);
-    return () => window.removeEventListener("AURA_EVENT", handler);
-  }, []);
-
-  // =================================================
-  // RENDER
-  // =================================================
   return (
-    <div style={{ height: "100vh", width: "100vw" }}>
-      <AURAChat
-        onUserMessage={onAuraMessage}
-        onAuraCommand={onAuraCommand} // 🔥 CLAVE
-      />
+    <div style={{ height: "100vh", display: "flex" }}>
+      {/* ZONA SISTEMA */}
+      <div style={{ flex: 1, padding: 20 }}>
+        {renderModulo()}
+      </div>
+
+      {/* AURA */}
+      <div style={{ width: 420, borderLeft: "1px solid #334155" }}>
+        <AURAChat onUserMessage={onAuraMessage} />
+      </div>
     </div>
   );
 }
