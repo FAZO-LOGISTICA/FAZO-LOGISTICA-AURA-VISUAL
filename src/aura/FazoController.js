@@ -3,22 +3,20 @@
 // ===================================================
 
 export function initFazoController(setModuloActivo) {
-  if (!setModuloActivo) {
-    console.error("❌ setModuloActivo no recibido");
+  if (typeof setModuloActivo !== "function") {
+    console.error("❌ setModuloActivo inválido en FazoController");
     return;
   }
 
   console.log("🧠 FazoController inicializado");
 
-  window.addEventListener("AURA_EVENT", (e) => {
-    const data = e.detail;
+  const handler = (event) => {
+    const data = event.detail;
     if (!data) return;
 
-    console.log("⚡ EVENTO FAZO RECIBIDO:", data);
+    console.log("⚡ AURA_EVENT recibido:", data);
 
-    // ==============================
-    // 🔓 ABRIR MÓDULOS
-    // ==============================
+    // 🔑 CLAVE: tipo EXACTO
     if (data.tipo === "OPEN_MODULE") {
       const modulo = data.modulo?.toLowerCase();
 
@@ -27,5 +25,12 @@ export function initFazoController(setModuloActivo) {
         setModuloActivo(modulo);
       }
     }
-  });
+  };
+
+  window.addEventListener("AURA_EVENT", handler);
+
+  // Limpieza segura
+  return () => {
+    window.removeEventListener("AURA_EVENT", handler);
+  };
 }
