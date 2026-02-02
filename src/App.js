@@ -1,19 +1,6 @@
-console.log("🟢 RENDER APP — moduloActivo:", moduloActivo);
-
-// ===================================================
-// App.js — FAZO OS OPERATIVO
-// ===================================================
-
-import React, { useCallback, useEffect, useState } from "react";
-
+import React, { useState } from "react";
 import AURAChat from "./components/AuraChat";
-import { detectarComando } from "./aura/intentDetector";
-import { ejecutarComando } from "./aura/AURACommandRouter";
-import { registrarAccion } from "./aura/AURA_Actions";
-import { enviarEventoDesdeAURA } from "./aura/moduleRouter";
-import { initFazoController } from "./aura/FazoController";
 
-// ===== MÓDULOS FAZO (placeholders reales) =====
 function Inicio() {
   return <h2>Panel Principal FAZO OS</h2>;
 }
@@ -30,35 +17,17 @@ function Reportes() {
   return <h2>📊 Reportes FAZO</h2>;
 }
 
-// ===================================================
-
-function App() {
+export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
 
-  // Inicializa control FAZO
-  useEffect(() => {
-    initFazoController(setModuloActivo);
-  }, []);
+  // 🔥 CONTROL CENTRAL REAL
+  const onAuraCommand = (command) => {
+    console.log("🧠 COMANDO AURA RECIBIDO:", command);
 
-  const onAuraMessage = useCallback(async (texto) => {
-    try {
-      registrarAccion("AURA_INPUT", texto);
-
-      const comando = detectarComando(texto);
-      if (!comando) return;
-
-      const resultado = await ejecutarComando(comando);
-
-      if (resultado?.accionUI) {
-        enviarEventoDesdeAURA({
-          tipo: resultado.accionUI,
-          modulo: resultado.modulo,
-        });
-      }
-    } catch (e) {
-      registrarAccion("AURA_ERROR", e.message);
+    if (command.type === "OPEN_MODULE") {
+      setModuloActivo(command.module.toLowerCase());
     }
-  }, []);
+  };
 
   const renderModulo = () => {
     switch (moduloActivo) {
@@ -75,17 +44,13 @@ function App() {
 
   return (
     <div style={{ height: "100vh", display: "flex" }}>
-      {/* ZONA SISTEMA */}
       <div style={{ flex: 1, padding: 20 }}>
         {renderModulo()}
       </div>
 
-      {/* AURA */}
       <div style={{ width: 420, borderLeft: "1px solid #334155" }}>
-        <AURAChat onUserMessage={onAuraMessage} />
+        <AURAChat onCommand={onAuraCommand} />
       </div>
     </div>
   );
 }
-
-export default App;
