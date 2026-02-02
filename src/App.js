@@ -1,3 +1,5 @@
+console.log("🟢 RENDER APP — moduloActivo:", moduloActivo);
+
 // ===================================================
 // App.js — FAZO OS OPERATIVO
 // ===================================================
