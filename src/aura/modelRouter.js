@@ -1,7 +1,7 @@
-// modelRouter.js
-// ----------------------------------------------------
-// Redirige la pregunta al modelo correcto
-// ----------------------------------------------------
+// =====================================================
+// modelRouter.js — AURA MULTI-IA ROUTER (PRODUCCIÓN)
+// FAZO OS 2025
+// =====================================================
 
 import { obtenerModeloDisponible } from "./brainSelector";
 
@@ -13,26 +13,51 @@ import { useLlama } from "./models/llama";
 import { useCohere } from "./models/cohere";
 import { useDeepSeek } from "./models/deepseek";
 
+// =====================================================
+// MAPA DE MODELOS
+// =====================================================
+
+const MODELOS = {
+  claude: useClaude,
+  openai: useOpenAI,
+  gemini: useGemini,
+  groq: useGroq,
+  llama: useLlama,
+  cohere: useCohere,
+  deepseek: useDeepSeek,
+};
+
+// =====================================================
+// CONSULTA CENTRAL (NUNCA CRASHEA)
+// =====================================================
+
 export async function consultarModelo(prompt) {
   const modelo = obtenerModeloDisponible();
-  if (!modelo) return "(No hay modelos disponibles. Revisa las claves del .env)";
 
-  switch (modelo) {
-    case "claude":
-      return await useClaude(prompt);
-    case "openai":
-      return await useOpenAI(prompt);
-    case "gemini":
-      return await useGemini(prompt);
-    case "groq":
-      return await useGroq(prompt);
-    case "llama":
-      return await useLlama(prompt);
-    case "cohere":
-      return await useCohere(prompt);
-    case "deepseek":
-      return await useDeepSeek(prompt);
-    default:
-      return "(Modelo no reconocido)";
+  if (!modelo || !MODELOS[modelo]) {
+    console.warn("⚠️ No hay modelos disponibles");
+    return "AURA está operativa, pero ningún modelo de IA está disponible en este momento.";
+  }
+
+  try {
+    const respuesta = await MODELOS[modelo](prompt);
+
+    if (!respuesta || typeof respuesta !== "string") {
+      throw new Error("Respuesta inválida del modelo");
+    }
+
+    // 🔍 Trazabilidad (solo debug)
+    if (process.env.NODE_ENV !== "production") {
+      console.debug(`🤖 Modelo usado: ${modelo}`);
+    }
+
+    return respuesta;
+  } catch (error) {
+    console.error(`❌ Error en modelo ${modelo}:`, error);
+
+    return (
+      "Tu solicitud fue recibida, pero el modelo activo tuvo un problema técnico. " +
+      "Puedes intentarlo nuevamente o reformular la pregunta."
+    );
   }
 }
