@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 const API = "https://aura-g5nw.onrender.com/aura";
 
-export default function AURAChat({ onUserMessage }) {
+export default function AURAChat({ onCommand }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
 
@@ -21,17 +21,11 @@ export default function AURAChat({ onUserMessage }) {
 
     const data = await res.json();
 
-    // 🔥 SI VIENE COMANDO → NO TEXTO IA
+    // 🔥 SI VIENE COMANDO → CONTROL DIRECTO
     if (data.command) {
-      onUserMessage(data.command); // FAZO manda
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply },
-      ]);
-      return;
+      onCommand(data.command); // ← AQUÍ ESTÁ LA CLAVE
     }
 
-    // Respuesta normal IA
     setMessages((prev) => [
       ...prev,
       { role: "assistant", content: data.reply },
