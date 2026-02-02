@@ -1,18 +1,11 @@
 // ===========================================================
-// 🧠 AURA — DETECTOR AVANZADO DE INTENCIONES (FAZO MASTER AI)
-// ===========================================================
-//
-// ✔ Sistema de coincidencias inteligentes
-// ✔ Palabras clasificadas por categoría (módulo FAZO)
-// ✔ Umbral flexible (2 palabras activan el módulo)
-// ✔ Compatible con App.js (exporta detectarComando)
-// ✔ Fácil de expandir
-//
+// 🧠 AURA — DETECTOR AVANZADO DE INTENCIONES + ACCIONES
+// FAZO MASTER AI — PRODUCCIÓN
 // ===========================================================
 
 /**
  * FUNCIÓN PRINCIPAL ESPERADA POR App.js
- * Devuelve un objeto de comando estructurado o null
+ * Devuelve un comando EJECUTABLE o null
  *
  * @param {string} texto
  * @returns {{ tipo: string, payload: any } | null}
@@ -20,82 +13,122 @@
 export function detectarComando(texto) {
   if (!texto || typeof texto !== "string") return null;
 
-  const intent = detectarIntent(texto);
+  const accion = detectarAccion(texto);
+  const modulo = detectarIntent(texto);
 
-  if (!intent || intent === "general") return null;
-
-  // Mapeo de intención → tipo de acción
-  switch (intent) {
-    case "aguaruta":
-    case "traslado":
-    case "flota":
-    case "reportes":
-    case "documentos":
-    case "planillas":
-    case "analisis":
-      return {
-        tipo: "MODULO",
-        payload: intent,
-      };
-
-    default:
-      return null;
+  // 🚪 ABRIR MÓDULO
+  if (accion === "abrir" && modulo && modulo !== "general") {
+    return {
+      tipo: "ABRIR_MODULO",
+      payload: modulo,
+    };
   }
+
+  // ❌ No hay comando ejecutable
+  return null;
 }
 
 /**
- * DETECTOR AVANZADO DE INTENCIONES (TU LÓGICA ORIGINAL)
- * @param {string} texto
- * @returns {string} intent
+ * DETECTOR DE ACCIÓN (VERBOS)
+ */
+function detectarAccion(texto) {
+  const msg = normalizar(texto);
+
+  const accionesAbrir = [
+    "abre",
+    "abrir",
+    "abrir el",
+    "abrir la",
+    "mostrar",
+    "ir a",
+    "entra a",
+    "entrar a",
+    "ver",
+  ];
+
+  if (accionesAbrir.some((a) => msg.includes(a))) {
+    return "abrir";
+  }
+
+  return null;
+}
+
+/**
+ * DETECTOR AVANZADO DE INTENCIONES (TUS MÓDULOS)
  */
 export function detectarIntent(texto) {
-  const msg = texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+  const msg = normalizar(texto);
 
-  // === DICCIONARIO AVANZADO DE INTENCIONES ===
   const intents = {
     aguaruta: [
-      "agua", "aguaruta", "litros", "camion", "camión", "estanques",
-      "recurrencia", "puntos", "ruta", "aljibe", "llave", "sector", "laguna verde"
+      "aguaruta",
+      "agua ruta",
+      "litros",
+      "aljibe",
+      "camion",
+      "camión",
+      "estanques",
+      "ruta",
+      "puntos",
+      "laguna verde",
     ],
 
     traslado: [
-      "traslado", "vehiculo", "vehículo", "reserva", "chofer",
-      "viaje", "movilizacion", "movilización", "solicitud",
-      "ranger", "camioneta", "minibus", "pasajero"
+      "traslado",
+      "vehiculo",
+      "vehículo",
+      "movilizacion",
+      "movilización",
+      "reserva",
+      "chofer",
+      "viaje",
     ],
 
     flota: [
-      "flota", "mantenimiento", "combustible", "rendimiento",
-      "kilometraje", "neumaticos", "neumáticos", "mantencion",
-      "mantención", "taller", "falla"
+      "flota",
+      "mantenimiento",
+      "combustible",
+      "kilometraje",
+      "neumaticos",
+      "mantencion",
+      "taller",
     ],
 
     reportes: [
-      "reporte", "informe", "estadistica", "estadística",
-      "dashboard", "pdf", "excel", "consolidado", "semanal", "mensual"
+      "reporte",
+      "informe",
+      "estadistica",
+      "dashboard",
+      "pdf",
+      "excel",
     ],
 
     documentos: [
-      "oficio", "memorando", "carta", "correo", "escribir",
-      "redactar", "firma", "solicito", "adjunto"
+      "oficio",
+      "memorando",
+      "carta",
+      "correo",
+      "redactar",
+      "firma",
     ],
 
     planillas: [
-      "excel", "planilla", "horas", "sueldos", "liquidacion",
-      "liquidación", "turnos", "registro", "columna", "fila"
+      "planilla",
+      "excel",
+      "horas",
+      "sueldos",
+      "turnos",
     ],
 
     analisis: [
-      "kpi", "indicador", "proyeccion", "proyección",
-      "rotacion", "rotación", "demanda", "analisis",
-      "análisis", "tendencia"
+      "kpi",
+      "indicador",
+      "analisis",
+      "tendencia",
+      "proyeccion",
     ],
   };
 
-  // === SISTEMA DE COINCIDENCIA INTELIGENTE ===
   let bestMatch = "general";
   let bestScore = 0;
 
@@ -103,17 +136,21 @@ export function detectarIntent(texto) {
     const palabras = intents[intent];
     const score = palabras.filter((p) => msg.includes(p)).length;
 
-    // Activación fuerte
-    if (score >= 2 && score > bestScore) {
+    if (score >= 1 && score > bestScore) {
       bestScore = score;
-      bestMatch = intent;
-    }
-
-    // Activación suave si no hay nada mejor
-    if (score === 1 && bestMatch === "general") {
       bestMatch = intent;
     }
   }
 
   return bestMatch;
+}
+
+/**
+ * NORMALIZADOR GLOBAL
+ */
+function normalizar(texto) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
