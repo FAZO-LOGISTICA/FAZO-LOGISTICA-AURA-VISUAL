@@ -1,117 +1,164 @@
-import React, { useState } from "react";
-import { detectarComando } from "../AURACommandDetector";
+import React, { useState, useRef, useEffect } from "react";
+import { resolverPreguntaFAZO } from "../core/FAZO_DataResolver";
 
+// Backend AURA en la nube (Render)
 const API = "https://aura-g5nw.onrender.com/aura";
 
 export default function AURAChat({ onCommand }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const endRef = useRef(null);
 
+  // ======================================================
+  // Auto-scroll al último mensaje
+  // ======================================================
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // ======================================================
+  // Enviar mensaje
+  // ======================================================
   const enviar = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim()) return;
 
     const texto = input;
     setInput("");
 
-    // Mostrar mensaje usuario
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: texto },
-    ]);
+    // 1️⃣ Mostrar mensaje del usuario
+    setMessages((prev) => [...prev, { role: "user", content: texto }]);
 
-    // ===============================
-    // 🔥 DETECCIÓN FAZO LOCAL (CLAVE)
-    // ===============================
-    const comando = detectarComando(texto);
-
-    if (comando) {
-      console.log("⚡ COMANDO FAZO EJECUTADO:", comando);
-
-      if (onCommand) onCommand(comando);
-
-      // 👉 Respuesta LOCAL (NO IA)
+    // 2️⃣ INTENTO FAZO (LOCAL, DATOS REALES)
+    const respuestaFAZO = resolverPreguntaFAZO(texto);
+    if (respuestaFAZO) {
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: `✅ Acción FAZO ejecutada: ${comando.tipo.replace("_", " ")}`,
-        },
+        { role: "assistant", content: respuestaFAZO },
       ]);
-
-      return; // 🚨 ESTO ES LO QUE FALTABA
+      return;
     }
 
-    // ===============================
-    // 🌐 SOLO SI NO ES COMANDO → IA
-    // ===============================
-    setLoading(true);
-
+    // 3️⃣ NUBE (AURA EN RENDER)
     try {
+      const history = [...messages, { role: "user", content: texto }];
+
       const res = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: texto }],
-        }),
+        body: JSON.stringify({ messages: history }),
       });
 
       const data = await res.json();
 
+      // 🔥 COMANDO FAZO (abrir módulos, etc)
+      if (data.command && onCommand) {
+        onCommand(data.command);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply || "Sin respuesta" },
+      ]);
+    } catch (err) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.reply || "…",
+          content: "❌ Error de conexión con AURA en la nube.",
         },
       ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "❌ Error de conexión con AURA",
-        },
-      ]);
-    } finally {
-      setLoading(false);
     }
   };
 
+  // ======================================================
+  // UI
+  // ======================================================
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        background: "rgba(2,6,23,0.9)",
+      }}
+    >
+      {/* ================= MENSAJES ================= */}
+      <div
+        style={{
+          flex: 1,
+          padding: 12,
+          overflowY: "auto",
+          fontSize: 14,
+        }}
+      >
         {messages.map((m, i) => (
           <div
             key={i}
             style={{
-              background: m.role === "user" ? "#2563eb" : "#0f172a",
-              color: "white",
-              padding: 10,
-              borderRadius: 6,
-              marginBottom: 8,
-              maxWidth: "90%",
+              marginBottom: 10,
+              textAlign: m.role === "user" ? "right" : "left",
             }}
           >
-            {m.content}
+            <div
+              style={{
+                display: "inline-block",
+                padding: "8px 12px",
+                borderRadius: 12,
+                maxWidth: "85%",
+                background:
+                  m.role === "user"
+                    ? "#2563eb"
+                    : "rgba(255,255,255,0.12)",
+                color: "#000", // 👈 TEXTO NEGRO VISIBLE
+                fontWeight: 500,
+              }}
+            >
+              {m.content}
+            </div>
           </div>
         ))}
+        <div ref={endRef} />
       </div>
 
-      <div style={{ display: "flex", padding: 10 }}>
+      {/* ================= INPUT ABAJO ================= */}
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          padding: 10,
+          borderTop: "1px solid #334155",
+          background: "#020617",
+        }}
+      >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
-          placeholder="Escribe una orden (ej: abre aguaruta)"
+          placeholder="Escribe una orden para AURA…"
           style={{
             flex: 1,
             padding: 10,
-            background: "white",
-            color: "black",
+            borderRadius: 8,
+            border: "none",
+            outline: "none",
+            background: "#ffffff",
+            color: "#000", // 👈 TEXTO NEGRO AL ESCRIBIR
+            fontSize: 14,
           }}
         />
-        <button onClick={enviar} style={{ marginLeft: 8 }}>
+
+        <button
+          onClick={enviar}
+          style={{
+            padding: "0 16px",
+            borderRadius: 8,
+            border: "none",
+            background: "#22d3ee",
+            color: "#000",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
           Enviar
         </button>
       </div>
