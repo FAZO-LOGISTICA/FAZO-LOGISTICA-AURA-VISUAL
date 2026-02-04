@@ -3,36 +3,78 @@
 // FAZO-OS 2025 — Núcleo de detección de comandos
 // ===================================================
 
+// Normaliza texto: minusculas, sin tildes, sin espacios
+const normalize = (text = "") =>
+  text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "");
+
+// ===================================================
+// COMANDOS DEFINIDOS DE FAZO OS
+// ===================================================
+
 const COMMANDS = [
+  // =======================
+  // MÓDULOS
+  // =======================
   {
-    key: "VER_RUTAS",
-    patterns: ["ver rutas", "mostrar rutas", "rutas activas"],
+    type: "OPEN_MODULE",
+    module: "AguaRuta",
+    patterns: [
+      "aguaruta",
+      "abreaguaruta",
+      "abriraguaruta",
+      "abre aguaruta",
+      "agua ruta",
+      "rutas de agua",
+    ],
   },
   {
-    key: "REDISTRIBUIR",
+    type: "OPEN_MODULE",
+    module: "Flota",
+    patterns: ["flota", "abreflota", "abrir flota"],
+  },
+  {
+    type: "OPEN_MODULE",
+    module: "Reportes",
+    patterns: ["reportes", "informes", "ver reportes"],
+  },
+
+  // =======================
+  // ACCIONES
+  // =======================
+  {
+    type: "ACTION",
+    action: "VER_RUTAS",
+    patterns: ["ver rutas", "rutas activas"],
+  },
+  {
+    type: "ACTION",
+    action: "REDISTRIBUIR",
     patterns: ["redistribuir", "recalcular rutas"],
   },
-  {
-    key: "GENERAR_REPORTE",
-    patterns: ["generar reporte", "crear informe"],
-  },
-  {
-    key: "ESTADO_SISTEMA",
-    patterns: ["estado del sistema", "estado aura"],
-  },
 ];
+
+// ===================================================
+// DETECTOR PRINCIPAL
+// ===================================================
 
 export function detectarComando(texto) {
   if (!texto) return null;
 
-  const clean = texto.toLowerCase();
+  const limpio = normalize(texto);
 
   for (const cmd of COMMANDS) {
-    for (const pattern of cmd.patterns) {
-      if (clean.includes(pattern)) {
+    for (const p of cmd.patterns) {
+      if (limpio.includes(normalize(p))) {
         return {
-          tipo: cmd.key,
+          type: cmd.type,
+          module: cmd.module || null,
+          action: cmd.action || null,
           original: texto,
+          source: "FAZO",
           timestamp: new Date().toISOString(),
         };
       }
