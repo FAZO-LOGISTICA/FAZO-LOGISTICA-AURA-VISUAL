@@ -1,5 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AURAChat from "./components/AuraChat";
+import { registrarSubsistema } from "./FAZO_OS_EventBridge";
+
+// ======================================================
+//  MÓDULOS BASE FAZO OS
+// ======================================================
 
 function Inicio() {
   return <h2>Panel Principal FAZO OS</h2>;
@@ -17,10 +22,59 @@ function Reportes() {
   return <h2>📊 Reportes FAZO</h2>;
 }
 
+// ======================================================
+//  APP PRINCIPAL — FAZO OS
+// ======================================================
+
 export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
 
-  // 🔥 ÚNICO PUNTO DE CONTROL REAL
+  // ======================================================
+  // 🧠 ESCUCHA GLOBAL FAZO OS (AURA → EVENTBRIDGE → APP)
+  // ======================================================
+  useEffect(() => {
+    const unsubscribe = registrarSubsistema((evento) => {
+      console.log("📡 FAZO OS EVENTO:", evento);
+
+      if (!evento || !evento.tipo) return;
+
+      switch (evento.tipo) {
+        case "AURA_MODULO":
+          setModuloActivo(evento.modulo);
+          break;
+
+        case "AURA_SUBRUTA":
+          console.log(
+            "➡️ Subruta solicitada:",
+            evento.modulo,
+            evento.ruta
+          );
+          break;
+
+        case "AURA_ACCION":
+          console.log(
+            "⚙️ Acción del sistema:",
+            evento.accion,
+            evento.payload
+          );
+          break;
+
+        case "AURA_ANALISIS_AUTOMATICO":
+          console.log("🧠 Análisis automático AURA:", evento.payload);
+          break;
+
+        default:
+          console.warn("Evento FAZO OS no manejado:", evento);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ======================================================
+  // 🔥 PUNTO DE CONTROL DIRECTO (AURAChat → UI)
+  // (se mantiene para compatibilidad)
+  // ======================================================
   const onAuraCommand = (command) => {
     console.log("🧠 COMANDO AURA RECIBIDO:", command);
 
@@ -31,6 +85,9 @@ export default function App() {
     }
   };
 
+  // ======================================================
+  // 🧩 RENDER DE MÓDULOS
+  // ======================================================
   const renderModulo = () => {
     switch (moduloActivo) {
       case "aguaruta":
@@ -44,9 +101,12 @@ export default function App() {
     }
   };
 
+  // ======================================================
+  // 🖥️ LAYOUT GENERAL
+  // ======================================================
   return (
     <div style={{ height: "100vh", display: "flex" }}>
-      {/* SISTEMA FAZO */}
+      {/* SISTEMA FAZO OS */}
       <div style={{ flex: 1, padding: 20 }}>
         {renderModulo()}
       </div>
