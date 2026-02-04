@@ -6,48 +6,56 @@ const API = "https://aura-g5nw.onrender.com/aura";
 export default function AURAChat({ onCommand }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const enviar = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
-    // 1️⃣ DETECTAR COMANDO FAZO (PRIORIDAD ABSOLUTA)
-    const comando = detectarComando(input);
-
-    if (comando && onCommand) {
-      onCommand(comando);
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "user", content: input },
-        {
-          role: "assistant",
-          content: `✔️ Acción FAZO ejecutada: ${
-            comando.module || comando.action
-          }`,
-        },
-      ]);
-
-      setInput("");
-      return; // ⛔ NO PASA A IA
-    }
-
-    // 2️⃣ SI NO ES COMANDO → IA
-    const history = [...messages, { role: "user", content: input }];
-    setMessages(history);
+    const texto = input;
     setInput("");
 
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: history }),
-    });
-
-    const data = await res.json();
-
+    // 👉 mostrar mensaje del usuario
     setMessages((prev) => [
       ...prev,
-      { role: "assistant", content: data.reply },
+      { role: "user", content: texto },
     ]);
+
+    // 🔥 DETECCIÓN DE COMANDO FAZO (LOCAL)
+    const comando = detectarComando(texto);
+    if (comando && onCommand) {
+      console.log("⚡ Comando FAZO detectado:", comando);
+      onCommand(comando);
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: texto }],
+        }),
+      });
+
+      const data = await res.json();
+
+      // 👉 mostrar respuesta de AURA
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply || "…" },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "❌ Error de conexión con AURA",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,44 +64,85 @@ export default function AURAChat({ onCommand }) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: "#0f172a",
-        padding: 12,
+        background: "#020617",
+        borderLeft: "1px solid #0ea5e9",
       }}
     >
-      {/* MENSAJES */}
-      <div style={{ flex: 1, overflowY: "auto", marginBottom: 10 }}>
+      {/* ================= MENSAJES ================= */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "12px",
+        }}
+      >
         {messages.map((m, i) => (
           <div
             key={i}
             style={{
-              background: m.role === "user" ? "#2563eb" : "#1e293b",
-              color: "#fff",
-              padding: 10,
-              borderRadius: 8,
-              marginBottom: 6,
+              marginBottom: 8,
+              padding: "8px 10px",
+              borderRadius: 6,
+              maxWidth: "90%",
+              background:
+                m.role === "user"
+                  ? "#0ea5e9"
+                  : "#0f172a",
+              color: "white",
+              alignSelf:
+                m.role === "user" ? "flex-end" : "flex-start",
             }}
           >
             {m.content}
           </div>
         ))}
+
+        {loading && (
+          <div style={{ color: "#94a3b8", fontSize: 12 }}>
+            AURA está pensando…
+          </div>
+        )}
       </div>
 
-      {/* INPUT ABAJO */}
-      <div style={{ display: "flex", gap: 6 }}>
+      {/* ================= INPUT ABAJO ================= */}
+      <div
+        style={{
+          display: "flex",
+          padding: "10px",
+          borderTop: "1px solid #0ea5e9",
+          background: "#020617",
+        }}
+      >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
-          placeholder="Escribe un comando FAZO…"
+          placeholder="Escribe una orden… (ej: abre aguaruta)"
           style={{
             flex: 1,
-            padding: 10,
+            padding: "10px",
             borderRadius: 6,
-            border: "none",
-            color: "#000", // 👈 LETRAS NEGRAS
+            border: "1px solid #64748b",
+            background: "white",
+            color: "black", // 👈 CLAVE: letras visibles
+            outline: "none",
           }}
         />
-        <button onClick={enviar}>Enviar</button>
+
+        <button
+          onClick={enviar}
+          style={{
+            marginLeft: 8,
+            padding: "10px 14px",
+            background: "#0ea5e9",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+          }}
+        >
+          Enviar
+        </button>
       </div>
     </div>
   );
