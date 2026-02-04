@@ -14,19 +14,37 @@ export default function AURAChat({ onCommand }) {
     const texto = input;
     setInput("");
 
-    // 👉 mostrar mensaje del usuario
+    // Mostrar mensaje usuario
     setMessages((prev) => [
       ...prev,
       { role: "user", content: texto },
     ]);
 
-    // 🔥 DETECCIÓN DE COMANDO FAZO (LOCAL)
+    // ===============================
+    // 🔥 DETECCIÓN FAZO LOCAL (CLAVE)
+    // ===============================
     const comando = detectarComando(texto);
-    if (comando && onCommand) {
-      console.log("⚡ Comando FAZO detectado:", comando);
-      onCommand(comando);
+
+    if (comando) {
+      console.log("⚡ COMANDO FAZO EJECUTADO:", comando);
+
+      if (onCommand) onCommand(comando);
+
+      // 👉 Respuesta LOCAL (NO IA)
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `✅ Acción FAZO ejecutada: ${comando.tipo.replace("_", " ")}`,
+        },
+      ]);
+
+      return; // 🚨 ESTO ES LO QUE FALTABA
     }
 
+    // ===============================
+    // 🌐 SOLO SI NO ES COMANDO → IA
+    // ===============================
     setLoading(true);
 
     try {
@@ -40,12 +58,14 @@ export default function AURAChat({ onCommand }) {
 
       const data = await res.json();
 
-      // 👉 mostrar respuesta de AURA
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.reply || "…" },
+        {
+          role: "assistant",
+          content: data.reply || "…",
+        },
       ]);
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -59,88 +79,39 @@ export default function AURAChat({ onCommand }) {
   };
 
   return (
-    <div
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: "#020617",
-        borderLeft: "1px solid #0ea5e9",
-      }}
-    >
-      {/* ================= MENSAJES ================= */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "12px",
-        }}
-      >
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
         {messages.map((m, i) => (
           <div
             key={i}
             style={{
-              marginBottom: 8,
-              padding: "8px 10px",
-              borderRadius: 6,
-              maxWidth: "90%",
-              background:
-                m.role === "user"
-                  ? "#0ea5e9"
-                  : "#0f172a",
+              background: m.role === "user" ? "#2563eb" : "#0f172a",
               color: "white",
-              alignSelf:
-                m.role === "user" ? "flex-end" : "flex-start",
+              padding: 10,
+              borderRadius: 6,
+              marginBottom: 8,
+              maxWidth: "90%",
             }}
           >
             {m.content}
           </div>
         ))}
-
-        {loading && (
-          <div style={{ color: "#94a3b8", fontSize: 12 }}>
-            AURA está pensando…
-          </div>
-        )}
       </div>
 
-      {/* ================= INPUT ABAJO ================= */}
-      <div
-        style={{
-          display: "flex",
-          padding: "10px",
-          borderTop: "1px solid #0ea5e9",
-          background: "#020617",
-        }}
-      >
+      <div style={{ display: "flex", padding: 10 }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
-          placeholder="Escribe una orden… (ej: abre aguaruta)"
+          placeholder="Escribe una orden (ej: abre aguaruta)"
           style={{
             flex: 1,
-            padding: "10px",
-            borderRadius: 6,
-            border: "1px solid #64748b",
+            padding: 10,
             background: "white",
-            color: "black", // 👈 CLAVE: letras visibles
-            outline: "none",
+            color: "black",
           }}
         />
-
-        <button
-          onClick={enviar}
-          style={{
-            marginLeft: 8,
-            padding: "10px 14px",
-            background: "#0ea5e9",
-            color: "white",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={enviar} style={{ marginLeft: 8 }}>
           Enviar
         </button>
       </div>
