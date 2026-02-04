@@ -1,169 +1,96 @@
 // ======================================================================
 //  AURA_MultiModel.js — FAZO IA Router 2025 PRO ENTERPRISE
-//  Autor: Mateo IA + Gustavo Oliva
-//  Sistema híbrido que selecciona automáticamente la mejor IA para cada tarea.
-//  Compatible con OpenAI, Claude, Gemini y expansiones futuras.
 // ======================================================================
 
 import config from "../config";
 
 // ======================================================================
-//  1) DEFINICIÓN DE PROVEEDORES DISPONIBLES
+//  PROVEEDORES LÓGICOS (backend decide el motor real)
 // ======================================================================
 
 const PROVIDERS = {
-  openai: {
-    name: "OpenAI GPT",
-    endpoint: config.AURA_BACKEND_URL,               // tu backend ya enruta GPT
-    model: config.AURA_PRIMARY || "gpt-4.1",
-  },
-  claude: {
-    name: "Claude",
-    endpoint: config.CLAUDE_BACKEND_URL || "",
-    model: config.AURA_CLAUDE_MODEL || "claude-3-5-sonnet",
-  },
-  gemini: {
-    name: "Gemini",
-    endpoint: config.GEMINI_BACKEND_URL || "",
-    model: config.AURA_GEMINI_MODEL || "gemini-1.5-pro",
-  },
+  openai: { name: "OpenAI GPT" },
+  claude: { name: "Claude" },
+  gemini: { name: "Gemini" },
 };
 
 // ======================================================================
-//  2) REGLAS DE SELECCIÓN AUTOMÁTICA DE MODELO
+//  REGLAS DE SELECCIÓN AUTOMÁTICA
 // ======================================================================
 
 export function seleccionarIA(mensaje) {
   const t = mensaje.toLowerCase();
 
-  // ----------------------------
-  // Código → GPT-o1 u OpenAI
-  // ----------------------------
   if (
-    t.includes("haz un código") ||
-    t.includes("corrige este código") ||
+    t.includes("codigo") ||
     t.includes("programa") ||
-    t.includes("optimiza código")
-  ) {
-    return "openai";
-  }
+    t.includes("react") ||
+    t.includes("optimiza")
+  ) return "openai";
 
-  // ----------------------------
-  // Redacción humana → Claude
-  // ----------------------------
   if (
     t.includes("redacta") ||
-    t.includes("escribe formal") ||
     t.includes("carta") ||
-    t.includes("comunica") ||
-    t.includes("humano")
-  ) {
-    return "claude";
-  }
+    t.includes("formal")
+  ) return "claude";
 
-  // ----------------------------
-  // Análisis largo → Gemini
-  // ----------------------------
   if (
     t.includes("analiza") ||
-    t.includes("interpretación") ||
     t.includes("diagnóstico") ||
-    t.includes("toma de decisiones")
-  ) {
-    return "gemini";
-  }
+    t.includes("decisión")
+  ) return "gemini";
 
-  // ----------------------------
-  // Lógica de planificación → Claude
-  // ----------------------------
-  if (
-    t.includes("planifica") ||
-    t.includes("proyecta") ||
-    t.includes("estrategia")
-  ) {
-    return "claude";
-  }
-
-  // ----------------------------
-  // Por defecto → OpenAI (más equilibrado)
-  // ----------------------------
   return "openai";
 }
 
 // ======================================================================
-//  3) EJECUTAR CONSULTA EN EL PROVEEDOR CORRESPONDIENTE
+//  EJECUCIÓN REAL (SIEMPRE VÍA BACKEND)
 // ======================================================================
 
-export async function usarIA(providerName, mensajes) {
-  const prov = PROVIDERS[providerName];
-  if (!prov || !prov.endpoint) {
-    console.warn("⚠️ Proveedor no configurado:", providerName);
-    return "Proveedor no disponible.";
-  }
-
+export async function usarIA(provider, mensajes) {
   try {
-    const res = await fetch(prov.endpoint, {
+    const res = await fetch(config.AURA_BACKEND_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        provider: providerName,
-        model: prov.model,
+        provider,
         messages: mensajes,
       }),
     });
 
     const data = await res.json();
-    return data.reply || "No obtuve respuesta.";
+    return data.reply || "Sin respuesta de la IA.";
   } catch (err) {
-    console.error("❌ Error al consultar IA:", err);
-    return "Error al conectar con la IA.";
+    console.error("❌ Error IA:", err);
+    return "Error al conectar con el backend de AURA.";
   }
 }
 
 // ======================================================================
-//  4) MOTOR PRINCIPAL — MODO AUTOMÁTICO + MANUAL
+//  MOTOR PRINCIPAL
 // ======================================================================
 
-export async function procesarAURA_Inteligencia(mensaje, historial, forzarIA = null) {
-  let proveedor = null;
-
-  // ----------------------------
-  // 1) Si usuario fuerza IA
-  // ----------------------------
-  if (forzarIA) proveedor = forzarIA;
-  else proveedor = seleccionarIA(mensaje);
-
-  // ----------------------------
-  // 2) Construcción del historial
-  // ----------------------------
+export async function procesarAURA_Inteligencia(
+  mensaje,
+  historial,
+  forzarIA = null
+) {
+  const proveedor = forzarIA || seleccionarIA(mensaje);
   const mensajes = [...historial, { role: "user", content: mensaje }];
 
-  // ----------------------------
-  // 3) Intento principal
-  // ----------------------------
   let respuesta = await usarIA(proveedor, mensajes);
 
-  if (respuesta && respuesta !== "Error al conectar con la IA.") {
+  if (respuesta) {
     return { proveedor, respuesta };
   }
 
-  // ----------------------------
-  // 4) Fallback automático
-  // ----------------------------
-  const fallbackOrden = ["openai", "claude", "gemini"].filter(
-    (p) => p !== proveedor
-  );
-
-  for (let p of fallbackOrden) {
+  // Fallback ordenado
+  for (let p of ["openai", "claude", "gemini"]) {
+    if (p === proveedor) continue;
     respuesta = await usarIA(p, mensajes);
-    if (respuesta && respuesta !== "Error al conectar con la IA.") {
-      return { proveedor: p, respuesta };
-    }
+    if (respuesta) return { proveedor: p, respuesta };
   }
 
-  // ----------------------------
-  // 5) Último recurso
-  // ----------------------------
   return {
     proveedor: "ninguno",
     respuesta: "No pude conectarme a ningún proveedor.",
@@ -171,9 +98,9 @@ export async function procesarAURA_Inteligencia(mensaje, historial, forzarIA = n
 }
 
 // ======================================================================
-//  5) API FINAL PARA AURAChat
+//  API FINAL PARA AURAChat
 // ======================================================================
 
 export async function AURA_MultiModel_Process(texto, historial, force = null) {
-  return await procesarAURA_Inteligencia(texto, historial, force);
+  return procesarAURA_Inteligencia(texto, historial, force);
 }
