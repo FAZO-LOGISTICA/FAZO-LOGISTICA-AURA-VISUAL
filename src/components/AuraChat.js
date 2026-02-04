@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { detectarComando } from "../AURACommandDetector";
 
 const API = "https://aura-g5nw.onrender.com/aura";
 
@@ -9,64 +10,88 @@ export default function AURAChat({ onCommand }) {
   const enviar = async () => {
     if (!input.trim()) return;
 
+    // 1️⃣ DETECTAR COMANDO FAZO (PRIORIDAD ABSOLUTA)
+    const comando = detectarComando(input);
+
+    if (comando && onCommand) {
+      onCommand(comando);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: input },
+        {
+          role: "assistant",
+          content: `✔️ Acción FAZO ejecutada: ${
+            comando.module || comando.action
+          }`,
+        },
+      ]);
+
+      setInput("");
+      return; // ⛔ NO PASA A IA
+    }
+
+    // 2️⃣ SI NO ES COMANDO → IA
     const history = [...messages, { role: "user", content: input }];
     setMessages(history);
     setInput("");
 
-    try {
-      const res = await fetch(API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
-      });
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: history }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      // 👉 comando FAZO
-      if (data.command && onCommand) {
-        onCommand(data.command);
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply || "Sin respuesta." },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "❌ Error conectando con AURA." },
-      ]);
-    }
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: data.reply },
+    ]);
   };
 
   return (
-    <div className="aura-chat aura-chat-container">
-      {/* HISTORIAL */}
-      <div className="aura-chat-messages">
+    <div
+      style={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        background: "#0f172a",
+        padding: 12,
+      }}
+    >
+      {/* MENSAJES */}
+      <div style={{ flex: 1, overflowY: "auto", marginBottom: 10 }}>
         {messages.map((m, i) => (
-          <div key={i} style={{ marginBottom: 10 }}>
-            <div
-              style={{
-                background: m.role === "user" ? "#2563eb" : "#1e293b",
-                color: "#ffffff",
-                padding: "8px 12px",
-                borderRadius: 8,
-                maxWidth: "90%",
-              }}
-            >
-              {m.content}
-            </div>
+          <div
+            key={i}
+            style={{
+              background: m.role === "user" ? "#2563eb" : "#1e293b",
+              color: "#fff",
+              padding: 10,
+              borderRadius: 8,
+              marginBottom: 6,
+            }}
+          >
+            {m.content}
           </div>
         ))}
       </div>
 
       {/* INPUT ABAJO */}
-      <div className="aura-chat-input">
+      <div style={{ display: "flex", gap: 6 }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
-          placeholder="Escribe una orden para AURA…"
+          placeholder="Escribe un comando FAZO…"
+          style={{
+            flex: 1,
+            padding: 10,
+            borderRadius: 6,
+            border: "none",
+            color: "#000", // 👈 LETRAS NEGRAS
+          }}
         />
         <button onClick={enviar}>Enviar</button>
       </div>
