@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import AURAChat from "./components/AuraChat";
-import { registrarSubsistema } from "./FAZO_OS_EventBridge";
 
-// 🔥 NUEVO: Listener FAZO_DATA_UPDATE
+// 🔥 IMPORTS CORRECTOS (core/)
+import { registrarSubsistema } from "./core/FAZO_OS_EventBridge";
 import { initFAZODataListener } from "./core/FAZO_DataListener";
 
 // ======================================================
@@ -55,19 +55,11 @@ export default function App() {
           break;
 
         case "AURA_SUBRUTA":
-          console.log(
-            "➡️ Subruta solicitada:",
-            evento.modulo,
-            evento.ruta
-          );
+          console.log("➡️ Subruta solicitada:", evento.modulo, evento.ruta);
           break;
 
         case "AURA_ACCION":
-          console.log(
-            "⚙️ Acción del sistema:",
-            evento.accion,
-            evento.payload
-          );
+          console.log("⚙️ Acción del sistema:", evento.accion, evento.payload);
           break;
 
         case "AURA_ANALISIS_AUTOMATICO":
