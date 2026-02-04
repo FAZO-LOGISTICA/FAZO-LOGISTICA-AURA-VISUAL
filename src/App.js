@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import AURAChat from "./components/AuraChat";
 import { registrarSubsistema } from "./FAZO_OS_EventBridge";
 
+// 🔥 NUEVO: Listener FAZO_DATA_UPDATE
+import { initFAZODataListener } from "./core/FAZO_DataListener";
+
 // ======================================================
 //  MÓDULOS BASE FAZO OS
 // ======================================================
@@ -28,6 +31,14 @@ function Reportes() {
 
 export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
+
+  // ======================================================
+  // 🛰️ LISTENER FAZO DATA (AguaRuta → FAZO OS)
+  // ======================================================
+  useEffect(() => {
+    const cleanup = initFAZODataListener();
+    return cleanup;
+  }, []);
 
   // ======================================================
   // 🧠 ESCUCHA GLOBAL FAZO OS (AURA → EVENTBRIDGE → APP)
@@ -72,8 +83,7 @@ export default function App() {
   }, []);
 
   // ======================================================
-  // 🔥 PUNTO DE CONTROL DIRECTO (AURAChat → UI)
-  // (se mantiene para compatibilidad)
+  // 🔥 CONTROL DIRECTO (AURAChat → UI)
   // ======================================================
   const onAuraCommand = (command) => {
     console.log("🧠 COMANDO AURA RECIBIDO:", command);
