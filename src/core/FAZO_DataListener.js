@@ -1,6 +1,6 @@
 // src/core/FAZO_DataListener.js
-import { actualizarFAZOData } from "../FAZO_DATA";
-import { FAZO_Intelligence } from "../FAZO_OS_Intelligence";
+import { actualizarFAZOData } from "./FAZO_DATA";
+import { FAZO_Intelligence } from "./FAZO_OS_Intelligence";
 
 export function initFAZODataListener() {
   function onMessage(event) {
