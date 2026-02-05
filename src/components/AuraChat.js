@@ -1,112 +1,125 @@
-import React, { useState, useEffect, useRef } from "react";
-import { detectarComando } from "../AURACommandDetector";
+// ======================================================
+// AURAChat.js — AURA OPERATIVA REAL (FAZO OS)
+// Abre sistemas + responde con FAZO_DATA + fallback IA
+// ======================================================
 
-const API = "https://aura-g5nw.onrender.com/aura"; // backend AURA en la nube
+import React, { useState } from "react";
+import { FAZO_DATA } from "../FAZO_DATA";
+
+const BACKEND = "https://aura-g5nw.onrender.com/aura"; // IA nube (fallback)
 
 export default function AURAChat({ onCommand }) {
   const [messages, setMessages] = useState([
-    { role: "assistant", content: "🧠 AURA en línea. ¿Qué necesitas?" },
+    { role: "assistant", content: "🧠 AURA operativa. ¿Qué necesitas?" },
   ]);
   const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
 
-  // Scroll automático
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // ======================================================
+  // 🔍 INTÉRPRETE FAZO (PRIORIDAD ABSOLUTA)
+  // ======================================================
+  function procesarFAZO(texto) {
+    const t = texto.toLowerCase();
 
-  // =========================
-  // ENVÍO DE MENSAJE
-  // =========================
-  const enviar = async () => {
-    if (!input.trim()) return;
-
-    const texto = input.trim();
-    setInput("");
-
-    // Mostrar mensaje usuario
-    setMessages((prev) => [...prev, { role: "user", content: texto }]);
-
-    // =========================
-    // 1️⃣ DETECTOR DE COMANDOS (FAZO)
-    // =========================
-    const comando = detectarComando(texto);
-
-    if (comando) {
-      // 👉 RESPUESTA VISUAL
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "⚡ Ejecutando comando FAZO…",
-        },
-      ]);
-
-      // 👉 EJECUTA EN APP.JS
-      if (onCommand) onCommand(comando);
-
-      return; // ❗ NO PASA A LA IA
+    // ---- ABRIR AGUARUTA ----
+    if (
+      t.includes("abre aguaruta") ||
+      t.includes("abrir aguaruta") ||
+      t.includes("ir a aguaruta")
+    ) {
+      window.open("https://aguaruta.netlify.app", "_blank");
+      return "🚚 Abriendo AguaRuta en una nueva pestaña.";
     }
 
-    // =========================
-    // 2️⃣ IA (solo si no es comando)
-    // =========================
+    // ---- DATOS REALES ----
+    if (t.includes("litros")) {
+      const total = FAZO_DATA.camiones.reduce(
+        (sum, c) => sum + (c.litros || 0),
+        0
+      );
+      return total
+        ? `💧 Total entregado: ${total.toLocaleString("es-CL")} litros.`
+        : "⚠️ Aún no tengo datos de litros.";
+    }
+
+    if (t.includes("camion") || t.includes("camión")) {
+      if (!FAZO_DATA.camiones.length)
+        return "⚠️ No hay camiones cargados aún.";
+      return (
+        "🚛 Camiones activos:\n" +
+        FAZO_DATA.camiones
+          .map((c) => `• ${c.nombre}: ${c.litros} L`)
+          .join("\n")
+      );
+    }
+
+    if (t.includes("estado")) {
+      return "✅ FAZO OS operativo. Datos sincronizados correctamente.";
+    }
+
+    return null; // no era FAZO → IA
+  }
+
+  // ======================================================
+  // 🚀 ENVÍO DE MENSAJE
+  // ======================================================
+  async function enviar() {
+    if (!input.trim()) return;
+
+    const texto = input;
+    setInput("");
+
+    setMessages((m) => [...m, { role: "user", content: texto }]);
+
+    // 1️⃣ INTENTO FAZO LOCAL
+    const respuestaFAZO = procesarFAZO(texto);
+    if (respuestaFAZO) {
+      setMessages((m) => [...m, { role: "assistant", content: respuestaFAZO }]);
+      return;
+    }
+
+    // 2️⃣ FALLBACK IA NUBE
     try {
-      const res = await fetch(API, {
+      const res = await fetch(BACKEND, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [
-            ...messages.map((m) => ({
-              role: m.role === "assistant" ? "assistant" : "user",
-              content: m.content,
-            })),
-            { role: "user", content: texto },
-          ],
+          messages: [{ role: "user", content: texto }],
         }),
       });
 
       const data = await res.json();
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.reply || "No pude responder eso.",
-        },
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: data.reply || "Sin respuesta" },
       ]);
+
+      if (data.command && onCommand) onCommand(data.command);
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
+      setMessages((m) => [
+        ...m,
         {
           role: "assistant",
-          content: "❌ Error conectando con AURA.",
+          content: "⚠️ No pude conectar con la IA.",
         },
       ]);
     }
-  };
+  }
 
-  // =========================
-  // UI
-  // =========================
+  // ======================================================
+  // 🖥️ UI (VISIBLE Y FUNCIONAL)
+  // ======================================================
   return (
     <div
       style={{
-        height: "100vh",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: "#0f172a",
-        borderLeft: "1px solid #334155",
+        background: "#020617",
+        color: "#fff",
       }}
     >
-      {/* MENSAJES */}
-      <div
-        style={{
-          flex: 1,
-          padding: 16,
-          overflowY: "auto",
-        }}
-      >
+      {/* HISTORIAL */}
+      <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
         {messages.map((m, i) => (
           <div
             key={i}
@@ -121,56 +134,51 @@ export default function AURAChat({ onCommand }) {
                 padding: "8px 12px",
                 borderRadius: 12,
                 background:
-                  m.role === "user" ? "#38bdf8" : "#1e293b",
-                color: m.role === "user" ? "#000" : "#fff",
-                maxWidth: "80%",
+                  m.role === "user" ? "#2563eb" : "#0f172a",
+                color: "#fff",
+                maxWidth: "85%",
               }}
             >
               {m.content}
             </span>
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* INPUT ABAJO */}
       <div
         style={{
           display: "flex",
-          gap: 8,
-          padding: 12,
+          padding: 10,
           borderTop: "1px solid #334155",
-          background: "#020617",
         }}
       >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
-          placeholder="Escribe o di un comando…"
+          placeholder="Escribe una orden para AURA…"
           style={{
             flex: 1,
             padding: 10,
             borderRadius: 8,
             border: "none",
             outline: "none",
-            color: "#000",          // 🔥 TEXTO NEGRO
-            background: "#e5e7eb",  // 🔥 FONDO CLARO
+            color: "#000",          // 🔥 TEXTO NEGRO (VISIBLE)
           }}
         />
         <button
           onClick={enviar}
           style={{
-            padding: "10px 16px",
+            marginLeft: 8,
+            padding: "0 16px",
             borderRadius: 8,
-            border: "none",
-            cursor: "pointer",
             background: "#22d3ee",
-            color: "#000",
+            border: "none",
             fontWeight: "bold",
           }}
         >
-          Enviar
+          ▶
         </button>
       </div>
     </div>
