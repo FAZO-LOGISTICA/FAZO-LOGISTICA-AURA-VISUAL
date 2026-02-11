@@ -1,9 +1,7 @@
-import React, { useState, useCallback } from "react";
-import AURAChat from "./components/AURAChat";
+import React, { useState, useCallback, useRef } from "react";
+import AuraChat from "./Componentes/AuraChat"; // ✅ IMPORT CORRECTO
 
-// ======================================================
-//  MÓDULOS INTERNOS
-// ======================================================
+// ================= MÓDULOS INTERNOS =================
 
 function Inicio() {
   return <h2 style={{ padding: 20 }}>Panel Principal FAZO OS</h2>;
@@ -17,118 +15,68 @@ function Reportes() {
   return <h2 style={{ padding: 20 }}>📊 Reportes FAZO</h2>;
 }
 
-// ======================================================
-//  MÓDULOS EXTERNOS (SOLO LOS QUE ABREN EN NUEVA PESTAÑA)
-// ======================================================
-
-const EXTERNAL_MODULES = {
-  trasladomunicipal: "https://traslado-municipal.netlify.app",
-  flotaexterna: "https://flota-municipal.netlify.app",
-};
-
-// ======================================================
-//  APP PRINCIPAL
-// ======================================================
+// ================= APP PRINCIPAL =================
 
 export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
+  const iframeRef = useRef(null);
 
-  // ======================================================
-  //  CONTROL CENTRAL AURA
-  // ======================================================
+  // Enviar mensaje al iframe de AguaRuta
+  const enviarAAguaRuta = (data) => {
+    if (!iframeRef.current) return;
+
+    iframeRef.current.contentWindow.postMessage(
+      data,
+      "https://aguaruta.netlify.app"
+    );
+  };
 
   const onAuraCommand = useCallback((command) => {
     console.log("🧠 COMANDO AURA RECIBIDO:", command);
 
-    if (!command || typeof command !== "object") return;
+    if (!command) return;
 
-    try {
-      switch (command.type) {
-        case "OPEN_MODULE": {
-          const modulo = command.module?.toLowerCase();
-          if (!modulo) return;
+    if (command.type === "OPEN_MODULE") {
+      const modulo = command.module?.toLowerCase();
+      if (!modulo) return;
 
-          // Si es módulo externo → nueva pestaña
-          if (EXTERNAL_MODULES[modulo]) {
-            window.open(
-              EXTERNAL_MODULES[modulo],
-              "_blank",
-              "noopener,noreferrer"
-            );
-            return;
-          }
+      setModuloActivo(modulo);
 
-          // Si es interno → cambiar vista
-          setModuloActivo(modulo);
-          return;
-        }
-
-        case "OPEN_EXTERNAL": {
-          if (command.url && typeof command.url === "string") {
-            window.open(command.url, "_blank", "noopener,noreferrer");
-          }
-          return;
-        }
-
-        default:
-          console.warn("⚠️ Tipo no manejado:", command.type);
+      // Si viene subacción (navegación interna)
+      if (command.subAction) {
+        setTimeout(() => {
+          enviarAAguaRuta(command.subAction);
+        }, 1000);
       }
-    } catch (error) {
-      console.error("❌ Error procesando comando:", error);
     }
   }, []);
 
-  // ======================================================
-  //  RENDER DE MÓDULOS
-  // ======================================================
-
   const renderModulo = () => {
-    switch (moduloActivo) {
-      case "aguaruta":
-        return (
-          <iframe
-            src="https://aguaruta.netlify.app"
-            title="AguaRuta"
-            style={{
-              width: "100%",
-              height: "100vh",
-              border: "none",
-            }}
-          />
-        );
-
-      case "flota":
-        return <Flota />;
-
-      case "reportes":
-        return <Reportes />;
-
-      case "inicio":
-      default:
-        return <Inicio />;
+    if (moduloActivo === "aguaruta") {
+      return (
+        <iframe
+          ref={iframeRef}
+          src="https://aguaruta.netlify.app"
+          title="AguaRuta"
+          style={{
+            width: "100%",
+            height: "100vh",
+            border: "none",
+          }}
+        />
+      );
     }
+
+    if (moduloActivo === "flota") return <Flota />;
+    if (moduloActivo === "reportes") return <Reportes />;
+
+    return <Inicio />;
   };
 
-  // ======================================================
-  //  LAYOUT PRINCIPAL
-  // ======================================================
-
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        backgroundColor: "#0f172a",
-      }}
-    >
+    <div style={{ height: "100vh", display: "flex" }}>
       {/* PANEL PRINCIPAL */}
-      <div
-        style={{
-          flex: 1,
-          height: "100vh",
-          overflow: "hidden",
-        }}
-      >
+      <div style={{ flex: 1 }}>
         {renderModulo()}
       </div>
 
@@ -137,12 +85,10 @@ export default function App() {
         style={{
           width: 420,
           borderLeft: "1px solid #334155",
-          display: "flex",
-          flexDirection: "column",
           height: "100vh",
         }}
       >
-        <AURAChat onCommand={onAuraCommand} />
+        <AuraChat onCommand={onAuraCommand} />
       </div>
     </div>
   );
