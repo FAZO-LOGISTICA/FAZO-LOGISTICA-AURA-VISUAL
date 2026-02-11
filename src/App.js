@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import AURAChat from "./components/AURAChat";
+
+// ======================================================
+//  MÓDULOS INTERNOS
+// ======================================================
 
 function Inicio() {
   return <h2>Panel Principal FAZO OS</h2>;
@@ -17,22 +21,77 @@ function Reportes() {
   return <h2>📊 Reportes FAZO</h2>;
 }
 
+// ======================================================
+//  CONFIGURACIÓN DE MÓDULOS EXTERNOS (ESCALABLE)
+// ======================================================
+
+const EXTERNAL_MODULES = {
+  aguaruta: "https://aguaruta.netlify.app",
+  trasladomunicipal: "https://traslado-municipal.netlify.app",
+  flotaexterna: "https://flota-municipal.netlify.app",
+};
+
+// ======================================================
+//  APP PRINCIPAL
+// ======================================================
+
 export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
 
-  const onAuraCommand = (command) => {
-    console.log("COMANDO AURA RECIBIDO:", command);
+  // ======================================================
+  //  CONTROL CENTRAL DE COMANDOS AURA
+  // ======================================================
 
-    if (!command) return;
+  const onAuraCommand = useCallback((command) => {
+    console.log("🧠 COMANDO AURA RECIBIDO:", command);
 
-    if (command.type === "OPEN_MODULE") {
-      setModuloActivo(command.module?.toLowerCase());
+    if (!command || typeof command !== "object") return;
+
+    try {
+      switch (command.type) {
+        // ------------------------------------------------
+        // ABRIR MÓDULO (INTERNO O EXTERNO)
+        // ------------------------------------------------
+        case "OPEN_MODULE": {
+          const modulo = command.module?.toLowerCase();
+
+          if (!modulo) return;
+
+          // Si existe como módulo externo → abrir pestaña
+          if (EXTERNAL_MODULES[modulo]) {
+            window.open(EXTERNAL_MODULES[modulo], "_blank", "noopener,noreferrer");
+            return;
+          }
+
+          // Si es interno → cambiar vista
+          setModuloActivo(modulo);
+          return;
+        }
+
+        // ------------------------------------------------
+        // ABRIR URL DIRECTA
+        // ------------------------------------------------
+        case "OPEN_EXTERNAL": {
+          if (command.url && typeof command.url === "string") {
+            window.open(command.url, "_blank", "noopener,noreferrer");
+          }
+          return;
+        }
+
+        // ------------------------------------------------
+        // FUTUROS TIPOS (ESCALABLE)
+        // ------------------------------------------------
+        default:
+          console.warn("⚠️ Tipo de comando no manejado:", command.type);
+      }
+    } catch (error) {
+      console.error("❌ Error procesando comando AURA:", error);
     }
+  }, []);
 
-    if (command.type === "OPEN_EXTERNAL") {
-      window.open(command.url, "_blank");
-    }
-  };
+  // ======================================================
+  //  RENDER DE MÓDULOS INTERNOS
+  // ======================================================
 
   const renderModulo = () => {
     switch (moduloActivo) {
@@ -42,10 +101,15 @@ export default function App() {
         return <Flota />;
       case "reportes":
         return <Reportes />;
+      case "inicio":
       default:
         return <Inicio />;
     }
   };
+
+  // ======================================================
+  //  LAYOUT PRINCIPAL
+  // ======================================================
 
   return (
     <div
@@ -55,7 +119,7 @@ export default function App() {
         overflow: "hidden",
       }}
     >
-      {/* SISTEMA */}
+      {/* SISTEMA PRINCIPAL */}
       <div
         style={{
           flex: 1,
@@ -66,7 +130,7 @@ export default function App() {
         {renderModulo()}
       </div>
 
-      {/* AURA */}
+      {/* PANEL AURA */}
       <div
         style={{
           width: 420,
