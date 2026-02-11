@@ -9,10 +9,6 @@ function Inicio() {
   return <h2>Panel Principal FAZO OS</h2>;
 }
 
-function AguaRuta() {
-  return <h2>🚚 AguaRuta — Gestión de Agua Potable</h2>;
-}
-
 function Flota() {
   return <h2>🚛 Flota Municipal</h2>;
 }
@@ -23,10 +19,10 @@ function Reportes() {
 
 // ======================================================
 //  CONFIGURACIÓN DE MÓDULOS EXTERNOS (ESCALABLE)
+//  ⚠️ AguaRuta YA NO VA AQUÍ
 // ======================================================
 
 const EXTERNAL_MODULES = {
-  aguaruta: "https://aguaruta.netlify.app",
   trasladomunicipal: "https://traslado-municipal.netlify.app",
   flotaexterna: "https://flota-municipal.netlify.app",
 };
@@ -49,17 +45,17 @@ export default function App() {
 
     try {
       switch (command.type) {
-        // ------------------------------------------------
-        // ABRIR MÓDULO (INTERNO O EXTERNO)
-        // ------------------------------------------------
         case "OPEN_MODULE": {
           const modulo = command.module?.toLowerCase();
-
           if (!modulo) return;
 
           // Si existe como módulo externo → abrir pestaña
           if (EXTERNAL_MODULES[modulo]) {
-            window.open(EXTERNAL_MODULES[modulo], "_blank", "noopener,noreferrer");
+            window.open(
+              EXTERNAL_MODULES[modulo],
+              "_blank",
+              "noopener,noreferrer"
+            );
             return;
           }
 
@@ -68,9 +64,6 @@ export default function App() {
           return;
         }
 
-        // ------------------------------------------------
-        // ABRIR URL DIRECTA
-        // ------------------------------------------------
         case "OPEN_EXTERNAL": {
           if (command.url && typeof command.url === "string") {
             window.open(command.url, "_blank", "noopener,noreferrer");
@@ -78,9 +71,6 @@ export default function App() {
           return;
         }
 
-        // ------------------------------------------------
-        // FUTUROS TIPOS (ESCALABLE)
-        // ------------------------------------------------
         default:
           console.warn("⚠️ Tipo de comando no manejado:", command.type);
       }
@@ -90,17 +80,30 @@ export default function App() {
   }, []);
 
   // ======================================================
-  //  RENDER DE MÓDULOS INTERNOS
+  //  RENDER DE MÓDULOS
   // ======================================================
 
   const renderModulo = () => {
     switch (moduloActivo) {
       case "aguaruta":
-        return <AguaRuta />;
+        return (
+          <iframe
+            src="https://aguaruta.netlify.app"
+            title="AguaRuta"
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "none",
+            }}
+          />
+        );
+
       case "flota":
         return <Flota />;
+
       case "reportes":
         return <Reportes />;
+
       case "inicio":
       default:
         return <Inicio />;
@@ -124,7 +127,7 @@ export default function App() {
         style={{
           flex: 1,
           padding: 20,
-          overflowY: "auto",
+          overflow: "auto",
         }}
       >
         {renderModulo()}
