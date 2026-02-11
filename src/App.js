@@ -6,20 +6,19 @@ import AURAChat from "./components/AURAChat";
 // ======================================================
 
 function Inicio() {
-  return <h2>Panel Principal FAZO OS</h2>;
+  return <h2 style={{ padding: 20 }}>Panel Principal FAZO OS</h2>;
 }
 
 function Flota() {
-  return <h2>🚛 Flota Municipal</h2>;
+  return <h2 style={{ padding: 20 }}>🚛 Flota Municipal</h2>;
 }
 
 function Reportes() {
-  return <h2>📊 Reportes FAZO</h2>;
+  return <h2 style={{ padding: 20 }}>📊 Reportes FAZO</h2>;
 }
 
 // ======================================================
-//  CONFIGURACIÓN DE MÓDULOS EXTERNOS (ESCALABLE)
-//  ⚠️ AguaRuta YA NO VA AQUÍ
+//  MÓDULOS EXTERNOS (SOLO LOS QUE ABREN EN NUEVA PESTAÑA)
 // ======================================================
 
 const EXTERNAL_MODULES = {
@@ -35,7 +34,7 @@ export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
 
   // ======================================================
-  //  CONTROL CENTRAL DE COMANDOS AURA
+  //  CONTROL CENTRAL AURA
   // ======================================================
 
   const onAuraCommand = useCallback((command) => {
@@ -49,7 +48,7 @@ export default function App() {
           const modulo = command.module?.toLowerCase();
           if (!modulo) return;
 
-          // Si existe como módulo externo → abrir pestaña
+          // Si es módulo externo → nueva pestaña
           if (EXTERNAL_MODULES[modulo]) {
             window.open(
               EXTERNAL_MODULES[modulo],
@@ -72,10 +71,10 @@ export default function App() {
         }
 
         default:
-          console.warn("⚠️ Tipo de comando no manejado:", command.type);
+          console.warn("⚠️ Tipo no manejado:", command.type);
       }
     } catch (error) {
-      console.error("❌ Error procesando comando AURA:", error);
+      console.error("❌ Error procesando comando:", error);
     }
   }, []);
 
@@ -92,7 +91,7 @@ export default function App() {
             title="AguaRuta"
             style={{
               width: "100%",
-              height: "100%",
+              height: "100vh",
               border: "none",
             }}
           />
@@ -119,15 +118,15 @@ export default function App() {
       style={{
         height: "100vh",
         display: "flex",
-        overflow: "hidden",
+        backgroundColor: "#0f172a",
       }}
     >
-      {/* SISTEMA PRINCIPAL */}
+      {/* PANEL PRINCIPAL */}
       <div
         style={{
           flex: 1,
-          padding: 20,
-          overflow: "auto",
+          height: "100vh",
+          overflow: "hidden",
         }}
       >
         {renderModulo()}
