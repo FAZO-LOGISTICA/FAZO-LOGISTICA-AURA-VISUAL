@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AURAChat from "./components/AURAChat";
 
 function Inicio() {
@@ -21,10 +21,16 @@ export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
 
   const onAuraCommand = (command) => {
-    console.log("🧠 COMANDO AURA:", command);
+    console.log("COMANDO AURA RECIBIDO:", command);
 
-    if (command.type === "OPEN_MODULE" && command.module) {
-      setModuloActivo(command.module.toLowerCase());
+    if (!command) return;
+
+    if (command.type === "OPEN_MODULE") {
+      setModuloActivo(command.module?.toLowerCase());
+    }
+
+    if (command.type === "OPEN_EXTERNAL") {
+      window.open(command.url, "_blank");
     }
   };
 
@@ -42,10 +48,34 @@ export default function App() {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex" }}>
-      <div style={{ flex: 1, padding: 20 }}>{renderModulo()}</div>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        overflow: "hidden",
+      }}
+    >
+      {/* SISTEMA */}
+      <div
+        style={{
+          flex: 1,
+          padding: 20,
+          overflowY: "auto",
+        }}
+      >
+        {renderModulo()}
+      </div>
 
-      <div style={{ width: 420, borderLeft: "1px solid #334155" }}>
+      {/* AURA */}
+      <div
+        style={{
+          width: 420,
+          borderLeft: "1px solid #334155",
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+        }}
+      >
         <AURAChat onCommand={onAuraCommand} />
       </div>
     </div>
