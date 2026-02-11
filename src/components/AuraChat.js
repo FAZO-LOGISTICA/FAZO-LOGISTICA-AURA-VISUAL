@@ -1,186 +1,139 @@
-// ======================================================
-// AURAChat.js — AURA OPERATIVA REAL (FAZO OS)
-// Abre sistemas + responde con FAZO_DATA + fallback IA
-// ======================================================
-
-import React, { useState } from "react";
-import { FAZO_DATA } from "../FAZO_DATA";
-
-const BACKEND = "https://aura-g5nw.onrender.com/aura"; // IA nube (fallback)
+import React, { useState, useRef, useEffect } from "react";
 
 export default function AURAChat({ onCommand }) {
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "🧠 AURA operativa. ¿Qué necesitas?" },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const messagesEndRef = useRef(null);
 
-  // ======================================================
-  // 🔍 INTÉRPRETE FAZO (PRIORIDAD ABSOLUTA)
-  // ======================================================
-  function procesarFAZO(texto) {
+  const autoScroll = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    autoScroll();
+  }, [messages]);
+
+  const detectarComandoSimple = (texto) => {
     const t = texto.toLowerCase();
 
-    // ---- ABRIR AGUARUTA ----
-    if (
-      t.includes("abre aguaruta") ||
-      t.includes("abrir aguaruta") ||
-      t.includes("ir a aguaruta")
-    ) {
-      window.open("https://aguaruta.netlify.app", "_blank");
-      return "🚚 Abriendo AguaRuta en una nueva pestaña.";
+    if (t.includes("abrir aguaruta") || t.includes("abre aguaruta")) {
+      return {
+        type: "OPEN_EXTERNAL",
+        url: "https://aguaruta.netlify.app",
+      };
     }
 
-    // ---- DATOS REALES ----
-    if (t.includes("litros")) {
-      const total = FAZO_DATA.camiones.reduce(
-        (sum, c) => sum + (c.litros || 0),
-        0
-      );
-      return total
-        ? `💧 Total entregado: ${total.toLocaleString("es-CL")} litros.`
-        : "⚠️ Aún no tengo datos de litros.";
-    }
+    return null;
+  };
 
-    if (t.includes("camion") || t.includes("camión")) {
-      if (!FAZO_DATA.camiones.length)
-        return "⚠️ No hay camiones cargados aún.";
-      return (
-        "🚛 Camiones activos:\n" +
-        FAZO_DATA.camiones
-          .map((c) => `• ${c.nombre}: ${c.litros} L`)
-          .join("\n")
-      );
-    }
-
-    if (t.includes("estado")) {
-      return "✅ FAZO OS operativo. Datos sincronizados correctamente.";
-    }
-
-    return null; // no era FAZO → IA
-  }
-
-  // ======================================================
-  // 🚀 ENVÍO DE MENSAJE
-  // ======================================================
-  async function enviar() {
+  const enviar = async () => {
     if (!input.trim()) return;
 
-    const texto = input;
-    setInput("");
+    const userMessage = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
 
-    setMessages((m) => [...m, { role: "user", content: texto }]);
+    const comando = detectarComandoSimple(input);
 
-    // 1️⃣ INTENTO FAZO LOCAL
-    const respuestaFAZO = procesarFAZO(texto);
-    if (respuestaFAZO) {
-      setMessages((m) => [...m, { role: "assistant", content: respuestaFAZO }]);
+    if (comando) {
+      onCommand(comando);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "✅ Abriendo AguaRuta en nueva pestaña...",
+        },
+      ]);
+
+      setInput("");
       return;
     }
 
-    // 2️⃣ FALLBACK IA NUBE
-    try {
-      const res = await fetch(BACKEND, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: texto }],
-        }),
-      });
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "🤖 AURA aún no tiene backend conectado.",
+      },
+    ]);
 
-      const data = await res.json();
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: data.reply || "Sin respuesta" },
-      ]);
+    setInput("");
+  };
 
-      if (data.command && onCommand) onCommand(data.command);
-    } catch (err) {
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content: "⚠️ No pude conectar con la IA.",
-        },
-      ]);
-    }
-  }
-
-  // ======================================================
-  // 🖥️ UI (VISIBLE Y FUNCIONAL)
-  // ======================================================
   return (
-    <div
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: "#020617",
-        color: "#fff",
-      }}
-    >
-      {/* HISTORIAL */}
-      <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+    <>
+      {/* CONTENEDOR MENSAJES */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: 20,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
         {messages.map((m, i) => (
           <div
             key={i}
             style={{
-              marginBottom: 10,
-              textAlign: m.role === "user" ? "right" : "left",
+              alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+              background:
+                m.role === "user" ? "#3b82f6" : "rgba(255,255,255,0.1)",
+              padding: "10px 14px",
+              borderRadius: 12,
+              maxWidth: "80%",
+              color: "white",
+              fontSize: 14,
             }}
           >
-            <span
-              style={{
-                display: "inline-block",
-                padding: "8px 12px",
-                borderRadius: 12,
-                background:
-                  m.role === "user" ? "#2563eb" : "#0f172a",
-                color: "#fff",
-                maxWidth: "85%",
-              }}
-            >
-              {m.content}
-            </span>
+            {m.content}
           </div>
         ))}
+
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* INPUT ABAJO */}
+      {/* INPUT FIJO ABAJO */}
       <div
         style={{
-          display: "flex",
-          padding: 10,
+          padding: 16,
           borderTop: "1px solid #334155",
+          display: "flex",
+          gap: 8,
+          background: "#0f172a",
         }}
       >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && enviar()}
-          placeholder="Escribe una orden para AURA…"
+          placeholder="Escribe una orden para AURA..."
           style={{
             flex: 1,
             padding: 10,
             borderRadius: 8,
-            border: "none",
+            border: "1px solid #334155",
             outline: "none",
-            color: "#000",          // 🔥 TEXTO NEGRO (VISIBLE)
+            color: "black",
+            background: "white",
           }}
         />
+
         <button
           onClick={enviar}
           style={{
-            marginLeft: 8,
-            padding: "0 16px",
+            padding: "10px 16px",
             borderRadius: 8,
-            background: "#22d3ee",
             border: "none",
-            fontWeight: "bold",
+            background: "#3b82f6",
+            color: "white",
+            cursor: "pointer",
           }}
         >
-          ▶
+          Enviar
         </button>
       </div>
-    </div>
+    </>
   );
 }
