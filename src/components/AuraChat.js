@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import AuraOrb from "./AuraOrb";
+import { useAuraVoice } from "../hooks/useAuraVoice";
 
 const AURA_API_URL = "https://aura-g5nw.onrender.com/api/aura";
 
@@ -8,8 +9,40 @@ export default function AURAChat({ onCommand }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [provider, setProvider] = useState("openai");
-  const [orbStatus, setOrbStatus] = useState("idle"); // idle, listening, thinking, speaking, error
+  const [orbStatus, setOrbStatus] = useState("idle");
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Hook de voz
+  const {
+    isListening,
+    isSpeaking,
+    isActive,
+    transcript,
+    startListening,
+    stopListening,
+    speak,
+  } = useAuraVoice({
+    onTranscript: (text) => {
+      console.log("📝 Transcript recibido:", text);
+      setInput(text); // Poner el texto en el input
+      // Auto-enviar después de 1 segundo
+      setTimeout(() => {
+        if (text.trim()) {
+          enviarMensaje(text);
+        }
+      }, 1000);
+    },
+    onStatusChange: (status) => {
+      console.log("🔄 Status change:", status);
+      if (status === "listening") setOrbStatus("listening");
+      else if (status === "speaking") setOrbStatus("speaking");
+      else if (status === "active") setOrbStatus("listening");
+      else if (status === "error") setOrbStatus("error");
+      else setOrbStatus("idle");
+    },
+    activationWord: "aura",
+  });
 
   const autoScroll = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -19,14 +52,21 @@ export default function AURAChat({ onCommand }) {
     autoScroll();
   }, [messages]);
 
-  const enviar = async () => {
-    if (!input.trim() || loading) return;
+  // Mostrar transcript en tiempo real
+  useEffect(() => {
+    if (transcript && isActive) {
+      setInput(transcript);
+    }
+  }, [transcript, isActive]);
 
-    const userMessage = { role: "user", content: input };
+  const enviarMensaje = async (texto = input) => {
+    if (!texto.trim() || loading) return;
+
+    const userMessage = { role: "user", content: texto };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
-    setOrbStatus("thinking"); // Orbe pensando
+    setOrbStatus("thinking");
 
     try {
       const response = await fetch(AURA_API_URL, {
@@ -61,12 +101,16 @@ export default function AURAChat({ onCommand }) {
         },
       ]);
 
-      setOrbStatus("speaking"); // Orbe hablando
-      setTimeout(() => setOrbStatus("idle"), 2000); // Vuelve a idle después de 2s
-
+      // Si la voz está activada, AURA habla la respuesta
+      if (voiceEnabled) {
+        speak(data.reply);
+      } else {
+        setOrbStatus("speaking");
+        setTimeout(() => setOrbStatus("idle"), 2000);
+      }
     } catch (error) {
       console.error("Error al llamar a AURA:", error);
-      
+
       setMessages((prev) => [
         ...prev,
         {
@@ -75,23 +119,32 @@ export default function AURAChat({ onCommand }) {
         },
       ]);
 
-      setOrbStatus("error"); // Orbe en error
+      setOrbStatus("error");
       setTimeout(() => setOrbStatus("idle"), 3000);
-
     } finally {
       setLoading(false);
     }
   };
 
   const handleOrbClick = () => {
-    // Aquí puedes agregar funcionalidad de voz más adelante
-    console.log("🎤 Orbe clickeado - Activar voz aquí");
-    setOrbStatus("listening");
-    setTimeout(() => setOrbStatus("idle"), 2000);
+    if (!voiceEnabled) {
+      // Activar voz por primera vez
+      setVoiceEnabled(true);
+      startListening();
+      speak("Sistema de voz activado. Di 'Aura' para comenzar.");
+    } else {
+      // Toggle escucha
+      if (isListening) {
+        stopListening();
+        setOrbStatus("idle");
+      } else {
+        startListening();
+      }
+    }
   };
 
   return (
-    <div 
+    <div
       className="h-screen flex flex-col"
       style={{
         background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
@@ -106,38 +159,64 @@ export default function AURAChat({ onCommand }) {
           backdropFilter: "blur(10px)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                background:
+                  orbStatus === "error" ? "#ef4444" :
+                  orbStatus === "thinking" ? "#a855f7" :
+                  orbStatus === "speaking" ? "#22c55e" :
+                  orbStatus === "listening" ? "#ec4899" : "#06b6d4",
+                boxShadow: `0 0 12px ${
+                  orbStatus === "error" ? "#ef4444" :
+                  orbStatus === "thinking" ? "#a855f7" :
+                  orbStatus === "speaking" ? "#22c55e" :
+                  orbStatus === "listening" ? "#ec4899" : "#06b6d4"
+                }`,
+                animation: "pulse 2s ease-in-out infinite",
+              }}
+            />
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 18,
+                fontWeight: 600,
+                background: "linear-gradient(90deg, #06b6d4, #3b82f6)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "0.5px",
+              }}
+            >
+              AURA • Sistema Inteligente
+            </h2>
+          </div>
+
+          {/* INDICADOR DE VOZ */}
           <div
             style={{
-              width: 12,
-              height: 12,
-              borderRadius: "50%",
-              background: orbStatus === "error" ? "#ef4444" : 
-                          orbStatus === "thinking" ? "#a855f7" :
-                          orbStatus === "speaking" ? "#22c55e" :
-                          orbStatus === "listening" ? "#ec4899" : "#06b6d4",
-              boxShadow: `0 0 12px ${
-                orbStatus === "error" ? "#ef4444" : 
-                orbStatus === "thinking" ? "#a855f7" :
-                orbStatus === "speaking" ? "#22c55e" :
-                orbStatus === "listening" ? "#ec4899" : "#06b6d4"
-              }`,
-              animation: "pulse 2s ease-in-out infinite",
-            }}
-          />
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 18,
-              fontWeight: 600,
-              background: "linear-gradient(90deg, #06b6d4, #3b82f6)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              letterSpacing: "0.5px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 12px",
+              borderRadius: 20,
+              background: voiceEnabled ? "rgba(236, 72, 153, 0.2)" : "rgba(100, 116, 139, 0.2)",
+              border: `1px solid ${voiceEnabled ? "rgba(236, 72, 153, 0.4)" : "rgba(100, 116, 139, 0.3)"}`,
             }}
           >
-            AURA • Sistema Inteligente
-          </h2>
+            <div
+              style={{
+                fontSize: 12,
+                color: voiceEnabled ? "#ec4899" : "#64748b",
+                fontWeight: 500,
+              }}
+            >
+              {voiceEnabled ? "🎤 VOZ ACTIVA" : "🔇 VOZ OFF"}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -182,6 +261,9 @@ export default function AURAChat({ onCommand }) {
               </div>
             </div>
             <div style={{ fontSize: 12, opacity: 0.5, marginTop: 20 }}>
+              💬 Escribe o 🎤 Click en el orbe para activar voz
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.4 }}>
               Prueba: "Abre AguaRuta" • "¿Qué puedes hacer?" • "Hola AURA"
             </div>
           </div>
@@ -295,14 +377,20 @@ export default function AURAChat({ onCommand }) {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !loading && enviar()}
-          placeholder="Escribe un comando o pregunta para AURA..."
+          onKeyDown={(e) => e.key === "Enter" && !loading && enviarMensaje()}
+          placeholder={
+            isActive
+              ? "🎤 Escuchando..."
+              : "Escribe un comando o pregunta para AURA..."
+          }
           disabled={loading}
           style={{
             flex: 1,
             padding: "12px 16px",
             borderRadius: 12,
-            border: "1px solid rgba(100, 200, 255, 0.3)",
+            border: isActive
+              ? "1px solid rgba(236, 72, 153, 0.5)"
+              : "1px solid rgba(100, 200, 255, 0.3)",
             outline: "none",
             background: "rgba(30, 41, 59, 0.8)",
             color: "white",
@@ -313,7 +401,7 @@ export default function AURAChat({ onCommand }) {
         />
 
         <button
-          onClick={enviar}
+          onClick={() => enviarMensaje()}
           disabled={loading}
           style={{
             padding: "12px 24px",
