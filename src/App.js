@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
-import AuraChat from "./Componentes/AuraChat"; // ✅ IMPORT CORRECTO
-
+import AuraChat from "./components/AuraChat";
 // ================= MÓDULOS INTERNOS =================
 
 function Inicio() {
