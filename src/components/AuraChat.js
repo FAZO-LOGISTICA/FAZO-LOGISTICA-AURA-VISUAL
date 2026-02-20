@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import AuraOrb from "./AuraOrb";
 
 const AURA_API_URL = "https://aura-g5nw.onrender.com/api/aura";
 
@@ -6,7 +7,8 @@ export default function AURAChat({ onCommand }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [provider, setProvider] = useState("openai"); // IA por defecto
+  const [provider, setProvider] = useState("openai");
+  const [orbStatus, setOrbStatus] = useState("idle"); // idle, listening, thinking, speaking, error
   const messagesEndRef = useRef(null);
 
   const autoScroll = () => {
@@ -24,9 +26,9 @@ export default function AURAChat({ onCommand }) {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
+    setOrbStatus("thinking"); // Orbe pensando
 
     try {
-      // Llamar al backend
       const response = await fetch(AURA_API_URL, {
         method: "POST",
         headers: {
@@ -58,6 +60,10 @@ export default function AURAChat({ onCommand }) {
           content: data.reply,
         },
       ]);
+
+      setOrbStatus("speaking"); // Orbe hablando
+      setTimeout(() => setOrbStatus("idle"), 2000); // Vuelve a idle después de 2s
+
     } catch (error) {
       console.error("Error al llamar a AURA:", error);
       
@@ -68,13 +74,73 @@ export default function AURAChat({ onCommand }) {
           content: `❌ Error: ${error.message}. Verifica que el backend esté activo.`,
         },
       ]);
+
+      setOrbStatus("error"); // Orbe en error
+      setTimeout(() => setOrbStatus("idle"), 3000);
+
     } finally {
       setLoading(false);
     }
   };
 
+  const handleOrbClick = () => {
+    // Aquí puedes agregar funcionalidad de voz más adelante
+    console.log("🎤 Orbe clickeado - Activar voz aquí");
+    setOrbStatus("listening");
+    setTimeout(() => setOrbStatus("idle"), 2000);
+  };
+
   return (
-    <>
+    <div 
+      className="h-screen flex flex-col"
+      style={{
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid rgba(100, 200, 255, 0.2)",
+          background: "rgba(15, 23, 42, 0.95)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: orbStatus === "error" ? "#ef4444" : 
+                          orbStatus === "thinking" ? "#a855f7" :
+                          orbStatus === "speaking" ? "#22c55e" :
+                          orbStatus === "listening" ? "#ec4899" : "#06b6d4",
+              boxShadow: `0 0 12px ${
+                orbStatus === "error" ? "#ef4444" : 
+                orbStatus === "thinking" ? "#a855f7" :
+                orbStatus === "speaking" ? "#22c55e" :
+                orbStatus === "listening" ? "#ec4899" : "#06b6d4"
+              }`,
+              animation: "pulse 2s ease-in-out infinite",
+            }}
+          />
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 18,
+              fontWeight: 600,
+              background: "linear-gradient(90deg, #06b6d4, #3b82f6)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              letterSpacing: "0.5px",
+            }}
+          >
+            AURA • Sistema Inteligente
+          </h2>
+        </div>
+      </div>
+
       {/* CONTENEDOR MENSAJES */}
       <div
         style={{
@@ -86,19 +152,61 @@ export default function AURAChat({ onCommand }) {
           gap: 12,
         }}
       >
+        {messages.length === 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "#64748b",
+              textAlign: "center",
+              gap: 16,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 48,
+                filter: "drop-shadow(0 0 20px rgba(6, 182, 212, 0.5))",
+              }}
+            >
+              🤖
+            </div>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8, color: "#94a3b8" }}>
+                Buenos días. Soy AURA.
+              </div>
+              <div style={{ fontSize: 14, opacity: 0.7 }}>
+                ¿En qué puedo asistirte hoy?
+              </div>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.5, marginTop: 20 }}>
+              Prueba: "Abre AguaRuta" • "¿Qué puedes hacer?" • "Hola AURA"
+            </div>
+          </div>
+        )}
+
         {messages.map((m, i) => (
           <div
             key={i}
             style={{
               alignSelf: m.role === "user" ? "flex-end" : "flex-start",
               background:
-                m.role === "user" ? "#3b82f6" : "rgba(255,255,255,0.1)",
-              padding: "10px 14px",
-              borderRadius: 12,
+                m.role === "user"
+                  ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)"
+                  : "rgba(30, 41, 59, 0.8)",
+              padding: "12px 16px",
+              borderRadius: 16,
               maxWidth: "80%",
               color: "white",
               fontSize: 14,
               wordWrap: "break-word",
+              border: m.role === "assistant" ? "1px solid rgba(100, 200, 255, 0.2)" : "none",
+              boxShadow:
+                m.role === "user"
+                  ? "0 4px 12px rgba(59, 130, 246, 0.3)"
+                  : "0 4px 12px rgba(0, 0, 0, 0.3)",
             }}
           >
             {m.content}
@@ -109,14 +217,27 @@ export default function AURAChat({ onCommand }) {
           <div
             style={{
               alignSelf: "flex-start",
-              background: "rgba(255,255,255,0.1)",
-              padding: "10px 14px",
-              borderRadius: 12,
-              color: "white",
+              background: "rgba(30, 41, 59, 0.8)",
+              padding: "12px 16px",
+              borderRadius: 16,
+              color: "#94a3b8",
               fontSize: 14,
+              border: "1px solid rgba(100, 200, 255, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            <span>💭 AURA está pensando...</span>
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#a855f7",
+                animation: "pulse 1s ease-in-out infinite",
+              }}
+            />
+            <span>AURA está procesando...</span>
           </div>
         )}
 
@@ -126,26 +247,30 @@ export default function AURAChat({ onCommand }) {
       {/* SELECTOR DE IA */}
       <div
         style={{
-          padding: "8px 16px",
-          borderTop: "1px solid #334155",
-          background: "#0f172a",
+          padding: "12px 20px",
+          borderTop: "1px solid rgba(100, 200, 255, 0.2)",
+          background: "rgba(15, 23, 42, 0.95)",
           display: "flex",
           gap: 8,
           alignItems: "center",
         }}
       >
-        <label style={{ color: "#94a3b8", fontSize: 12 }}>IA:</label>
+        <label style={{ color: "#94a3b8", fontSize: 12, fontWeight: 500 }}>
+          MOTOR IA:
+        </label>
         <select
           value={provider}
           onChange={(e) => setProvider(e.target.value)}
           style={{
-            padding: "4px 8px",
-            borderRadius: 6,
-            border: "1px solid #334155",
-            background: "#1e293b",
+            padding: "6px 12px",
+            borderRadius: 8,
+            border: "1px solid rgba(100, 200, 255, 0.3)",
+            background: "rgba(30, 41, 59, 0.8)",
             color: "white",
             fontSize: 12,
             cursor: "pointer",
+            outline: "none",
+            fontWeight: 500,
           }}
         >
           <option value="openai">OpenAI (GPT-4o-mini)</option>
@@ -157,31 +282,33 @@ export default function AURAChat({ onCommand }) {
         </select>
       </div>
 
-      {/* INPUT FIJO ABAJO */}
+      {/* INPUT */}
       <div
         style={{
-          padding: 16,
-          borderTop: "1px solid #334155",
+          padding: 20,
+          borderTop: "1px solid rgba(100, 200, 255, 0.2)",
           display: "flex",
-          gap: 8,
-          background: "#0f172a",
+          gap: 12,
+          background: "rgba(15, 23, 42, 0.95)",
         }}
       >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !loading && enviar()}
-          placeholder="Escribe una orden para AURA..."
+          placeholder="Escribe un comando o pregunta para AURA..."
           disabled={loading}
           style={{
             flex: 1,
-            padding: 10,
-            borderRadius: 8,
-            border: "1px solid #334155",
+            padding: "12px 16px",
+            borderRadius: 12,
+            border: "1px solid rgba(100, 200, 255, 0.3)",
             outline: "none",
-            color: "black",
-            background: loading ? "#e5e7eb" : "white",
+            background: "rgba(30, 41, 59, 0.8)",
+            color: "white",
+            fontSize: 14,
             cursor: loading ? "not-allowed" : "text",
+            transition: "all 0.2s",
           }}
         />
 
@@ -189,18 +316,26 @@ export default function AURAChat({ onCommand }) {
           onClick={enviar}
           disabled={loading}
           style={{
-            padding: "10px 16px",
-            borderRadius: 8,
+            padding: "12px 24px",
+            borderRadius: 12,
             border: "none",
-            background: loading ? "#64748b" : "#3b82f6",
+            background: loading
+              ? "rgba(100, 116, 139, 0.5)"
+              : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
             color: "white",
             cursor: loading ? "not-allowed" : "pointer",
-            fontWeight: "500",
+            fontWeight: 600,
+            fontSize: 14,
+            transition: "all 0.2s",
+            boxShadow: loading ? "none" : "0 4px 12px rgba(59, 130, 246, 0.4)",
           }}
         >
-          {loading ? "..." : "Enviar"}
+          {loading ? "●●●" : "Enviar"}
         </button>
       </div>
-    </>
+
+      {/* ORBE FLOTANTE */}
+      <AuraOrb status={orbStatus} onClick={handleOrbClick} />
+    </div>
   );
 }
