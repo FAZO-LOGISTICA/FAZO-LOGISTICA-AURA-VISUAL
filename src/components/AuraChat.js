@@ -271,7 +271,7 @@ export default function AURAChat({ onCommand }) {
               </div>
             </div>
             <div style={{ fontSize: 12, opacity: 0.5, marginTop: 20 }}>
-              💬 Escribe o 🎤 Click en el orbe para activar voz
+              💬 Escribe o 🎤 Activa el micrófono
             </div>
             <div style={{ fontSize: 11, opacity: 0.4 }}>
               Prueba: "Abre AguaRuta" • "Abre mapas" • "Muestra gráficos"
