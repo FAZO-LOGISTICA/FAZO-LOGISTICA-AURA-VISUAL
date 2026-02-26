@@ -418,23 +418,24 @@ export default function AURAChat({ onCommand }) {
         <button
           onClick={toggleVoice}
           style={{
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             borderRadius: "50%",
             border: "none",
             background: voiceEnabled
               ? "linear-gradient(135deg, #ec4899 0%, #ef4444 100%)"
-              : "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+              : "rgba(100, 116, 139, 0.3)",
             color: "white",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 18,
+            fontSize: 16,
             transition: "all 0.2s",
             boxShadow: voiceEnabled
-              ? "0 4px 12px rgba(236, 72, 153, 0.4)"
-              : "0 2px 8px rgba(0, 0, 0, 0.2)",
+              ? "0 2px 8px rgba(236, 72, 153, 0.4)"
+              : "none",
+            flexShrink: 0,
           }}
           title={voiceEnabled ? "Desactivar voz" : "Activar voz"}
         >
@@ -445,8 +446,8 @@ export default function AURAChat({ onCommand }) {
           onClick={() => enviarMensaje()}
           disabled={loading}
           style={{
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             borderRadius: "50%",
             border: "none",
             background: loading
@@ -457,9 +458,11 @@ export default function AURAChat({ onCommand }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 18,
+            fontSize: 16,
+            fontWeight: "bold",
             transition: "all 0.2s",
-            boxShadow: loading ? "none" : "0 4px 12px rgba(59, 130, 246, 0.4)",
+            boxShadow: loading ? "none" : "0 2px 8px rgba(59, 130, 246, 0.4)",
+            flexShrink: 0,
           }}
         >
           {loading ? "●●●" : "➤"}
