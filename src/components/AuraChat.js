@@ -25,8 +25,7 @@ export default function AURAChat({ onCommand }) {
   } = useAuraVoice({
     onTranscript: (text) => {
       console.log("📝 Transcript recibido:", text);
-      setInput(text); // Poner el texto en el input
-      // Auto-enviar después de 1 segundo
+      setInput(text);
       setTimeout(() => {
         if (text.trim()) {
           enviarMensaje(text);
@@ -52,7 +51,6 @@ export default function AURAChat({ onCommand }) {
     autoScroll();
   }, [messages]);
 
-  // Mostrar transcript en tiempo real
   useEffect(() => {
     if (transcript && isActive) {
       setInput(transcript);
@@ -87,12 +85,10 @@ export default function AURAChat({ onCommand }) {
 
       const data = await response.json();
 
-      // Si hay comando, ejecutarlo
       if (data.command) {
         onCommand(data.command);
       }
 
-      // Agregar respuesta de AURA
       setMessages((prev) => [
         ...prev,
         {
@@ -101,7 +97,6 @@ export default function AURAChat({ onCommand }) {
         },
       ]);
 
-      // Si la voz está activada, AURA habla la respuesta
       if (voiceEnabled) {
         speak(data.reply);
       } else {
@@ -128,12 +123,10 @@ export default function AURAChat({ onCommand }) {
 
   const handleOrbClick = () => {
     if (!voiceEnabled) {
-      // Activar voz por primera vez
       setVoiceEnabled(true);
       startListening();
       speak("Sistema de voz activado. Di 'Aura' para comenzar.");
     } else {
-      // Toggle escucha
       if (isListening) {
         stopListening();
         setOrbStatus("idle");
@@ -143,20 +136,35 @@ export default function AURAChat({ onCommand }) {
     }
   };
 
+  const toggleVoice = () => {
+    if (voiceEnabled) {
+      stopListening();
+      setVoiceEnabled(false);
+      setOrbStatus("idle");
+    } else {
+      setVoiceEnabled(true);
+      startListening();
+      speak("Voz activada");
+    }
+  };
+
   return (
     <div
       className="h-screen flex flex-col"
       style={{
         background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* HEADER */}
+      {/* HEADER FIJO */}
       <div
         style={{
           padding: "16px 20px",
           borderBottom: "1px solid rgba(100, 200, 255, 0.2)",
           background: "rgba(15, 23, 42, 0.95)",
           backdropFilter: "blur(10px)",
+          flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -195,40 +203,43 @@ export default function AURAChat({ onCommand }) {
             </h2>
           </div>
 
-          {/* INDICADOR DE VOZ */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 12px",
-              borderRadius: 20,
-              background: voiceEnabled ? "rgba(236, 72, 153, 0.2)" : "rgba(100, 116, 139, 0.2)",
-              border: `1px solid ${voiceEnabled ? "rgba(236, 72, 153, 0.4)" : "rgba(100, 116, 139, 0.3)"}`,
-            }}
-          >
+          {voiceEnabled && (
             <div
               style={{
-                fontSize: 12,
-                color: voiceEnabled ? "#ec4899" : "#64748b",
-                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 12px",
+                borderRadius: 20,
+                background: "rgba(236, 72, 153, 0.2)",
+                border: "1px solid rgba(236, 72, 153, 0.4)",
               }}
             >
-              {voiceEnabled ? "🎤 VOZ ACTIVA" : "🔇 VOZ OFF"}
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#ec4899",
+                  fontWeight: 500,
+                }}
+              >
+                🎤 VOZ ACTIVA
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* CONTENEDOR MENSAJES */}
+      {/* CONTENEDOR MENSAJES CON SCROLL INDEPENDIENTE */}
       <div
         style={{
           flex: 1,
           overflowY: "auto",
+          overflowX: "hidden",
           padding: 20,
           display: "flex",
           flexDirection: "column",
           gap: 12,
+          position: "relative",
         }}
       >
         {messages.length === 0 && (
@@ -264,7 +275,7 @@ export default function AURAChat({ onCommand }) {
               💬 Escribe o 🎤 Click en el orbe para activar voz
             </div>
             <div style={{ fontSize: 11, opacity: 0.4 }}>
-              Prueba: "Abre AguaRuta" • "¿Qué puedes hacer?" • "Hola AURA"
+              Prueba: "Abre AguaRuta" • "Abre mapas" • "Muestra gráficos"
             </div>
           </div>
         )}
@@ -335,6 +346,7 @@ export default function AURAChat({ onCommand }) {
           display: "flex",
           gap: 8,
           alignItems: "center",
+          flexShrink: 0,
         }}
       >
         <label style={{ color: "#94a3b8", fontSize: 12, fontWeight: 500 }}>
@@ -364,14 +376,16 @@ export default function AURAChat({ onCommand }) {
         </select>
       </div>
 
-      {/* INPUT */}
+      {/* INPUT ESTILO WHATSAPP */}
       <div
         style={{
-          padding: 20,
+          padding: "16px 20px",
           borderTop: "1px solid rgba(100, 200, 255, 0.2)",
           display: "flex",
           gap: 12,
           background: "rgba(15, 23, 42, 0.95)",
+          alignItems: "center",
+          flexShrink: 0,
         }}
       >
         <input
@@ -387,7 +401,7 @@ export default function AURAChat({ onCommand }) {
           style={{
             flex: 1,
             padding: "12px 16px",
-            borderRadius: 12,
+            borderRadius: 24,
             border: isActive
               ? "1px solid rgba(236, 72, 153, 0.5)"
               : "1px solid rgba(100, 200, 255, 0.3)",
@@ -400,25 +414,55 @@ export default function AURAChat({ onCommand }) {
           }}
         />
 
+        {/* BOTÓN MIC ESTILO WHATSAPP */}
+        <button
+          onClick={toggleVoice}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            border: "none",
+            background: voiceEnabled
+              ? "linear-gradient(135deg, #ec4899 0%, #ef4444 100%)"
+              : "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+            color: "white",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            transition: "all 0.2s",
+            boxShadow: voiceEnabled
+              ? "0 4px 12px rgba(236, 72, 153, 0.4)"
+              : "0 2px 8px rgba(0, 0, 0, 0.2)",
+          }}
+          title={voiceEnabled ? "Desactivar voz" : "Activar voz"}
+        >
+          🎤
+        </button>
+
         <button
           onClick={() => enviarMensaje()}
           disabled={loading}
           style={{
-            padding: "12px 24px",
-            borderRadius: 12,
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
             border: "none",
             background: loading
               ? "rgba(100, 116, 139, 0.5)"
               : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
             color: "white",
             cursor: loading ? "not-allowed" : "pointer",
-            fontWeight: 600,
-            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
             transition: "all 0.2s",
             boxShadow: loading ? "none" : "0 4px 12px rgba(59, 130, 246, 0.4)",
           }}
         >
-          {loading ? "●●●" : "Enviar"}
+          {loading ? "●●●" : "➤"}
         </button>
       </div>
 
