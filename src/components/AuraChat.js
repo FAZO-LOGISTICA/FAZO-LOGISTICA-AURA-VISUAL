@@ -120,21 +120,6 @@ export default function AURAChat({ onCommand }) {
     }
   };
 
-  const handleOrbClick = () => {
-    if (!voiceEnabled) {
-      setVoiceEnabled(true);
-      startListening();
-      speak("Sistema de voz activado. Di 'Aura' para comenzar.");
-    } else {
-      if (isListening) {
-        stopListening();
-        setOrbStatus("idle");
-      } else {
-        startListening();
-      }
-    }
-  };
-
   const toggleVoice = () => {
     if (voiceEnabled) {
       stopListening();
@@ -149,11 +134,12 @@ export default function AURAChat({ onCommand }) {
 
   return (
     <div
-      className="h-screen flex flex-col"
       style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
         background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
         position: "relative",
-        overflow: "hidden",
       }}
     >
       {/* HEADER FIJO */}
@@ -228,17 +214,18 @@ export default function AURAChat({ onCommand }) {
         </div>
       </div>
 
-      {/* CONTENEDOR MENSAJES CON SCROLL INDEPENDIENTE */}
+      {/* CONTENEDOR MENSAJES - SCROLL INDEPENDIENTE */}
       <div
         style={{
           flex: 1,
-          overflowY: "auto",
+          overflowY: "scroll",
           overflowX: "hidden",
-          padding: 20,
+          padding: "20px",
           display: "flex",
           flexDirection: "column",
           gap: 12,
-          position: "relative",
+          // CRÍTICO: Esto hace que el scroll sea 100% independiente
+          minHeight: 0,
         }}
       >
         {messages.length === 0 && (
@@ -336,7 +323,7 @@ export default function AURAChat({ onCommand }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* SELECTOR DE IA */}
+      {/* SELECTOR DE IA - FIJO */}
       <div
         style={{
           padding: "12px 20px",
@@ -375,7 +362,7 @@ export default function AURAChat({ onCommand }) {
         </select>
       </div>
 
-      {/* INPUT ESTILO WHATSAPP */}
+      {/* INPUT - FIJO */}
       <div
         style={{
           padding: "16px 20px",
@@ -413,7 +400,6 @@ export default function AURAChat({ onCommand }) {
           }}
         />
 
-        {/* BOTÓN MIC ESTILO WHATSAPP */}
         <button
           onClick={toggleVoice}
           style={{
@@ -467,8 +453,6 @@ export default function AURAChat({ onCommand }) {
           {loading ? "●●●" : "➤"}
         </button>
       </div>
-
-      {/* ORBE FLOTANTE ELIMINADO */}
     </div>
   );
 }
