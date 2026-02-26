@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import AuraOrb from "./AuraOrb";
 import { useAuraVoice } from "../hooks/useAuraVoice";
 
 const AURA_API_URL = "https://aura-g5nw.onrender.com/api/aura";
@@ -469,8 +468,7 @@ export default function AURAChat({ onCommand }) {
         </button>
       </div>
 
-      {/* ORBE FLOTANTE */}
-      <AuraOrb status={orbStatus} onClick={handleOrbClick} />
+      {/* ORBE FLOTANTE ELIMINADO */}
     </div>
   );
 }
