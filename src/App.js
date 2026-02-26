@@ -129,9 +129,9 @@ export default function App() {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", overflow: "hidden" }}>
+    <div style={{ height: "100vh", display: "flex", overflow: "hidden", position: "fixed", width: "100%", top: 0, left: 0 }}>
       {/* PANEL PRINCIPAL */}
-      <div style={{ flex: 1, overflow: "hidden" }}>
+      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
         {renderModulo()}
       </div>
 
@@ -142,6 +142,9 @@ export default function App() {
           borderLeft: "1px solid #334155",
           height: "100vh",
           overflow: "hidden",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <AuraChat onCommand={onAuraCommand} />
