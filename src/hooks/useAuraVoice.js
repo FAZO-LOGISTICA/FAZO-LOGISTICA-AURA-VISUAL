@@ -108,7 +108,8 @@ export function useAuraVoice({
         recognitionRef.current.stop();
       }
     };
-  }, [isActive, isListening, activationWord, onTranscript, onStatusChange, speak]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, isListening, activationWord, onTranscript, onStatusChange]);
 
   // Iniciar escucha
   const startListening = useCallback(() => {
