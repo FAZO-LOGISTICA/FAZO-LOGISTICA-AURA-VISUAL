@@ -14,8 +14,6 @@ export default function AURAChat({ onCommand }) {
 
   // Hook de voz
   const {
-    isListening,
-    isSpeaking,
     isActive,
     transcript,
     startListening,
