@@ -55,21 +55,34 @@ const BASE_AGUARUTA = "https://aguaruta.netlify.app";
 
 export default function App() {
   const [moduloActivo, setModuloActivo] = useState("inicio");
-  const [aguaRutaUrl, setAguaRutaUrl] = useState(BASE_AGUARUTA);
   const iframeRef = useRef(null);
+  // Guardamos la ruta destino cuando AguaRuta aún no está montado
+  const rutaPendiente = useRef(null);
 
-  // Navega dentro del iframe de AguaRuta de forma fiable
+  // Navega dentro del iframe sin recargar — via postMessage
   const navegarAguaRuta = useCallback((target) => {
-    const newUrl = BASE_AGUARUTA + target;
-    console.log(`🔄 Navegando a: ${newUrl}`);
-
-    // Si el iframe ya existe en el DOM, forzamos la navegación directo al contentWindow
-    if (iframeRef.current) {
-      iframeRef.current.src = newUrl;
+    if (iframeRef.current?.contentWindow) {
+      console.log(`📨 postMessage GO_TO: ${target}`);
+      iframeRef.current.contentWindow.postMessage(
+        { type: "GO_TO", target },
+        BASE_AGUARUTA
+      );
+    } else {
+      // iframe aún no listo, guardar ruta pendiente
+      rutaPendiente.current = target;
     }
+  }, []);
 
-    // Sincronizamos el state para que React no revierta el src
-    setAguaRutaUrl(newUrl);
+  // Cuando el iframe termina de cargar, enviar ruta pendiente si hay una
+  const onIframeLoad = useCallback(() => {
+    if (rutaPendiente.current && iframeRef.current?.contentWindow) {
+      console.log(`📨 postMessage pendiente: ${rutaPendiente.current}`);
+      iframeRef.current.contentWindow.postMessage(
+        { type: "GO_TO", target: rutaPendiente.current },
+        BASE_AGUARUTA
+      );
+      rutaPendiente.current = null;
+    }
   }, []);
 
   const onAuraCommand = useCallback((command) => {
@@ -82,29 +95,26 @@ export default function App() {
 
       console.log(`📂 Abriendo módulo: ${modulo}`);
 
-      if (command.subAction?.type === "GO_TO") {
-        const target = command.subAction.target;
+      if (modulo === "aguaruta") {
+        const target = command.subAction?.type === "GO_TO"
+          ? command.subAction.target
+          : null;
 
         if (moduloActivo === "aguaruta") {
-          // Ya está en AguaRuta — navegar directo sin esperar
-          navegarAguaRuta(target);
+          // Ya está montado — navegar via postMessage directamente
+          if (target) navegarAguaRuta(target);
         } else {
-          // Hay que montar el iframe primero, luego navegar
-          setModuloActivo(modulo);
-          setAguaRutaUrl(BASE_AGUARUTA + target);
-          // El iframe se montará con la URL correcta desde el inicio
+          // Montar iframe — si hay target, guardarlo como pendiente
+          if (target) rutaPendiente.current = target;
+          setModuloActivo("aguaruta");
         }
-      } else if (command.subAction?.type === "DESCARGAR_GRAFICOS_PDF") {
-        setModuloActivo(modulo);
-        navegarAguaRuta("/graficos");
+
+        if (command.subAction?.type === "DESCARGAR_GRAFICOS_PDF") {
+          navegarAguaRuta("/graficos");
+        }
+
       } else {
-        // Sin subacción: abrir módulo en raíz
-        if (modulo === "aguaruta") {
-          setModuloActivo(modulo);
-          navegarAguaRuta("/");
-        } else {
-          setModuloActivo(modulo);
-        }
+        setModuloActivo(modulo);
       }
     }
   }, [moduloActivo, navegarAguaRuta]);
@@ -114,8 +124,9 @@ export default function App() {
       return (
         <iframe
           ref={iframeRef}
-          src={aguaRutaUrl}
+          src={BASE_AGUARUTA}
           title="AguaRuta"
+          onLoad={onIframeLoad}
           style={{ width: "100%", height: "100vh", border: "none" }}
           allow="fullscreen"
         />
@@ -128,12 +139,9 @@ export default function App() {
 
   return (
     <div style={{ height: "100vh", display: "flex", overflow: "hidden", position: "fixed", width: "100%", top: 0, left: 0 }}>
-      {/* PANEL PRINCIPAL */}
       <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
         {renderModulo()}
       </div>
-
-      {/* PANEL AURA */}
       <div style={{
         width: 420,
         borderLeft: "1px solid #334155",
