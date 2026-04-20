@@ -26,6 +26,31 @@ function formatMonto(monto) {
   return `$${Number(monto).toLocaleString("es-CL")}`;
 }
 
+function CopiarBoton({ texto }) {
+  const [copiado, setCopiado] = useState(false);
+  return (
+    <button
+      onClick={e => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(texto).then(() => {
+          setCopiado(true);
+          setTimeout(() => setCopiado(false), 2000);
+        });
+      }}
+      style={{
+        background: copiado ? "#0f3d2e" : "#1e2d3d",
+        border: `1px solid ${copiado ? "#4ade80" : "#4d8eb5"}`,
+        color: copiado ? "#4ade80" : "#4d8eb5",
+        fontSize: 11, padding: "4px 10px",
+        borderRadius: 6, cursor: "pointer",
+        transition: "all 0.2s", whiteSpace: "nowrap",
+      }}
+    >
+      {copiado ? "✅ Copiado" : "📋 Copiar código"}
+    </button>
+  );
+}
+
 export default function MercadoPublicoPanel({
   resultados = [],
   query = "",
@@ -59,6 +84,7 @@ export default function MercadoPublicoPanel({
 
   return (
     <div style={s.container}>
+      {/* Header */}
       <div style={s.header}>
         <span style={s.headerIcon}>🏛️</span>
         <div style={s.headerInfo}>
@@ -68,6 +94,12 @@ export default function MercadoPublicoPanel({
         <span style={s.badge}>{resultados.length} resultados</span>
       </div>
 
+      {/* Hint */}
+      <div style={s.hint}>
+        💡 Copia el código → búscalo en Mercado Público con tu Clave Única
+      </div>
+
+      {/* Lista */}
       <div style={s.list}>
         {resultados.map((item, i) => {
           const estadoKey   = (item.estado || "publicada").toLowerCase();
@@ -81,20 +113,31 @@ export default function MercadoPublicoPanel({
               style={{ ...s.card, ...(isOpen ? s.cardOpen : {}) }}
               onClick={() => setExpandido(isOpen ? null : i)}
             >
+              {/* Fila superior */}
               <div style={s.cardTop}>
                 <div style={s.cardTopLeft}>
-                  <span style={{ ...s.estadoBadge, background: estadoStyle.bg, color: estadoStyle.text }}>
+                  <span style={{
+                    ...s.estadoBadge,
+                    background: estadoStyle.bg,
+                    color: estadoStyle.text,
+                  }}>
                     <span style={{ ...s.dot, background: estadoStyle.dot }} />
                     {item.estado || item.convenio || "—"}
                   </span>
-                  {item.codigo && <span style={s.codigo}>{item.codigo}</span>}
+                  {item.codigo && (
+                    <span style={s.codigo}>{item.codigo}</span>
+                  )}
                 </div>
                 <span style={s.chevron}>{isOpen ? "▲" : "▼"}</span>
               </div>
 
+              {/* Nombre */}
               <p style={s.nombre}>{item.nombre || "Sin nombre"}</p>
+
+              {/* Subtítulo */}
               {subtitulo && <p style={s.subtitulo}>{subtitulo}</p>}
 
+              {/* Detalle expandido */}
               {isOpen && (
                 <div style={s.detalle}>
                   {item.fechaCierre && (
@@ -117,16 +160,36 @@ export default function MercadoPublicoPanel({
                       </span>
                     </div>
                   )}
-                  {item.url && (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={s.verLink}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      Ver en Mercado Público →
-                    </a>
+                  {item.organismo && !esConvenio && (
+                    <div style={s.detalleRow}>
+                      <span style={s.detalleLabel}>Organismo</span>
+                      <span style={{ ...s.detalleValor, fontSize: 11 }}>{item.organismo}</span>
+                    </div>
+                  )}
+
+                  {/* Acciones */}
+                  {item.codigo && (
+                    <div style={s.acciones}>
+                      <CopiarBoton texto={item.codigo} />
+                      <a
+                        href={`https://licisoft.cl/w/licitaciones.php?cod=${item.codigo}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ ...s.verLink, color: "#a78bfa" }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        Ver en Licisoft →
+                      </a>
+                      <a
+                        href={`https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?codigoOC=${item.codigo}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={s.verLink}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        Abrir en MP →
+                      </a>
+                    </div>
                   )}
                 </div>
               )}
@@ -135,7 +198,9 @@ export default function MercadoPublicoPanel({
         })}
       </div>
 
-      <p style={s.footer}>Fuente: api.mercadopublico.cl · Clic en cada resultado para ver detalles</p>
+      <p style={s.footer}>
+        Fuente: api.mercadopublico.cl · Clic en cada resultado para expandir
+      </p>
     </div>
   );
 }
@@ -153,15 +218,23 @@ const s = {
   },
   header: {
     display: "flex", alignItems: "center", gap: 10,
-    marginBottom: 12, borderBottom: "1px solid #1e2d3d", paddingBottom: 10,
+    marginBottom: 10, borderBottom: "1px solid #1e2d3d", paddingBottom: 10,
   },
   headerIcon: { fontSize: 18, flexShrink: 0 },
   headerInfo: { flex: 1, display: "flex", flexDirection: "column", gap: 2, minWidth: 0 },
   headerTitle: { color: "#e6edf3", fontWeight: "bold", fontSize: 13 },
-  headerQuery: { color: "#4d8eb5", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  headerQuery: {
+    color: "#4d8eb5", fontSize: 11,
+    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+  },
   badge: {
     background: "#1e2d3d", color: "#4d8eb5", fontSize: 11,
     padding: "3px 8px", borderRadius: 20, whiteSpace: "nowrap", flexShrink: 0,
+  },
+  hint: {
+    background: "#161b22", border: "1px solid #1e2d3d",
+    borderRadius: 6, padding: "6px 10px",
+    fontSize: 11, color: "#4d5662", marginBottom: 10,
   },
   list: { display: "flex", flexDirection: "column", gap: 6 },
   card: {
@@ -170,7 +243,10 @@ const s = {
     transition: "border-color 0.2s, background 0.2s",
   },
   cardOpen: { borderColor: "#4d8eb5", background: "#192230" },
-  cardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 },
+  cardTop: {
+    display: "flex", justifyContent: "space-between",
+    alignItems: "center", marginBottom: 5,
+  },
   cardTopLeft: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" },
   estadoBadge: {
     display: "flex", alignItems: "center", gap: 5,
@@ -178,7 +254,7 @@ const s = {
     borderRadius: 4, textTransform: "uppercase", letterSpacing: 0.5,
   },
   dot: { width: 5, height: 5, borderRadius: "50%", flexShrink: 0 },
-  codigo: { color: "#4d8eb5", fontSize: 10, opacity: 0.8 },
+  codigo: { color: "#4d8eb5", fontSize: 11, fontWeight: "bold" },
   chevron: { color: "#4d5662", fontSize: 10, flexShrink: 0 },
   nombre: {
     color: "#c9d1d9", fontSize: 12, margin: "0 0 2px 0", lineHeight: 1.5,
@@ -190,15 +266,28 @@ const s = {
     marginTop: 10, borderTop: "1px solid #1e2d3d",
     paddingTop: 10, display: "flex", flexDirection: "column", gap: 7,
   },
-  detalleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 },
+  detalleRow: {
+    display: "flex", justifyContent: "space-between",
+    alignItems: "flex-start", gap: 8,
+  },
   detalleLabel: { color: "#4d5662", fontSize: 11, flexShrink: 0 },
   detalleValor: { color: "#e6edf3", fontSize: 12, textAlign: "right" },
-  verLink: { color: "#4d8eb5", fontSize: 12, textDecoration: "none", marginTop: 2, display: "inline-block" },
-  footer: { color: "#2d3748", fontSize: 10, textAlign: "center", marginTop: 10, marginBottom: 0 },
+  acciones: {
+    display: "flex", gap: 8, marginTop: 4,
+    flexWrap: "wrap", alignItems: "center",
+  },
+  verLink: {
+    color: "#4d8eb5", fontSize: 11,
+    textDecoration: "none", whiteSpace: "nowrap",
+  },
+  footer: {
+    color: "#2d3748", fontSize: 10,
+    textAlign: "center", marginTop: 10, marginBottom: 0,
+  },
   spinner: {
-    width: 14, height: 14, border: "2px solid #1e2d3d",
-    borderTop: "2px solid #4d8eb5", borderRadius: "50%",
-    animation: "spin 0.8s linear infinite", flexShrink: 0,
+    width: 14, height: 14,
+    border: "2px solid #1e2d3d", borderTop: "2px solid #4d8eb5",
+    borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0,
   },
   skeleton: {
     height: 64, background: "#161b22", borderRadius: 8,
