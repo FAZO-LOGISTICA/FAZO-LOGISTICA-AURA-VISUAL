@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useAuraVoice } from "../hooks/useAuraVoice";
+import MercadoPublicoPanel from "./MercadoPublicoPanel";
 
-const AURA_API_URL = "https://aura-g5nw.onrender.com/api/aura";
+const AURA_API_URL     = "https://aura-g5nw.onrender.com/api/aura";
+const AURA_BACKEND_URL = "https://aura-g5nw.onrender.com";
 
 export default function AURAChat({ onCommand }) {
   const [messages, setMessages]     = useState([]);
@@ -11,21 +13,63 @@ export default function AURAChat({ onCommand }) {
   const [orbStatus, setOrbStatus]   = useState("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
+  // Estados Mercado Público
+  const [mpResultados, setMpResultados] = useState([]);
+  const [mpQuery, setMpQuery]           = useState("");
+  const [mpTipo, setMpTipo]             = useState("licitacion");
+  const [mpLoading, setMpLoading]       = useState(false);
+
   const messagesEndRef = useRef(null);
-  const messagesRef    = useRef(messages);   // ← ref para evitar stale closure
+  const messagesRef    = useRef(messages);
   const loadingRef     = useRef(loading);
   const providerRef    = useRef(provider);
 
-  // Mantener refs sincronizados
-  useEffect(() => { messagesRef.current  = messages;  }, [messages]);
-  useEffect(() => { loadingRef.current   = loading;   }, [loading]);
-  useEffect(() => { providerRef.current  = provider;  }, [provider]);
+  useEffect(() => { messagesRef.current = messages;  }, [messages]);
+  useEffect(() => { loadingRef.current  = loading;   }, [loading]);
+  useEffect(() => { providerRef.current = provider;  }, [provider]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, mpResultados]);
 
-  // ── Enviar mensaje — usa refs para no tener stale closure ──
+  // ── Handler Mercado Público ────────────────────────────────
+  const handleMercadoPublico = useCallback(async (comando) => {
+    const { query, tipo = "licitacion" } = comando;
+
+    setMpLoading(true);
+    setMpQuery(query);
+    setMpTipo(tipo);
+    setMpResultados([]);
+
+    const endpoint = tipo === "convenio-marco"
+      ? `/aura/convenio-marco?q=${encodeURIComponent(query)}`
+      : `/aura/licitaciones?q=${encodeURIComponent(query)}`;
+
+    try {
+      const res  = await fetch(`${AURA_BACKEND_URL}${endpoint}`);
+      const data = await res.json();
+
+      if (data.error) {
+        setMpLoading(false);
+        return `❌ Error Mercado Público: ${data.error}`;
+      }
+
+      setMpResultados(data.resultados || []);
+      setMpLoading(false);
+
+      const label = tipo === "convenio-marco" ? "productos en Convenio Marco" : "licitaciones";
+      if (!data.total || data.total === 0) {
+        return `🏛️ No encontré ${label} para "${query}". Intenta con otros términos.`;
+      }
+      return `🏛️ Encontré ${data.total} ${label} para "${query}". Mostrando resultados.`;
+
+    } catch (err) {
+      setMpLoading(false);
+      return `❌ Error al consultar Mercado Público: ${err.message}`;
+    }
+  }, []);
+
+  // ── Enviar mensaje ─────────────────────────────────────────
   const enviarMensaje = useCallback(async (texto) => {
     const textoFinal = (texto || "").trim();
     if (!textoFinal || loadingRef.current) return;
@@ -53,14 +97,23 @@ export default function AURAChat({ onCommand }) {
 
       const data = await response.json();
 
+      // ── Mercado Público: resolver en frontend ──
+      if (data.command?.type === "BUSCAR_LICITACIONES") {
+        const respuestaMp = await handleMercadoPublico(data.command);
+        setMessages(prev => [...prev, { role: "assistant", content: respuestaMp }]);
+        setOrbStatus("idle");
+        setLoading(false);
+        if (voiceEnabledRef.current) speak(respuestaMp);
+        return;
+      }
+
+      // ── Resto de comandos pasan al padre (App.js) ──
       if (data.command) onCommand?.(data.command);
 
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
       setOrbStatus("idle");
 
-      if (voiceEnabledRef.current) {
-        speak(data.reply);
-      }
+      if (voiceEnabledRef.current) speak(data.reply);
 
     } catch (error) {
       console.error("Error AURA:", error);
@@ -73,7 +126,7 @@ export default function AURAChat({ onCommand }) {
     } finally {
       setLoading(false);
     }
-  }, [onCommand]); // eslint-disable-line
+  }, [onCommand, handleMercadoPublico]); // eslint-disable-line
 
   const enviarMensajeRef = useRef(enviarMensaje);
   useEffect(() => { enviarMensajeRef.current = enviarMensaje; }, [enviarMensaje]);
@@ -81,21 +134,20 @@ export default function AURAChat({ onCommand }) {
   const voiceEnabledRef = useRef(voiceEnabled);
   useEffect(() => { voiceEnabledRef.current = voiceEnabled; }, [voiceEnabled]);
 
-  // ── Hook de voz ──
+  // ── Hook de voz ──────────────────────────────────────────
   const { isActive, transcript, startListening, stopListening, speak } = useAuraVoice({
     onTranscript: useCallback((text) => {
       console.log("🎤 Voz recibida:", text);
       setInput(text);
-      // Llamar via ref — sin stale closure
       enviarMensajeRef.current(text);
     }, []),
     onStatusChange: useCallback((status) => {
       console.log("🔄 Status:", status);
-      if (status === "listening")       setOrbStatus("listening");
-      else if (status === "speaking")   setOrbStatus("speaking");
-      else if (status === "active")     setOrbStatus("listening");
-      else if (status === "error")      setOrbStatus("error");
-      else                              setOrbStatus("idle");
+      if (status === "listening")     setOrbStatus("listening");
+      else if (status === "speaking") setOrbStatus("speaking");
+      else if (status === "active")   setOrbStatus("listening");
+      else if (status === "error")    setOrbStatus("error");
+      else                            setOrbStatus("idle");
     }, []),
     activationWord: "aura",
   });
@@ -164,7 +216,7 @@ export default function AURAChat({ onCommand }) {
         padding: "20px", display: "flex", flexDirection: "column",
         gap: 12, minHeight: 0,
       }}>
-        {messages.length === 0 && (
+        {messages.length === 0 && !mpResultados.length && !mpLoading && (
           <div style={{
             display: "flex", flexDirection: "column", alignItems: "center",
             justifyContent: "center", height: "100%", color: "#64748b",
@@ -180,8 +232,10 @@ export default function AURAChat({ onCommand }) {
             <div style={{ fontSize: 12, opacity: 0.5, marginTop: 20 }}>
               💬 Escribe o 🎤 Activa el micrófono
             </div>
-            <div style={{ fontSize: 11, opacity: 0.4 }}>
-              Prueba: "Abre AguaRuta" • "Abre mapas" • "Muestra gráficos"
+            <div style={{ fontSize: 11, opacity: 0.4, lineHeight: 1.8 }}>
+              "Abre AguaRuta" • "Abre mapas" • "Muestra gráficos"<br/>
+              "Busca licitaciones de ropa de invierno"<br/>
+              "Busca convenio marco de herramientas"
             </div>
           </div>
         )}
@@ -217,6 +271,17 @@ export default function AURAChat({ onCommand }) {
             <span>AURA está procesando...</span>
           </div>
         )}
+
+        {/* Panel Mercado Público */}
+        {(mpResultados.length > 0 || mpLoading) && (
+          <MercadoPublicoPanel
+            resultados={mpResultados}
+            query={mpQuery}
+            tipo={mpTipo}
+            loading={mpLoading}
+          />
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
